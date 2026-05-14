@@ -1,0 +1,28 @@
+# Secretos — NUNCA subir al repo
+.env
+
+# Dependencias
+node_modules/
+__pycache__/
+*.pyc
+venv/
+
+# Build output de Emscripten (se genera con docker build)
+frontend/dist/
+*.wasm
+game.js
+game.data
+
+# Logs
+*.log
+logs/
+build.log
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
