@@ -1,0 +1,211 @@
+:root {
+  color: #f6f1e9;
+  background: #08121f;
+  font-family: "Segoe UI", sans-serif;
+}
+
+body {
+  margin: 0;
+}
+
+code {
+  font-family: "Cascadia Code", "Fira Code", monospace;
+}
+
+button,
+input {
+  font: inherit;
+}
+
+.auth-page {
+  width: 100vw;
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(135deg, #08121f 0%, #12263f 40%, #1c4966 100%);
+}
+
+.auth-card {
+  width: min(92vw, 560px);
+  padding: 32px;
+  border-radius: 24px;
+  background: rgba(8, 12, 20, 0.84);
+  border: 1px solid rgba(236, 213, 175, 0.22);
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.35);
+}
+
+.auth-eyebrow {
+  margin: 0 0 8px;
+  font-size: 0.78rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #d7c29a;
+}
+
+.auth-title {
+  margin: 0 0 10px;
+  font-size: clamp(2rem, 6vw, 3rem);
+  line-height: 1;
+}
+
+.auth-subtitle {
+  margin: 0 0 24px;
+  color: #cfdae5;
+  line-height: 1.5;
+}
+
+.auth-tabs {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.auth-tab {
+  flex: 1;
+  padding: 12px 16px;
+  border-radius: 999px;
+  border: 1px solid rgba(236, 213, 175, 0.25);
+  background: transparent;
+  color: #f6f1e9;
+  cursor: pointer;
+}
+
+.auth-tab-active {
+  background: #d7c29a;
+  color: #08121f;
+  border-color: #d7c29a;
+}
+
+.auth-form {
+  display: grid;
+  gap: 12px;
+}
+
+.auth-label {
+  font-size: 0.95rem;
+  color: #f6f1e9;
+}
+
+.auth-input {
+  padding: 14px 16px;
+  border-radius: 14px;
+  border: 1px solid rgba(236, 213, 175, 0.22);
+  background: rgba(255, 255, 255, 0.06);
+  color: #f6f1e9;
+}
+
+.auth-input::placeholder {
+  color: #91a0af;
+}
+
+.auth-input:focus {
+  outline: 2px solid rgba(215, 194, 154, 0.4);
+  border-color: rgba(215, 194, 154, 0.7);
+}
+
+.auth-error {
+  margin: 4px 0 0;
+  color: #ff9c9c;
+}
+
+.auth-submit,
+.logout-button {
+  padding: 14px 18px;
+  border: 0;
+  border-radius: 999px;
+  background: #d7c29a;
+  color: #08121f;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.auth-submit:disabled,
+.logout-button:disabled {
+  opacity: 0.7;
+  cursor: wait;
+}
+
+.auth-switch {
+  margin: 4px 0 0;
+  color: #cfdae5;
+}
+
+.auth-link {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: #d7c29a;
+  cursor: pointer;
+}
+
+.game-page {
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background: #0a0a0a;
+}
+
+.game-toolbar {
+  position: fixed;
+  top: 16px;
+  left: 16px;
+  right: 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  z-index: 10;
+}
+
+.game-user {
+  padding: 10px 14px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.45);
+  color: #f5f5f5;
+  backdrop-filter: blur(10px);
+}
+
+.game-user-label {
+  margin-right: 8px;
+  color: #bfc8d0;
+}
+
+.game-frame {
+  width: min(100vw, calc(100vh * 800 / 600));
+  height: min(100vh, calc(100vw * 600 / 800));
+  position: relative;
+}
+
+.game-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  image-rendering: pixelated;
+  transition: opacity 0.15s ease;
+}
+
+.game-status {
+  position: fixed;
+  bottom: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.7rem;
+  color: #444;
+  pointer-events: none;
+}
+
+@media (max-width: 640px) {
+  .auth-card {
+    padding: 24px;
+  }
+
+  .game-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
