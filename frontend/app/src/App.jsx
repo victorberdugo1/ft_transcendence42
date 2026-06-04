@@ -103,7 +103,6 @@ function LoadingScreen({ onPrivacy, onTerms }) {
 
 function GameShell({ user, onLogout, onPrivacy, onTerms }) {
   const canvasRef = useRef(null);
-  const [status, setStatus] = useState("Conectando...");
   const [visible, setVisible] = useState(false);
   const [logoutLoading, setLogoutLoading] = useState(false);
 
@@ -115,13 +114,11 @@ function GameShell({ user, onLogout, onPrivacy, onTerms }) {
     window.Module = {
       canvas: canvasRef.current,
       locateFile: (path) => `/${path}`,
-      onRuntimeInitialized: () => setStatus("Juego cargado"),
     };
 
     const script = document.createElement("script");
     script.src = "/game.js";
     script.async = false;
-    script.onload = () => setStatus("Juego inicializado");
     script.onerror = () => setStatus("Error cargando game.js");
     document.body.appendChild(script);
   // sendStageSelect está definido en ws-client.js y maneja tanto la
@@ -199,7 +196,6 @@ function GameShell({ user, onLogout, onPrivacy, onTerms }) {
         />
       </div>
 
-      <div className="game-status">{status}</div>
       <LegalFooter onPrivacy={onPrivacy} onTerms={onTerms} />
     </div>
   );

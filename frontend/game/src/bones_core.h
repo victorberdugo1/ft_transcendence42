@@ -41,7 +41,7 @@
 
 #define HEAD_DEPTH_OFFSET           -0.02f
 #define CHEST_OFFSET_Y              -0.06f
-#define CHEST_OFFSET_Z              -0.005f
+#define CHEST_OFFSET_Z              0.025f
 #define CHEST_FALLBACK_Y            -0.08f
 #define HIP_OFFSET_Y                -0.02f
 
