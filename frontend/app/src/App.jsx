@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import Login from "./Login.jsx";
+import Privacy from "./Privacy.jsx";
 import Register from "./Register.jsx";
+import Terms from "./Terms.jsx";
 import "./auth.css";
 
 const GAME_RATIO = 800 / 600;
@@ -32,13 +34,26 @@ function normalizeUser(rawUser) {
   };
 }
 
-function AuthGate({ view, onChangeView, onLogin }) {
+function LegalFooter({ onPrivacy, onTerms }) {
+  return (
+    <div className="legal-footer">
+      <button type="button" className="auth-link" onClick={onPrivacy}>
+        Privacy Policy
+      </button>
+      <span className="legal-separator">|</span>
+      <button type="button" className="auth-link" onClick={onTerms}>
+        Terms of Service
+      </button>
+    </div>
+  );
+}
+
+function AuthGate({ view, onChangeView, onLogin, onPrivacy, onTerms }) {
   return (
     <div className="auth-page">
       <div className="auth-card">
         <p className="auth-eyebrow">ft_transcendence</p>
         <h1 className="auth-title">Sign in to play</h1>
-
 
         <div className="auth-tabs">
           <button
@@ -62,12 +77,31 @@ function AuthGate({ view, onChangeView, onLogin }) {
         ) : (
           <Register onLogin={onLogin} onSwitchToLogin={() => onChangeView("login")} />
         )}
+
+        <LegalFooter onPrivacy={onPrivacy} onTerms={onTerms} />
       </div>
     </div>
   );
 }
 
-function GameShell({ user, onLogout }) {
+function LoadingScreen({ onPrivacy, onTerms }) {
+  return (
+    <div className="auth-page">
+      <div className="auth-card">
+        <p className="auth-eyebrow">ft_transcendence</p>
+        <h1 className="auth-title">Checking session</h1>
+        <p className="auth-subtitle">
+          The app is asking the backend whether the <code>sid</code> cookie is
+          still valid.
+        </p>
+
+        <LegalFooter onPrivacy={onPrivacy} onTerms={onTerms} />
+      </div>
+    </div>
+  );
+}
+
+function GameShell({ user, onLogout, onPrivacy, onTerms }) {
   const canvasRef = useRef(null);
   const [status, setStatus] = useState("Conectando...");
   const [visible, setVisible] = useState(false);
@@ -90,7 +124,7 @@ function GameShell({ user, onLogout }) {
     script.onload = () => setStatus("Juego inicializado");
     script.onerror = () => setStatus("Error cargando game.js");
     document.body.appendChild(script);
-    // sendStageSelect está definido en ws-client.js y maneja tanto la
+  // sendStageSelect está definido en ws-client.js y maneja tanto la
     // confirmación local como el envío al servidor vía WebSocket.
     const poll = setInterval(() => {
       if (window._isSpectator && window._myClientId > 0) {
@@ -166,6 +200,7 @@ function GameShell({ user, onLogout }) {
       </div>
 
       <div className="game-status">{status}</div>
+      <LegalFooter onPrivacy={onPrivacy} onTerms={onTerms} />
     </div>
   );
 }
@@ -174,6 +209,8 @@ export default function App() {
   const [authStatus, setAuthStatus] = useState("loading");
   const [authView, setAuthView] = useState("login");
   const [user, setUser] = useState(null);
+  const [page, setPage] = useState("auth");
+  const [legalBackPage, setLegalBackPage] = useState("auth");
 
   useEffect(() => {
     let cancelled = false;
@@ -191,6 +228,7 @@ export default function App() {
             if (!cancelled) {
               setUser(null);
               setAuthStatus("guest");
+              setPage("auth");
             }
             return;
           }
@@ -203,6 +241,7 @@ export default function App() {
         if (!cancelled) {
           setUser(normalizeUser(data.user));
           setAuthStatus("authenticated");
+          setPage("game");
         }
       } catch (error) {
         console.error("[auth] /api/me failed:", error);
@@ -210,6 +249,7 @@ export default function App() {
         if (!cancelled) {
           setUser(null);
           setAuthStatus("guest");
+          setPage("auth");
         }
       }
     }
@@ -221,30 +261,44 @@ export default function App() {
     };
   }, []);
 
+  function openPrivacy(fromPage) {
+    setLegalBackPage(fromPage);
+    setPage("privacy");
+  }
+
+  function openTerms(fromPage) {
+    setLegalBackPage(fromPage);
+    setPage("terms");
+  }
+
   function handleAuthSuccess(rawUser) {
     setUser(normalizeUser(rawUser));
     setAuthStatus("authenticated");
+    setPage("game");
   }
 
   function handleLogout() {
     setUser(null);
     setAuthStatus("guest");
     setAuthView("login");
+    setPage("auth");
   }
 
   if (authStatus === "loading") {
     return (
-      <div className="auth-page">
-        <div className="auth-card">
-          <p className="auth-eyebrow">ft_transcendence</p>
-          <h1 className="auth-title">Checking session</h1>
-          <p className="auth-subtitle">
-            The app is asking the backend whether the <code>sid</code> cookie is
-            still valid.
-          </p>
-        </div>
-      </div>
+      <LoadingScreen
+        onPrivacy={() => openPrivacy("loading")}
+        onTerms={() => openTerms("loading")}
+      />
     );
+  }
+
+  if (page === "privacy") {
+    return <Privacy onBack={() => setPage(legalBackPage)} />;
+  }
+
+  if (page === "terms") {
+    return <Terms onBack={() => setPage(legalBackPage)} />;
   }
 
   if (authStatus !== "authenticated" || !user) {
@@ -253,9 +307,18 @@ export default function App() {
         view={authView}
         onChangeView={setAuthView}
         onLogin={handleAuthSuccess}
+        onPrivacy={() => openPrivacy("auth")}
+        onTerms={() => openTerms("auth")}
       />
     );
   }
 
-  return <GameShell user={user} onLogout={handleLogout} />;
+  return (
+    <GameShell
+      user={user}
+      onLogout={handleLogout}
+      onPrivacy={() => openPrivacy("game")}
+      onTerms={() => openTerms("game")}
+    />
+  );
 }
