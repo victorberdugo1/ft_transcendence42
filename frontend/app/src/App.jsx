@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from "react";
-import Login from "./Login.jsx";
-import Privacy from "./Privacy.jsx";
+import Login    from "./Login.jsx";
+import Lobby    from "./Lobby.jsx";
+import Privacy  from "./Privacy.jsx";
 import Register from "./Register.jsx";
-import Terms from "./Terms.jsx";
+import Terms    from "./Terms.jsx";
 import "./auth.css";
 
 const GAME_RATIO = 800 / 600;
@@ -10,40 +11,28 @@ const GAME_RATIO = 800 / 600;
 function calcResolution() {
   const vw = window.innerWidth;
   const vh = window.innerHeight;
-
-  if (vw / vh > GAME_RATIO) {
-    const h = vh;
-    return { w: Math.round(h * GAME_RATIO), h };
-  }
-
+  if (vw / vh > GAME_RATIO) { const h = vh; return { w: Math.round(h * GAME_RATIO), h }; }
   const w = vw;
   return { w, h: Math.round(w / GAME_RATIO) };
 }
 
-// The backend does not always use the same key for the user id.
-// login/register use `id` and `/api/me` uses `user_id`.
 function normalizeUser(rawUser) {
   if (!rawUser) return null;
-
   return {
-    id: rawUser.id ?? rawUser.user_id ?? null,
-    username: rawUser.username ?? "",
-    email: rawUser.email ?? "",
+    id:        rawUser.id        ?? rawUser.user_id   ?? null,
+    username:  rawUser.username  ?? "",
+    email:     rawUser.email     ?? "",
     avatarUrl: rawUser.avatar_url ?? "/avatars/default.png",
-    role: rawUser.role ?? "user",
+    role:      rawUser.role      ?? "user",
   };
 }
 
 function LegalFooter({ onPrivacy, onTerms }) {
   return (
     <div className="legal-footer">
-      <button type="button" className="auth-link" onClick={onPrivacy}>
-        Privacy Policy
-      </button>
+      <button type="button" className="auth-link" onClick={onPrivacy}>Privacy Policy</button>
       <span className="legal-separator">|</span>
-      <button type="button" className="auth-link" onClick={onTerms}>
-        Terms of Service
-      </button>
+      <button type="button" className="auth-link" onClick={onTerms}>Terms of Service</button>
     </div>
   );
 }
@@ -54,30 +43,17 @@ function AuthGate({ view, onChangeView, onLogin, onPrivacy, onTerms }) {
       <div className="auth-card">
         <p className="auth-eyebrow">ft_transcendence</p>
         <h1 className="auth-title">Sign in to play</h1>
-
         <div className="auth-tabs">
-          <button
-            type="button"
+          <button type="button"
             className={view === "login" ? "auth-tab auth-tab-active" : "auth-tab"}
-            onClick={() => onChangeView("login")}
-          >
-            Login
-          </button>
-          <button
-            type="button"
+            onClick={() => onChangeView("login")}>Login</button>
+          <button type="button"
             className={view === "register" ? "auth-tab auth-tab-active" : "auth-tab"}
-            onClick={() => onChangeView("register")}
-          >
-            Register
-          </button>
+            onClick={() => onChangeView("register")}>Register</button>
         </div>
-
-        {view === "login" ? (
-          <Login onLogin={onLogin} onSwitchToRegister={() => onChangeView("register")} />
-        ) : (
-          <Register onLogin={onLogin} onSwitchToLogin={() => onChangeView("login")} />
-        )}
-
+        {view === "login"
+          ? <Login    onLogin={onLogin} onSwitchToRegister={() => onChangeView("register")} />
+          : <Register onLogin={onLogin} onSwitchToLogin={() => onChangeView("login")} />}
         <LegalFooter onPrivacy={onPrivacy} onTerms={onTerms} />
       </div>
     </div>
@@ -90,214 +66,279 @@ function LoadingScreen({ onPrivacy, onTerms }) {
       <div className="auth-card">
         <p className="auth-eyebrow">ft_transcendence</p>
         <h1 className="auth-title">Checking session</h1>
-        <p className="auth-subtitle">
-          The app is asking the backend whether the <code>sid</code> cookie is
-          still valid.
-        </p>
-
+        <p className="auth-subtitle">Verifying your <code>sid</code> cookie with the server…</p>
         <LegalFooter onPrivacy={onPrivacy} onTerms={onTerms} />
       </div>
     </div>
   );
 }
 
-function GameShell({ user, onLogout, onPrivacy, onTerms }) {
-  const canvasRef = useRef(null);
-  const [visible, setVisible] = useState(false);
-  const [logoutLoading, setLogoutLoading] = useState(false);
+// ── GameShell ──────────────────────────────────────────────────────────────────
+// Stays mounted for the entire authenticated session so Emscripten never
+// re-initialises (doing so crashes preMainLoop). inLobby=true hides the
+// canvas behind the lobby overlay without unmounting it.
 
+function GameShell({ user, gameMode, gameOpts, inLobby, onBackToLobby }) {
+  const canvasRef   = useRef(null);
+  const scriptRef   = useRef(null);
+  const [visible,    setVisible]    = useState(false);
+  const [status,     setStatus]     = useState("Connecting\u2026");
+  const [sessionErr, setSessionErr] = useState("");
+
+  function handleBackToLobby() {
+    try {
+      if (window._ws?.readyState === 1) {
+        window._ws.send(JSON.stringify({ type: "leave" }));
+      }
+    } catch (_) {}
+    // Keep WS open and WASM alive — only reset UI/match state.
+    Object.assign(window, {
+      _isSpectator: false, _spectatorMode: null, _matchSession: null,
+      _victoryActive: false, _victoryConsumed: true, _hitstopState: null,
+      _countdownStart: null, _countdownDone: false,
+      _confirmedStageId: undefined, _isHost: undefined,
+      _charSelectData: null, _charSelectConfirmed: false,
+      _gameState: { players: {} },
+    });
+    try {
+      ["charSelectData","pendingCharSelect","watchSession","gameState","confirmedStageId"]
+        .forEach(k => sessionStorage.removeItem(k));
+    } catch (_) {}
+    setVisible(false);
+    setStatus("Connecting\u2026");
+    onBackToLobby();
+  }
+
+  // Mount once: init canvas + load game.js + resize listener
   useEffect(() => {
     const { w, h } = calcResolution();
-    window._canvasWidth = w;
+    window._canvasWidth  = w;
     window._canvasHeight = h;
+    window._pendingGameMode = gameMode;
+    window._pendingGameOpts = gameOpts ?? {};
+    window.Module = { canvas: canvasRef.current, locateFile: (p) => `/${p}` };
 
-    window.Module = {
-      canvas: canvasRef.current,
-      locateFile: (path) => `/${path}`,
-    };
-
-    const script = document.createElement("script");
-    script.src = "/game.js";
-    script.async = false;
-    script.onerror = () => setStatus("Error cargando game.js");
-    document.body.appendChild(script);
-  // sendStageSelect está definido en ws-client.js y maneja tanto la
-    // confirmación local como el envío al servidor vía WebSocket.
-    const poll = setInterval(() => {
-      if (window._isSpectator && window._myClientId > 0) {
-        setVisible(true);
-        clearInterval(poll);
-        return;
-      }
-
-      const id = window._myClientId;
-      if (id <= 0) return;
-
-      const state = window._gameState;
-      if (!state || !state.players || !state.players[id]) return;
-
-      setVisible(true);
-      clearInterval(poll);
-    }, 50);
+    if (!scriptRef.current) {
+      const script = document.createElement("script");
+      script.src   = "/game.js";
+      script.async = false;
+      document.body.appendChild(script);
+      scriptRef.current = script;
+    }
 
     const onResize = () => {
       const { w, h } = calcResolution();
-      window._canvasWidth = w;
-      window._canvasHeight = h;
+      window._canvasWidth = w; window._canvasHeight = h;
     };
-
     window.addEventListener("resize", onResize);
-
-    return () => {
-      clearInterval(poll);
-      window.removeEventListener("resize", onResize);
-      script.parentNode?.removeChild(script);
-    };
+    return () => window.removeEventListener("resize", onResize);
   }, []);
 
-  async function handleLogoutClick() {
-    setLogoutLoading(true);
+  // When transitioning lobby → game, send join/rejoin
+  useEffect(() => {
+    if (inLobby) return;
+    window._pendingGameMode = gameMode;
+    window._pendingGameOpts = gameOpts ?? {};
+    setVisible(false);
+    setStatus("Connecting\u2026");
+    setSessionErr("");
 
-    try {
-      await fetch("/api/logout", {
-        method: "POST",
-        credentials: "include",
-      });
-    } finally {
-      setLogoutLoading(false);
-      onLogout();
+    function sendIntent() {
+      const savedId = sessionStorage.getItem("clientId");
+      if (savedId) {
+        try { sessionStorage.removeItem("gameState"); sessionStorage.removeItem("confirmedStageId"); } catch (_) {}
+        Object.assign(window, { _matchSession: null, _victoryActive: false, _victoryConsumed: true, _hitstopState: null, _countdownStart: null, _countdownDone: false });
+        window._ws.send(JSON.stringify({ type: "rejoin", clientId: parseInt(savedId, 10) }));
+      } else if (gameMode === "spectate") {
+        window._ws.send(JSON.stringify({ type: "watch", sessionId: gameOpts?.sessionId ?? null }));
+      } else if (gameMode === "training") {
+        window._pendingTraining = gameOpts?.cpuCharId ?? "eld";
+        window._ws.send(JSON.stringify({ type: "join" }));
+      } else {
+        window._pendingTournament = gameMode === "tournament";
+        window._ws.send(JSON.stringify({ type: "join" }));
+      }
     }
-  }
+
+    if (window._ws?.readyState === 1) { sendIntent(); }
+    else {
+      const t = setInterval(() => { if (window._ws?.readyState === 1) { clearInterval(t); sendIntent(); } }, 50);
+    }
+  }, [inLobby, gameMode]);
+
+  // Poll for clientId visible in game state
+  useEffect(() => {
+    if (inLobby) return;
+    const poll = setInterval(() => {
+      if (window._isSpectator && window._myClientId > 0) { setVisible(true); setStatus(""); clearInterval(poll); return; }
+      const id = window._myClientId;
+      if (id > 0 && window._gameState?.players?.[id]) { setVisible(true); setStatus(""); clearInterval(poll); }
+    }, 50);
+    const onStart    = () => setStatus("");
+    const onSpectate = () => { setVisible(true); setStatus(""); };
+    window.addEventListener("match_start",    onStart);
+    window.addEventListener("spectator_mode", onSpectate);
+    return () => {
+      clearInterval(poll);
+      window.removeEventListener("match_start",    onStart);
+      window.removeEventListener("spectator_mode", onSpectate);
+    };
+  }, [inLobby]);
+
+  const modeLabel = { versus: "Playing vs", training: "Training vs AI", tournament: "Tournament", spectate: "Spectating" };
 
   return (
-    <div className="game-page">
+    <div className="game-page" style={inLobby ? { visibility: "hidden", pointerEvents: "none" } : undefined}>
       <div className="game-toolbar">
         <div className="game-user">
-          <span className="game-user-label">Playing as</span>
+          <span className="game-user-label">{modeLabel[gameMode] ?? "Playing as"}</span>
           <strong>{user.username || user.email || "user"}</strong>
         </div>
-
-        <button
-          type="button"
-          className="logout-button"
-          onClick={handleLogoutClick}
-          disabled={logoutLoading}
-        >
-          {logoutLoading ? "Logging out..." : "Logout"}
+        <button type="button" className="logout-button" onClick={handleBackToLobby}>
+          ← Lobby
         </button>
       </div>
-
+      {status && <div className="game-status-overlay"><p>{status}</p></div>}
+      {sessionErr && (
+        <div className="game-status-overlay game-status-error">
+          <p>{sessionErr}</p>
+          <button type="button" className="auth-link" onClick={handleBackToLobby}>Back to lobby</button>
+        </div>
+      )}
       <div className="game-frame">
-        <canvas
-          ref={canvasRef}
-          id="canvas"
-          className="game-canvas"
-          style={{ opacity: visible ? 1 : 0 }}
-        />
+        <canvas ref={canvasRef} id="canvas" className="game-canvas" style={{ opacity: visible ? 1 : 0 }} />
       </div>
-
-      <LegalFooter onPrivacy={onPrivacy} onTerms={onTerms} />
     </div>
   );
 }
 
+// ── Grace countdown banner ────────────────────────────────────────────────────
+
+function GraceBanner({ grace, myClientId, onRejoin }) {
+  const [secsLeft, setSecsLeft] = useState(null);
+
+  useEffect(() => {
+    if (!grace) { setSecsLeft(null); return; }
+    function tick() {
+      const ms = grace.expiresAt - Date.now();
+      setSecsLeft(Math.max(0, Math.ceil(ms / 1000)));
+    }
+    tick();
+    const id = setInterval(tick, 250);
+    return () => clearInterval(id);
+  }, [grace]);
+
+  if (!grace || secsLeft === null) return null;
+
+  const isMe = grace.clientId === myClientId;
+
+  return (
+    <div style={{
+      position: "fixed", top: 0, left: 0, right: 0, zIndex: 100,
+      background: secsLeft <= 2 ? "#c0392b" : "#e67e22",
+      color: "#fff", textAlign: "center", padding: "12px 16px",
+      fontFamily: "sans-serif", fontWeight: "bold", fontSize: "1rem",
+      display: "flex", alignItems: "center", justifyContent: "center", gap: "16px",
+    }}>
+      <span>
+        {isMe
+          ? `⚔️ ¡Tienes ${secsLeft}s para volver a la pelea o perderás!`
+          : `⏳ Tu rival tiene ${secsLeft}s para volver…`}
+      </span>
+      {isMe && (
+        <button
+          onClick={onRejoin}
+          style={{
+            background: "#fff", color: "#e67e22", border: "none",
+            borderRadius: "6px", padding: "6px 18px", fontWeight: "bold",
+            cursor: "pointer", fontSize: "0.95rem",
+          }}
+        >
+          ¡Volver a luchar!
+        </button>
+      )}
+    </div>
+  );
+}
+
+// ── Root ───────────────────────────────────────────────────────────────────────
+
 export default function App() {
-  const [authStatus, setAuthStatus] = useState("loading");
-  const [authView, setAuthView] = useState("login");
-  const [user, setUser] = useState(null);
-  const [page, setPage] = useState("auth");
+  const [page,          setPage]          = useState("loading");
+  const [authView,      setAuthView]      = useState("login");
+  const [user,          setUser]          = useState(null);
   const [legalBackPage, setLegalBackPage] = useState("auth");
+  const [gameMode,      setGameMode]      = useState("versus");
+  const [gameOpts,      setGameOpts]      = useState({});
+  const [grace,         setGrace]         = useState(null); // leave_grace state
 
   useEffect(() => {
     let cancelled = false;
-
-    async function loadSession() {
+    async function checkSession() {
       try {
-        // `credentials: include` is required.
-        // Without it, the browser does not send the HttpOnly `sid` cookie.
-        const response = await fetch("/api/me", {
-          credentials: "include",
-        });
-
-        if (!response.ok) {
-          if (response.status === 401) {
-            if (!cancelled) {
-              setUser(null);
-              setAuthStatus("guest");
-              setPage("auth");
-            }
-            return;
-          }
-
-          throw new Error(`Session check failed with status ${response.status}`);
-        }
-
-        const data = await response.json();
-
-        if (!cancelled) {
-          setUser(normalizeUser(data.user));
-          setAuthStatus("authenticated");
-          setPage("game");
-        }
-      } catch (error) {
-        console.error("[auth] /api/me failed:", error);
-
-        if (!cancelled) {
-          setUser(null);
-          setAuthStatus("guest");
-          setPage("auth");
-        }
+        const res = await fetch("/api/me", { credentials: "include" });
+        if (!res.ok) { if (!cancelled) { setUser(null); setPage("auth"); } return; }
+        const data = await res.json();
+        if (!cancelled) { setUser(normalizeUser(data.user)); setPage("lobby"); }
+      } catch (e) {
+        console.error("[auth] /api/me failed:", e);
+        if (!cancelled) { setUser(null); setPage("auth"); }
       }
     }
+    checkSession();
+    return () => { cancelled = true; };
+  }, []);
 
-    loadSession();
-
+  // Listen for leave_grace WS events from ws-client
+  useEffect(() => {
+    function onGrace(e)   { setGrace(e.detail); }
+    function onExpired()  { setGrace(null); }
+    function onReconn()   { setGrace(null); }
+    window.addEventListener("leave_grace",         onGrace);
+    window.addEventListener("leave_grace_expired", onExpired);
+    window.addEventListener("player_reconnected",  onReconn);
     return () => {
-      cancelled = true;
+      window.removeEventListener("leave_grace",         onGrace);
+      window.removeEventListener("leave_grace_expired", onExpired);
+      window.removeEventListener("player_reconnected",  onReconn);
     };
   }, []);
 
-  function openPrivacy(fromPage) {
-    setLegalBackPage(fromPage);
-    setPage("privacy");
-  }
-
-  function openTerms(fromPage) {
-    setLegalBackPage(fromPage);
-    setPage("terms");
-  }
+  function openPrivacy(from) { setLegalBackPage(from); setPage("privacy"); }
+  function openTerms(from)   { setLegalBackPage(from); setPage("terms");   }
 
   function handleAuthSuccess(rawUser) {
     setUser(normalizeUser(rawUser));
-    setAuthStatus("authenticated");
-    setPage("game");
+    if (typeof window.reconnectWS === "function") window.reconnectWS();
+    setPage("lobby");
   }
 
   function handleLogout() {
-    setUser(null);
-    setAuthStatus("guest");
-    setAuthView("login");
-    setPage("auth");
+    setUser(null); setAuthView("login"); setPage("auth");
+    if (typeof window.reconnectWS === "function") window.reconnectWS();
   }
 
-  if (authStatus === "loading") {
-    return (
-      <LoadingScreen
-        onPrivacy={() => openPrivacy("loading")}
-        onTerms={() => openTerms("loading")}
-      />
-    );
+  function handleEnterGame(mode, opts = {}) {
+    setGameMode(mode);
+    setGameOpts(opts);
+    setGrace(null);
+    setPage("game");
   }
 
-  if (page === "privacy") {
-    return <Privacy onBack={() => setPage(legalBackPage)} />;
+  // Player clicks "¡Volver a luchar!" — go back to game immediately
+  function handleRejoinFight() {
+    setGrace(null);
+    setPage("game");
   }
 
-  if (page === "terms") {
-    return <Terms onBack={() => setPage(legalBackPage)} />;
+  // ── Render ──────────────────────────────────────────────────────────────────
+  if (page === "loading") {
+    return <LoadingScreen onPrivacy={() => openPrivacy("loading")} onTerms={() => openTerms("loading")} />;
   }
+  if (page === "privacy") return <Privacy onBack={() => setPage(legalBackPage)} />;
+  if (page === "terms")   return <Terms   onBack={() => setPage(legalBackPage)} />;
 
-  if (authStatus !== "authenticated" || !user) {
+  if (page === "auth" || !user) {
     return (
       <AuthGate
         view={authView}
@@ -309,12 +350,41 @@ export default function App() {
     );
   }
 
+  const myClientId = window._myClientId ?? -1;
+
+  // GameShell is ALWAYS mounted once the user is authenticated so the Emscripten
+  // WASM module is never torn down (re-initialising it crashes the mainLoop).
+  // The lobby is rendered as a fixed overlay on top of the hidden canvas.
+  const gameActive = page === "lobby" || page === "game";
+
   return (
-    <GameShell
-      user={user}
-      onLogout={handleLogout}
-      onPrivacy={() => openPrivacy("game")}
-      onTerms={() => openTerms("game")}
-    />
+    <>
+      {gameActive && (
+        <GameShell
+          user={user}
+          gameMode={gameMode}
+          gameOpts={gameOpts}
+          inLobby={page === "lobby"}
+          onBackToLobby={() => setPage("lobby")}
+        />
+      )}
+
+      {page === "lobby" && (
+        <div style={{ position: "fixed", inset: 0, zIndex: 10 }}>
+          <GraceBanner
+            grace={grace}
+            myClientId={myClientId}
+            onRejoin={handleRejoinFight}
+          />
+          <Lobby
+            user={user}
+            onEnterGame={handleEnterGame}
+            onLogout={handleLogout}
+            onPrivacy={() => openPrivacy("lobby")}
+            onTerms={() => openTerms("lobby")}
+          />
+        </div>
+      )}
+    </>
   );
 }

@@ -98,11 +98,35 @@ function buildPlayerSnapshot(p) {
 }
 
 function broadcastState() {
-    const snapshot = {};
-    for (const [id, p] of Object.entries(players)) snapshot[id] = buildPlayerSnapshot(p);
-    const msg = JSON.stringify({ type: 'state', frameId: ++frameId, players: snapshot });
-    for (const p of Object.values(players))
-        if (p.ws.readyState === WebSocket.OPEN) p.ws.send(msg);
+    // Build a per-session snapshot so each player only receives state for their own session.
+    const sessionSnapshots = new Map(); // sessionId -> JSON string
+
+    for (const p of Object.values(players)) {
+        if (!p.ws || p.ws.readyState !== WebSocket.OPEN) continue;
+
+        const sid = playerSession.get(p.id);
+        if (!sid) {
+            // Lobby player (no session yet) — send only themselves.
+            const solo = {};
+            solo[p.id] = buildPlayerSnapshot(p);
+            p.ws.send(JSON.stringify({ type: 'state', frameId: ++frameId, players: solo }));
+            continue;
+        }
+
+        if (!sessionSnapshots.has(sid)) {
+            const session = gameSessions.get(sid);
+            const snapshot = {};
+            if (session) {
+                for (const cid of session.playerIds) {
+                    const sp = players[cid];
+                    if (sp) snapshot[cid] = buildPlayerSnapshot(sp);
+                }
+            }
+            sessionSnapshots.set(sid, JSON.stringify({ type: 'state', frameId: ++frameId, players: snapshot }));
+        }
+
+        p.ws.send(sessionSnapshots.get(sid));
+    }
 }
 
 function sendStateToSpectator(spec) {
@@ -196,8 +220,21 @@ function listActiveSessions() {
 
 // ─── Character selection ──────────────────────────────────────────────────────
 
-function buildCharSelectAck(selectorCharId, selectorClientId, stageId) {
-    const playerIds = Object.keys(players).map(Number);
+// session (optional): if provided, only players within that session are included
+// in the ack payload. Without it, all lobby players are included (legacy path).
+function buildCharSelectAck(selectorCharId, selectorClientId, stageId, session = null) {
+    // Scoped player list: session peers, or lobby players (no session), or all as fallback.
+    let playerIds;
+    if (session) {
+        playerIds = [...session.playerIds];
+    } else {
+        // Lobby: only players not yet assigned to any session.
+        const lobbyIds = Object.keys(players).map(Number).filter(id => !playerSession.has(id));
+        // Always include the selector even if they just got a session assigned.
+        if (!lobbyIds.includes(selectorClientId)) lobbyIds.push(selectorClientId);
+        playerIds = lobbyIds;
+    }
+
     const usedChars = new Set([selectorCharId]);
     const playersOut = {};
 
@@ -309,7 +346,17 @@ function startBrawl(clientIds) {
 
 function startDuel(clientId1, clientId2) {
     const session = createSession('1v1', [clientId1, clientId2]);
-    broadcastToSession(session, { type: 'match_start', mode: '1v1', sessionId: session.id, countdown: true });
+    // The host (lowest clientId) may have selected a stage before the session existed.
+    // Transfer _pendingStageId from either player to the session so spectators get the right stage.
+    for (const cid of [clientId1, clientId2]) {
+        const p = players[cid];
+        if (p?._pendingStageId !== undefined) {
+            session.stageId = p._pendingStageId;
+            delete p._pendingStageId;
+            break;
+        }
+    }
+    broadcastToSession(session, { type: 'match_start', mode: '1v1', sessionId: session.id, countdown: true, stageId: session.stageId ?? -1 });
     console.log(`[GAME] 1v1 started: session ${session.id} — ${clientId1} vs ${clientId2}`);
     return session;
 }
@@ -362,31 +409,33 @@ function startTraining(humanClientId, cpuCharId = 'eld') {
 function tryAutoMatch() {
     if (!DEBUG_AUTO_MATCH) return;
 
-    const ready = Object.values(players)
-        .filter(p => !playerSession.has(p.id) && playerCharSelected.has(p.id))
-        .map(p => p.id);
-
-    const activeSessions = [...gameSessions.values()].filter(s => !s.finished);
-    if (activeSessions.length > 0) {
-        if (ready.length === 0) return;
-        const sess = activeSessions[0];
-        for (const cid of ready) {
-            sess.playerIds.add(cid);
-            playerSession.set(cid, sess.id);
-            if (!sess.playerFlags[cid])
-                sess.playerFlags[cid] = { tookDamage: false, completedCombo: false };
-            const p = players[cid];
-            if (p && p.prevSessionId !== sess.id) p.stocks = 3;
-            if (p) p.prevSessionId = null;
+    // Build a set of all clientIds that are already inside an active (non-finished) session.
+    // This guards against playerSession being momentarily out of sync (e.g. right after
+    // cleanupSession deletes the mapping but before the player object is fully reset).
+    const busyIds = new Set();
+    for (const sess of gameSessions.values()) {
+        if (!sess.finished) {
+            for (const cid of sess.playerIds) busyIds.add(cid);
         }
-        broadcastToSession(sess, { type: 'players_joined', sessionId: sess.id, newPlayers: ready });
-        broadcastState();
-        return;
     }
 
-    if (ready.length >= 2) {
-        const sess = startBrawl(ready);
-        console.log(`[AUTO-MATCH] Brawl session ${sess.id} — players: ${[...sess.playerIds].join(', ')}`);
+    // Only authenticated human players who have selected a character and are not already in a session.
+    // Players with dbUserId === null are browsers connected without a login and must be ignored.
+    const ready = Object.values(players)
+        .filter(p =>
+            !p.isCpu &&
+            p.dbUserId != null &&
+            !playerSession.has(p.id) &&
+            !busyIds.has(p.id) &&          // ← belt-and-suspenders: not in any active session
+            playerCharSelected.has(p.id)
+        )
+        .map(p => p.id);
+
+    // Pair them into closed 1v1 duels two at a time.
+    // If an odd number is waiting the last one stays in the lobby until another joins.
+    for (let i = 0; i + 1 < ready.length; i += 2) {
+        const sess = startDuel(ready[i], ready[i + 1]);
+        console.log(`[AUTO-MATCH] 1v1 session ${sess.id} — ${ready[i]} vs ${ready[i + 1]}`);
     }
 }
 
@@ -442,11 +491,29 @@ function handleElimination(loser) {
 function cleanupSession(session, winnerClientId) {
     gameSessions.delete(session.id);
     delete hitstopBySession[session.id];
-    confirmedStageId = -1;
+
+    // Reset stage only if no other active sessions remain
+    if ([...gameSessions.values()].every(s => s.finished)) confirmedStageId = -1;
+
+    // Keep the winner in the player pool so they can queue for the next match.
+    // Just remove the session mapping and reset their state.
+    // NOTE: intentionally keep playerCharSelected so tryAutoMatch can pair them immediately.
     if (players[winnerClientId]) {
-        delete players[winnerClientId];
         playerSession.delete(winnerClientId);
+        const w = players[winnerClientId];
+        w.stocks        = 3;
+        w.voltage       = 0;
+        w.voltageMaxed  = false;
+        w.attacking     = false;
+        w.dashing       = false;
+        w.blocking      = false;
+        w.crouching     = false;
+        w.hitTargets    = new Set();
+        w.kbx = 0; w.kby = 0; w.vx = 0; w.vy = 0;
+        w.animation     = 'idle';
+        w.animTimer     = 0;
     }
+
     const nextSession = [...gameSessions.values()].find(s => !s.finished)?.id ?? null;
     for (const spec of Object.values(spectators)) {
         if (spec.watchingSession !== session.id) continue;
@@ -652,39 +719,62 @@ function tick() {
         if (!hs || hs.framesLeft <= 0) delete hitstopBySession[sessId];
     }
 
-    const aliveAll = Object.values(players).filter(p => !p.respawning && !_frozenIds.has(p.id));
     tickRespawn();
 
-    for (const p of aliveAll) {
-        if (_pendingWinnerIds.has(p.id)) {
-            p.input.moveX = 0; p.input.jump = false; p.input.attack = false;
-            p.input.dash  = false; p.input.dashAttack = false; p.input.block = false;
+    // ── Per-session physics: players from different sessions must never interact ──
+    for (const session of gameSessions.values()) {
+        if (session.finished) continue;
+
+        // Build the set of players alive in this session this tick.
+        const sessPlayers = [...session.playerIds]
+            .map(cid => players[cid])
+            .filter(p => p && !p.respawning && !_frozenIds.has(p.id));
+
+        const hs = hitstopBySession[session.id];
+        const hitstopActive = hs && hs.framesLeft > 0;
+
+        // Build the session-scoped player map once (attack targets must stay within session).
+        const sessionPlayersMap = {};
+        for (const sp of sessPlayers) sessionPlayersMap[sp.id] = sp;
+
+        for (const p of sessPlayers) {
+            if (_pendingWinnerIds.has(p.id)) {
+                p.input.moveX = 0; p.input.jump = false; p.input.attack = false;
+                p.input.dash  = false; p.input.dashAttack = false; p.input.block = false;
+            }
+            const { moveX, jump, attack, dash, dashDir, crouch, block, dashAttack } = p.input;
+            p.input.jump = p.input.attack = p.input.dash = p.input.dashAttack = false;
+            tickBlock(p, moveX, attack, dash, dashAttack, block, crouch);
+            tickDash(p, dash, dashDir, moveX, block, crouch);
+            tickMovement(p, moveX, jump, crouch);
+            tickAttack(p, attack, dashAttack, crouch, sessionPlayersMap, hitCtx);
         }
-        const { moveX, jump, attack, dash, dashDir, crouch, block, dashAttack } = p.input;
-        p.input.jump = p.input.attack = p.input.dash = p.input.dashAttack = false;
-        tickBlock(p, moveX, attack, dash, dashAttack, block, crouch);
-        tickDash(p, dash, dashDir, moveX, block, crouch);
-        tickMovement(p, moveX, jump, crouch);
-        tickAttack(p, attack, dashAttack, crouch, players, hitCtx);
+
+        // Hitstop freeze for this session
+        if (hitstopActive) {
+            hitstopBySession[session.id].framesLeft--;
+            if (hitstopBySession[session.id].framesLeft <= 0) delete hitstopBySession[session.id];
+            // Skip physics/collision for frozen session this frame
+            continue;
+        }
+
+        const platforms = session.stageId !== undefined
+            ? (STAGE_LAYOUTS[session.stageId] ?? STAGE_LAYOUTS[0])
+            : (STAGE_LAYOUTS[confirmedStageId] ?? STAGE_LAYOUTS[0]);
+
+        tickPhysics(sessPlayers);
+        tickCollisions(sessPlayers);
+        tickPlatforms(sessPlayers, handleElimination, platforms);
     }
 
-    _hitstopFrozenIds.clear();
-    for (const [sessId, hs] of Object.entries(hitstopBySession)) {
-        if (!hs || hs.framesLeft <= 0) { delete hitstopBySession[sessId]; continue; }
-        const session = gameSessions.get(sessId);
-        if (session) for (const cid of session.playerIds) _hitstopFrozenIds.add(cid);
-        hs.framesLeft--;
-        if (hs.framesLeft <= 0) delete hitstopBySession[sessId];
-    }
-
-    const alive        = aliveAll.filter(p => !_hitstopFrozenIds.has(p.id));
+    // Animations run for all non-frozen players regardless of session
     const aliveForAnim = Object.values(players).filter(p => !_frozenIds.has(p.id));
-    const platforms    = STAGE_LAYOUTS[confirmedStageId] ?? STAGE_LAYOUTS[0];
-
-    tickPhysics(alive);
-    tickCollisions(alive);
-    tickPlatforms(alive, handleElimination, platforms);
     tickAnimations(aliveForAnim);
+
+    // Clean up any remaining zero-frame hitstop entries
+    for (const [sessId, hs] of Object.entries(hitstopBySession)) {
+        if (!hs || hs.framesLeft <= 0) delete hitstopBySession[sessId];
+    }
 
     for (const session of gameSessions.values()) {
         if (!session.isCpuSession || session.finished) continue;
@@ -717,8 +807,32 @@ setInterval(tick, 1000 / TICK_RATE);
 
 // ─── Exports ──────────────────────────────────────────────────────────────────
 
+// ─── Force-disconnect a user by dbUserId (called on logout) ──────────────────
+
+function disconnectPlayer(dbUserId) {
+    if (!dbUserId) return;
+    console.log(`[AUTH] disconnectPlayer called for dbUserId=${dbUserId}, players=${Object.keys(players).length}, spectators=${Object.keys(spectators).length}`);
+    // Find in players
+    for (const [cid, p] of Object.entries(players)) {
+        if (p.dbUserId === dbUserId) {
+            console.log(`[AUTH] closing WS for player clientId=${cid} readyState=${p.ws?.readyState}`);
+            if (p.ws?.readyState === 1 /* OPEN */) p.ws.close(1000, 'logout');
+            return;
+        }
+    }
+    // Find in spectators
+    for (const [cid, spec] of Object.entries(spectators)) {
+        if (spec.dbUserId === dbUserId) {
+            console.log(`[AUTH] closing WS for spectator clientId=${cid} readyState=${spec.ws?.readyState}`);
+            if (spec.ws?.readyState === 1) spec.ws.close(1000, 'logout');
+            return;
+        }
+    }
+    console.log(`[AUTH] disconnectPlayer: no active WS found for dbUserId=${dbUserId}`);
+}
+
 module.exports = {
-    players, spectators, lastState,
+    players, spectators, spectatorsBySession, lastState,
     gameSessions, playerSession, playerCharSelected, hitstopBySession,
     get nextClientId()      { return nextClientId; },
     set nextClientId(v)     { nextClientId = v; },
@@ -729,6 +843,7 @@ module.exports = {
     listActiveSessions, buildCharSelectAck, sendAllCharSelectsTo,
     createPlayer, startBrawl, startDuel, startTournament, startTraining,
     tryAutoMatch, handleElimination, resolveMatchWinner, getLastWatchedSession,
+    disconnectPlayer,
     MAX_PLAYERS, GHOST_TTL,
     ATTACK_RANGE, ATTACK_RANGE_Y, DASH_ATTACK_RANGE_X,
     CHAR_IDS, CHARACTER_DEFS, CHARACTER_ASSETS,
