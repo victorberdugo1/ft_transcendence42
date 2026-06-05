@@ -4,6 +4,11 @@ const bcrypt = require('bcrypt');
 const crypto = require('crypto');
 const db     = require('./db');
 
+// Lazily required to avoid circular dependency (session requires auth for SESSION_COOKIE).
+function getDisconnectPlayer() {
+    try { return require('./game/session').disconnectPlayer; } catch { return () => {}; }
+}
+
 const BCRYPT_ROUNDS = 10;
 const SESSION_DAYS  = 7;
 const SESSION_COOKIE = 'sid';
@@ -157,6 +162,8 @@ async function logout(req, res) {
     } catch (err) {
         console.error('[AUTH] logout error:', err.message);
     }
+    // Close the player's WS connection so game sessions clean up immediately.
+    try { getDisconnectPlayer()(req.user.user_id); } catch {}
     res.clearCookie(SESSION_COOKIE);
     res.json({ ok: true });
 }
