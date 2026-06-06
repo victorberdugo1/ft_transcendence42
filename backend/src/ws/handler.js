@@ -12,6 +12,7 @@ const {
     buildCharSelectAck, sendAllCharSelectsTo,
     createPlayer, startDuel, startTournament, tryAutoMatch,
     handleElimination, resolveMatchWinner, getLastWatchedSession,
+    getLobbyHost, claimLobbyHost, transferLobbyHost,
     MAX_PLAYERS, GHOST_TTL,
     ATTACK_RANGE, ATTACK_RANGE_Y, DASH_ATTACK_RANGE_X,
     CHAR_IDS, CHARACTER_DEFS,
@@ -54,26 +55,42 @@ function applyInput(p, msg) {
 }
 
 // Broadcast host_status to every connected player.
+// Lobby host: whoever first entered the queue (claimLobbyHost), not connection order.
+// In-session host: lowest clientId within the session (stable once session starts).
 function broadcastHostStatus() {
-    // Host election is per-session: the lowest authenticated clientId within
-    // each session (or the lobby) is that group's host for stage/char selection.
-    // Players in different sessions must not share host state.
-
-    // Group players by their current session (null = lobby).
-    const groups = new Map(); // sessionId|null -> [clientId, ...]
-    for (const [pid, pl] of Object.entries(players)) {
-        if (pl.dbUserId == null) continue;   // unauthenticated — skip
-        const sid = playerSession.get(Number(pid)) ?? null;
-        if (!groups.has(sid)) groups.set(sid, []);
-        groups.get(sid).push(Number(pid));
+    // Build per-session host map.
+    const sessionHostMap = new Map(); // sessionId -> hostClientId
+    for (const [sid, sess] of gameSessions.entries()) {
+        if (sess.finished) continue;
+        const members = [...sess.playerIds]
+            .filter(cid => players[cid]?.dbUserId != null);
+        if (members.length) sessionHostMap.set(sid, Math.min(...members));
     }
+
+    const currentLobbyHost = getLobbyHost();
 
     for (const [, pl] of Object.entries(players)) {
         if (!pl.ws || pl.ws.readyState !== WebSocket.OPEN) continue;
-        const sid   = playerSession.get(pl.id) ?? null;
-        const group = groups.get(sid) ?? [];
-        const minId = group.length ? Math.min(...group) : pl.id;
-        pl.ws.send(JSON.stringify({ type: 'host_status', isHost: pl.id === minId }));
+        const sid = playerSession.get(pl.id) ?? null;
+
+        let isHost;
+        if (sid) {
+            // In a session: use per-session host.
+            isHost = pl.id === (sessionHostMap.get(sid) ?? pl.id);
+        } else {
+            // In lobby: use lobbyHostId.
+            if (pl.dbUserId == null) {
+                isHost = false;
+            } else if (currentLobbyHost !== null) {
+                isHost = pl.id === currentLobbyHost;
+            } else {
+                // Fallback: no one has claimed host yet (e.g. no char_select yet).
+                // Don't pick a random host — everyone gets false until claim happens.
+                isHost = false;
+            }
+        }
+
+        pl.ws.send(JSON.stringify({ type: 'host_status', isHost }));
     }
 }
 
@@ -89,8 +106,10 @@ function kickDuplicateDbUser(incomingClientId, incomingDbUserId) {
 
         console.log(`[WS] Kicking duplicate player slot ${pid} for dbUserId ${incomingDbUserId}`);
         try {
-            pl.ws?.send(JSON.stringify({ type: 'kicked', reason: 'logged_in_elsewhere' }));
-            pl.ws?.close(4001, 'Duplicate session');
+            if (pl.ws && pl.ws.readyState === WebSocket.OPEN) {
+                pl.ws.send(JSON.stringify({ type: 'kicked', reason: 'logged_in_elsewhere' }));
+                pl.ws.close(4001, 'Duplicate session');
+            }
         } catch {}
         // Clean up the old slot immediately so close handler finds nothing to process
         delete players[pid];
@@ -105,15 +124,35 @@ function kickDuplicateDbUser(incomingClientId, incomingDbUserId) {
 
         console.log(`[WS] Kicking duplicate spectator slot ${sid} for dbUserId ${incomingDbUserId}`);
         try {
-            spec.ws?.send(JSON.stringify({ type: 'kicked', reason: 'logged_in_elsewhere' }));
-            spec.ws?.close(4001, 'Duplicate session');
+            if (spec.ws && spec.ws.readyState === WebSocket.OPEN) {
+                spec.ws.send(JSON.stringify({ type: 'kicked', reason: 'logged_in_elsewhere' }));
+                spec.ws.close(4001, 'Duplicate session');
+            }
         } catch {}
         delete spectators[sid];
     }
 }
 
 // Send the standard post-join messages to a player's websocket.
+// If the player had a finished session, notify them so the client can
+// clean up the game canvas and return to the lobby view.
 function sendWelcomeToPlayer(ws, clientId) {
+    // Check whether the player was just pulled out of a finished session.
+    // canRejoinSession already cleared playerSession for finished sessions,
+    // but we need to inform the client before sending the lobby init.
+    // We detect this by looking for a recently-finished session that still
+    // references this clientId (it won't be in playerSession any more).
+    let finishedSessionId = null;
+    for (const [sid, sess] of gameSessions.entries()) {
+        if (sess.finished && sess.playerIds.has(clientId)) {
+            finishedSessionId = sid;
+            break;
+        }
+    }
+    if (finishedSessionId && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({ type: 'match_finished', sessionId: finishedSessionId, redirect: 'lobby' }));
+    }
+
     ws.send(JSON.stringify({
         type: 'init', clientId,
         config: {
@@ -165,6 +204,10 @@ function sendWelcomeToPlayer(ws, clientId) {
 }
 
 // ─── Connection handler ───────────────────────────────────────────────────────
+
+function canRejoinSession(session) {
+    return !!session && !session.finished && !session.pendingWinner;
+}
 
 async function onConnection(ws, req) {
     let clientId         = null;
@@ -369,118 +412,57 @@ async function onConnection(ws, req) {
         try { msg = JSON.parse(raw); } catch { return; }
 
 
-        if (msg.type === 'join') {
-            // ── dbUserId-first: if this user already has a slot, reuse it ──
-            // Handles the case where a user opens a fresh tab (no sessionStorage
-            // clientId) while already connected in another tab or mid-match.
-            if (dbUserId) {
-                let existingClientId = null;
-                for (const [pid, pl] of Object.entries(players)) {
-                    if (pl.dbUserId === dbUserId) { existingClientId = Number(pid); break; }
-                }
-                if (existingClientId === null) {
-                    for (const [pid, gs] of Object.entries(lastState)) {
-                        if (gs.dbUserId === dbUserId) { existingClientId = Number(pid); break; }
-                    }
-                }
-                if (existingClientId === null) {
-                    for (const [pid, spec] of Object.entries(spectators)) {
-                        if (spec.dbUserId === dbUserId) { existingClientId = Number(pid); break; }
-                    }
-                }
-
-                if (existingClientId !== null) {
-                    // Kick the old WS for that slot (may still be the first tab open)
-                    const oldPlayer = players[existingClientId];
-                    const oldSpec   = spectators[existingClientId];
-                    const oldWs     = oldPlayer?.ws ?? oldSpec?.ws;
-                    if (oldWs && oldWs.readyState === WebSocket.OPEN) {
-                        try {
-                            oldWs.send(JSON.stringify({ type: 'kicked', reason: 'reconnected_in_another_tab' }));
-                            oldWs.close(4001, 'Reconnected elsewhere');
-                        } catch {}
-                    }
-                    console.log(`[WS] join: dbUserId ${dbUserId} has existing slot ${existingClientId}, reusing`);
-                    clientId = existingClientId;
-                    if (clientId >= gameSession.nextClientId) gameSession.nextClientId = clientId + 1;
-
-                    if (players[clientId]) {
-                        players[clientId].ws = ws;
-                        players[clientId].dbUserId = dbUserId;
-                        isSpectator = false; mode = 'player';
-                        sendWelcomeToPlayer(ws, clientId);
-                        return;
-                    }
-                    if (spectators[clientId]) {
-                        spectators[clientId].ws = ws;
-                        spectators[clientId].dbUserId = dbUserId;
-                        isSpectator = true; mode = spectators[clientId].mode;
-                        sendSpectatorWelcome(mode, spectators[clientId].watchingSession);
-                        return;
-                    }
-                    // Ghost state (disconnected, grace period active)
-                    const ghostState = lastState[clientId];
-                    if (ghostState) { clearTimeout(ghostState.timer); delete lastState[clientId]; }
-                    await promoteToPlayer(null);
-                    return;
-                }
+if (msg.type === 'join') {
+    // ── dbUserId-first: if this user already has a slot, reuse it ──
+    if (dbUserId) {
+        let existingClientId = null;
+        for (const [pid, pl] of Object.entries(players)) {
+            if (pl.dbUserId === dbUserId) { existingClientId = Number(pid); break; }
+        }
+        if (existingClientId === null) {
+            for (const [pid, gs] of Object.entries(lastState)) {
+                if (gs.dbUserId === dbUserId) { existingClientId = Number(pid); break; }
             }
-
-            if (clientId === null) clientId = gameSession.nextClientId++;
-            await promoteToPlayer(null);
-            return;
+        }
+        if (existingClientId === null) {
+            for (const [pid, spec] of Object.entries(spectators)) {
+                if (spec.dbUserId === dbUserId) { existingClientId = Number(pid); break; }
+            }
         }
 
-        if (msg.type === 'rejoin' && msg.clientId) {
-            const requestedId = msg.clientId;
+        if (existingClientId !== null) {
+            const oldPlayer = players[existingClientId];
+            const oldSpec   = spectators[existingClientId];
+            const oldWs     = oldPlayer?.ws ?? oldSpec?.ws;
+            // Only kick if it's a genuinely different WS (not the same connection
+            // cycling through a re-join), and only if it's still open.
+            // If oldWs === ws the client sent join on an already-registered connection —
+            // just fall through to the reuse logic without sending kicked.
+            if (oldWs && oldWs !== ws && oldWs.readyState === WebSocket.OPEN) {
+                try {
+                    oldWs.send(JSON.stringify({ type: 'kicked', reason: 'reconnected_in_another_tab' }));
+                    oldWs.close(4001, 'Reconnected elsewhere');
+                } catch {}
+            }
 
-            // ── Primary lookup: find existing slot by dbUserId ─────────────
-            // If this authenticated user already has an active slot (player or
-            // spectator), redirect to THAT slot regardless of the clientId hint
-            // the browser sent. This is the key fix for "same user, two tabs":
-            // tab B sends its own sessionStorage clientId, but we ignore it and
-            // reuse the slot that already belongs to this dbUserId.
-            if (dbUserId) {
-                let existingClientId = null;
+            console.log(`[WS] join: dbUserId ${dbUserId} has existing slot ${existingClientId}, reusing`);
+            clientId = existingClientId;
+            if (clientId >= gameSession.nextClientId) gameSession.nextClientId = clientId + 1;
 
-                // Search active players first (most likely during a match)
-                for (const [pid, pl] of Object.entries(players)) {
-                    if (pl.dbUserId === dbUserId) { existingClientId = Number(pid); break; }
-                }
-                // Then ghost/lastState (disconnected but grace period still running)
-                if (existingClientId === null) {
-                    for (const [pid, gs] of Object.entries(lastState)) {
-                        if (gs.dbUserId === dbUserId) { existingClientId = Number(pid); break; }
+            const sessionId = playerSession.get(clientId) ?? lastState[clientId]?.sessionId ?? null;
+            const session   = sessionId ? gameSessions.get(sessionId) : null;
+            const rejoinable = canRejoinSession(session);
+
+            if (players[clientId]) {
+                players[clientId].ws = ws;
+                players[clientId].dbUserId = dbUserId;
+                isSpectator = false;
+                mode = 'player';
+
+                if (rejoinable) {
+                    if (sessionId && !playerSession.has(clientId)) {
+                        playerSession.set(clientId, sessionId);
                     }
-                }
-                // Then spectators
-                if (existingClientId === null) {
-                    for (const [pid, spec] of Object.entries(spectators)) {
-                        if (spec.dbUserId === dbUserId) { existingClientId = Number(pid); break; }
-                    }
-                }
-
-                if (existingClientId !== null && existingClientId !== requestedId) {
-                    // There is an existing slot for this user that differs from the
-                    // clientId hint. Kick the old WS connection if it is still open
-                    // (second tab trying to reconnect while first tab is still live).
-                    const oldPlayer = players[existingClientId];
-                    const oldSpec   = spectators[existingClientId];
-                    const oldWs     = oldPlayer?.ws ?? oldSpec?.ws;
-                    if (oldWs && oldWs.readyState === WebSocket.OPEN) {
-                        try {
-                            oldWs.send(JSON.stringify({ type: 'kicked', reason: 'reconnected_in_another_tab' }));
-                            oldWs.close(4001, 'Reconnected elsewhere');
-                        } catch {}
-                    }
-                    // Redirect this new connection to the real slot
-                    console.log(`[WS] rejoin: dbUserId ${dbUserId} redirected from hint ${requestedId} → existing slot ${existingClientId}`);
-                    // Fall through with existingClientId as the effective requestedId
-                    // by re-routing into the rejoin logic below using the correct id.
-                    clientId = existingClientId;
-                    if (clientId >= gameSession.nextClientId) gameSession.nextClientId = clientId + 1;
-
-                    // Cancel any pending grace-period elimination for this slot
                     for (const [, sess] of gameSessions.entries()) {
                         if (sess.pendingEliminations?.[clientId]) {
                             clearTimeout(sess.pendingEliminations[clientId]);
@@ -488,164 +470,232 @@ async function onConnection(ws, req) {
                             broadcastToSession(sess, { type: 'player_reconnected', clientId });
                         }
                     }
-
-                    if (players[clientId]) {
-                        players[clientId].ws = ws;
-                        players[clientId].dbUserId = dbUserId;
-                        isSpectator = false; mode = 'player';
-                        const savedSession = lastState[clientId]?.sessionId ?? null;
-                        if (savedSession && gameSessions.has(savedSession) && !playerSession.has(clientId))
-                            playerSession.set(clientId, savedSession);
-                        sendWelcomeToPlayer(ws, clientId);
-                        return;
-                    }
-                    if (spectators[clientId]) {
-                        spectators[clientId].ws = ws;
-                        spectators[clientId].dbUserId = dbUserId;
-                        isSpectator = true; mode = spectators[clientId].mode;
-                        sendSpectatorWelcome(mode, spectators[clientId].watchingSession);
-                        return;
-                    }
-                    // Ghost state: fall through to promoteToPlayer with the corrected clientId
-                    const ghostState = lastState[clientId];
-                    if (ghostState) {
-                        clearTimeout(ghostState.timer);
-                        delete lastState[clientId];
-                    }
-                    await promoteToPlayer(null);
-                    return;
+                } else {
+                    playerSession.delete(clientId);
+                    if (lastState[clientId]) delete lastState[clientId];
                 }
-            }
 
-            // ── Security: verify the slot belongs to this dbUserId ─────────
-            // A rejoin is legitimate only if:
-            //   (a) the slot has no dbUserId yet (anonymous player reconnecting), OR
-            //   (b) the slot's dbUserId matches the cookie-resolved dbUserId.
-            // This prevents tab B from stealing tab A's slot and also prevents
-            // an unauthenticated client from hijacking an authenticated slot.
-            const slotDbUserId =
-                players[requestedId]?.dbUserId ??
-                spectators[requestedId]?.dbUserId ??
-                lastState[requestedId]?.dbUserId ??
-                null;
-
-            const ownershipOk =
-                slotDbUserId === null ||          // anonymous slot — anyone may claim
-                slotDbUserId === dbUserId;        // slot belongs to this account
-
-            if (!ownershipOk) {
-                // The requesting cookie does not match the slot owner.
-                // Reject the rejoin and let the client join fresh instead.
-                console.warn(`[WS] rejoin rejected: slot ${requestedId} owned by dbUserId ${slotDbUserId}, requester is ${dbUserId}`);
-                clientId = gameSession.nextClientId++;
-                await promoteToPlayer(null);
-                return;
-            }
-
-            // ── Kick any OTHER slot already using this dbUserId ────────────
-            // This handles: same user opens a second tab and both try to rejoin.
-            // We allow the most-recent connection (this one) and boot the old one.
-            kickDuplicateDbUser(requestedId, dbUserId);
-
-            // ── Resume pending grace-period cancelation ────────────────────
-            for (const [, sess] of gameSessions.entries()) {
-                if (sess.pendingEliminations?.[requestedId]) {
-                    clearTimeout(sess.pendingEliminations[requestedId]);
-                    delete sess.pendingEliminations[requestedId];
-                    broadcastToSession(sess, { type: 'player_reconnected', clientId: requestedId });
-                }
-            }
-
-            if (players[requestedId]) {
-                clientId = requestedId;
-                if (clientId >= gameSession.nextClientId) gameSession.nextClientId = clientId + 1;
-                players[clientId].ws = ws;
-                players[clientId].dbUserId = dbUserId ?? players[clientId].dbUserId;
-                isSpectator = false; mode = 'player';
-                const savedSession = lastState[clientId]?.sessionId ?? null;
-                if (savedSession && gameSessions.has(savedSession) && !playerSession.has(clientId))
-                    playerSession.set(clientId, savedSession);
                 sendWelcomeToPlayer(ws, clientId);
                 return;
             }
 
-            if (spectators[requestedId]) {
-                clientId = requestedId;
-                if (clientId >= gameSession.nextClientId) gameSession.nextClientId = clientId + 1;
+            if (spectators[clientId]) {
                 spectators[clientId].ws = ws;
-                spectators[clientId].dbUserId = dbUserId ?? spectators[clientId].dbUserId;
-                isSpectator = true; mode = spectators[clientId].mode;
+                spectators[clientId].dbUserId = dbUserId;
+                isSpectator = true;
+                mode = spectators[clientId].mode;
                 sendSpectatorWelcome(mode, spectators[clientId].watchingSession);
                 return;
             }
 
-            if (clientId !== null && clientId !== requestedId) {
-                delete spectators[clientId];
-                delete players[clientId];
-            }
-            clientId = requestedId;
-            if (clientId >= gameSession.nextClientId) gameSession.nextClientId = clientId + 1;
-
+            // Ghost state
             const ghostState = lastState[clientId];
-            if (ghostState?.spectator) {
-                const watchSess = ghostState.watchingSession ?? null;
-                const sessStillActive = watchSess && gameSessions.has(watchSess) && !gameSessions.get(watchSess).finished;
+            if (ghostState) {
                 clearTimeout(ghostState.timer);
                 delete lastState[clientId];
-                if (!sessStillActive) {
-                    playerCharSelected.delete(clientId);
-                    await promoteToPlayer(null);
-                } else {
-                    await ensureSpectatorReady(ghostState.mode ?? 'overflow', watchSess, { eliminated: ghostState.eliminated ?? false });
+            }
+
+            if (rejoinable) {
+                const savedSession = sessionId;
+                if (savedSession && !playerSession.has(clientId)) {
+                    playerSession.set(clientId, savedSession);
                 }
-                return;
+            } else {
+                playerSession.delete(clientId);
             }
 
             await promoteToPlayer(null);
             return;
         }
+    }
 
-        if (msg.type === 'watch') {
-            // If the client had a previous player slot (prevClientId sent by ws-client),
-            // clean it up now so it doesn't linger in the player pool.
-            const prevId = msg.prevClientId ? parseInt(msg.prevClientId, 10) : null;
-            if (prevId && prevId !== clientId) {
-                if (players[prevId]) {
-                    // Remove from player pool; leave any in-session logic to the close handler
-                    // (the WS for prevId is already gone — this is just a stale slot cleanup).
-                    delete players[prevId];
-                    playerSession.delete(prevId);
-                    playerCharSelected.delete(prevId);
-                    delete lastState[prevId];
-                    console.log(`[WS] watch: cleaned up stale player slot ${prevId}`);
+    if (clientId === null) clientId = gameSession.nextClientId++;
+    await promoteToPlayer(null);
+    return;
+}
+
+if (msg.type === 'rejoin' && msg.clientId) {
+    const requestedId = msg.clientId;
+
+    // ── Primary lookup: find existing slot by dbUserId ─────────────
+    if (dbUserId) {
+        let existingClientId = null;
+
+        for (const [pid, pl] of Object.entries(players)) {
+            if (pl.dbUserId === dbUserId) { existingClientId = Number(pid); break; }
+        }
+        if (existingClientId === null) {
+            for (const [pid, gs] of Object.entries(lastState)) {
+                if (gs.dbUserId === dbUserId) { existingClientId = Number(pid); break; }
+            }
+        }
+        if (existingClientId === null) {
+            for (const [pid, spec] of Object.entries(spectators)) {
+                if (spec.dbUserId === dbUserId) { existingClientId = Number(pid); break; }
+            }
+        }
+
+        if (existingClientId !== null && existingClientId !== requestedId) {
+            const oldPlayer = players[existingClientId];
+            const oldSpec   = spectators[existingClientId];
+            const oldWs     = oldPlayer?.ws ?? oldSpec?.ws;
+            if (oldWs && oldWs !== ws && oldWs.readyState === WebSocket.OPEN) {
+                try {
+                    oldWs.send(JSON.stringify({ type: 'kicked', reason: 'reconnected_in_another_tab' }));
+                    oldWs.close(4001, 'Reconnected elsewhere');
+                } catch {}
+            }
+
+            console.log(`[WS] rejoin: dbUserId ${dbUserId} redirected from hint ${requestedId} → existing slot ${existingClientId}`);
+            clientId = existingClientId;
+            if (clientId >= gameSession.nextClientId) gameSession.nextClientId = clientId + 1;
+
+            const sessionId = playerSession.get(clientId) ?? lastState[clientId]?.sessionId ?? null;
+            const session   = sessionId ? gameSessions.get(sessionId) : null;
+            const rejoinable = canRejoinSession(session);
+
+            for (const [, sess] of gameSessions.entries()) {
+                if (sess.pendingEliminations?.[clientId]) {
+                    clearTimeout(sess.pendingEliminations[clientId]);
+                    delete sess.pendingEliminations[clientId];
+                    broadcastToSession(sess, { type: 'player_reconnected', clientId });
                 }
             }
 
-            if (clientId == null) clientId = gameSession.nextClientId++;
-
-            // If this clientId was previously a player, remove it from the player pool
-            // before entering spectators so the slot is not double-counted.
             if (players[clientId]) {
-                delete players[clientId];
-                playerSession.delete(clientId);
-                playerCharSelected.delete(clientId);
-                delete lastState[clientId];
-                console.log(`[WS] watch: moved client ${clientId} from players to spectators`);
+                players[clientId].ws = ws;
+                players[clientId].dbUserId = dbUserId;
+                isSpectator = false;
+                mode = 'player';
+
+                if (rejoinable) {
+                    const savedSession = sessionId;
+                    if (savedSession && !playerSession.has(clientId)) {
+                        playerSession.set(clientId, savedSession);
+                    }
+                } else {
+                    playerSession.delete(clientId);
+                    if (lastState[clientId]) delete lastState[clientId];
+                }
+
+                sendWelcomeToPlayer(ws, clientId);
+                return;
             }
 
-            const _rawSession = (msg.sessionId && gameSessions.get(msg.sessionId) && !gameSessions.get(msg.sessionId).finished)
-                ? msg.sessionId
-                : (msg.sessionId ? null : await getLastWatchedSession(dbUserId));
-            // Validate DB-restored session is still active in memory
-            const watchingSession = (_rawSession && gameSessions.has(_rawSession) && !gameSessions.get(_rawSession).finished)
-                ? _rawSession
-                : null;
+            if (spectators[clientId]) {
+                spectators[clientId].ws = ws;
+                spectators[clientId].dbUserId = dbUserId;
+                isSpectator = true;
+                mode = spectators[clientId].mode;
+                sendSpectatorWelcome(mode, spectators[clientId].watchingSession);
+                return;
+            }
 
-            // ensureSpectatorReady registers the spectator AND calls sendSpectatorWelcome
-            // for new spectators. For already-registered spectators the else-branch runs.
-            await ensureSpectatorReady('voluntary', watchingSession ?? null);
+            const ghostState = lastState[clientId];
+            if (ghostState) {
+                clearTimeout(ghostState.timer);
+                delete lastState[clientId];
+            }
+
+            if (rejoinable) {
+                const savedSession = sessionId;
+                if (savedSession && !playerSession.has(clientId)) {
+                    playerSession.set(clientId, savedSession);
+                }
+            } else {
+                playerSession.delete(clientId);
+            }
+
+            await promoteToPlayer(null);
             return;
         }
+    }
+
+    // ── Security: verify the slot belongs to this dbUserId ─────────
+    const slotDbUserId =
+        players[requestedId]?.dbUserId ??
+        spectators[requestedId]?.dbUserId ??
+        lastState[requestedId]?.dbUserId ??
+        null;
+
+    const ownershipOk =
+        slotDbUserId === null ||
+        slotDbUserId === dbUserId;
+
+    if (!ownershipOk) {
+        console.warn(`[WS] rejoin rejected: slot ${requestedId} owned by dbUserId ${slotDbUserId}, requester is ${dbUserId}`);
+        clientId = gameSession.nextClientId++;
+        await promoteToPlayer(null);
+        return;
+    }
+
+    // ── Kick any OTHER slot already using this dbUserId ────────────
+    kickDuplicateDbUser(requestedId, dbUserId);
+
+    // ── Resume pending grace-period cancelation ────────────────────
+    for (const [, sess] of gameSessions.entries()) {
+        if (sess.pendingEliminations?.[requestedId]) {
+            clearTimeout(sess.pendingEliminations[requestedId]);
+            delete sess.pendingEliminations[requestedId];
+            broadcastToSession(sess, { type: 'player_reconnected', clientId: requestedId });
+        }
+    }
+
+    const sessionId = playerSession.get(requestedId) ?? lastState[requestedId]?.sessionId ?? null;
+    const session   = sessionId ? gameSessions.get(sessionId) : null;
+    const rejoinable = canRejoinSession(session);
+
+    if (players[requestedId]) {
+        clientId = requestedId;
+        if (clientId >= gameSession.nextClientId) gameSession.nextClientId = clientId + 1;
+        players[clientId].ws = ws;
+        players[clientId].dbUserId = dbUserId ?? players[clientId].dbUserId;
+        isSpectator = false;
+        mode = 'player';
+
+        if (rejoinable) {
+            const savedSession = sessionId;
+            if (savedSession && !playerSession.has(clientId)) {
+                playerSession.set(clientId, savedSession);
+            }
+        } else {
+            playerSession.delete(clientId);
+            if (lastState[clientId]) delete lastState[clientId];
+        }
+
+        sendWelcomeToPlayer(ws, clientId);
+        return;
+    }
+
+    if (spectators[requestedId]) {
+        clientId = requestedId;
+        if (clientId >= gameSession.nextClientId) gameSession.nextClientId = clientId + 1;
+        spectators[clientId].ws = ws;
+        spectators[clientId].dbUserId = dbUserId ?? spectators[clientId].dbUserId;
+        isSpectator = true;
+        mode = spectators[clientId].mode;
+        sendSpectatorWelcome(mode, spectators[clientId].watchingSession);
+        return;
+    }
+
+    // Ghost state: only preserve the old session if it is still rejoinable.
+    if (lastState[requestedId]) {
+        clearTimeout(lastState[requestedId].timer);
+        delete lastState[requestedId];
+    }
+
+    clientId = requestedId;
+    if (clientId >= gameSession.nextClientId) gameSession.nextClientId = clientId + 1;
+
+    if (rejoinable && sessionId && !playerSession.has(clientId)) {
+        playerSession.set(clientId, sessionId);
+    } else {
+        playerSession.delete(clientId);
+    }
+
+    await promoteToPlayer(null);
+    return;
+}
 
         if (msg.type === 'leave') {
             // ── Spectator: clean up immediately ──────────────────────────────
@@ -670,6 +720,7 @@ async function onConnection(ws, req) {
                 const lp = players[clientId];
                 delete players[clientId];
                 playerSession.delete(clientId);
+                transferLobbyHost(clientId);
                 if (lastState[clientId]?.timer) clearTimeout(lastState[clientId].timer);
                 lastState[clientId] = {
                     x: lp?.x, y: lp?.y, onGround: lp?.onGround, stocks: lp?.stocks,
@@ -677,6 +728,7 @@ async function onConnection(ws, req) {
                     timer: setTimeout(() => { delete lastState[clientId]; playerCharSelected.delete(clientId); }, GHOST_TTL),
                 };
                 broadcastState();
+                broadcastHostStatus();
                 console.log(`[SERVER] Player ${clientId} left voluntarily (lobby)`);
                 return;
             }
@@ -796,6 +848,12 @@ async function onConnection(ws, req) {
             // Broadcast char_select_ack only to peers in the same session (or lobby).
             const senderSid     = playerSession.get(clientId) ?? null;
             const senderSession = senderSid ? gameSessions.get(senderSid) : null;
+
+            // If this player is in the lobby queue, let them claim host if unclaimed.
+            if (!senderSession && players[clientId]?.dbUserId != null) {
+                claimLobbyHost(clientId);
+                broadcastHostStatus();
+            }
 
             // Build an ack scoped to only the relevant players.
             const ack = JSON.stringify(buildCharSelectAck(charId, clientId, stageId, senderSession));
@@ -933,6 +991,7 @@ async function onConnection(ws, req) {
         } else {
             // Disconnected from lobby (no active session) — save state so they
             // keep their selected character if they reconnect quickly.
+            transferLobbyHost(clientId);
             lastState[clientId] = {
                 x: p.x, y: p.y, onGround: p.onGround, stocks: p.stocks,
                 dbUserId:  disconnectedDbUserId,
@@ -942,6 +1001,7 @@ async function onConnection(ws, req) {
                     playerCharSelected.delete(clientId);
                 }, GHOST_TTL),
             };
+            broadcastHostStatus();
         }
 
         console.log(`[SERVER] Player ${clientId} disconnected`);
