@@ -67,15 +67,20 @@ function UserCard({ user, stats, onLogout, logoutLoading }) {
 
 // ── Mode: Versus ───────────────────────────────────────────────────────────────
 
-function ModeVersus({ onEnterGame }) {
+function ModeVersus({ onEnterGame, matchCooldown = 0 }) {
   return (
     <div className="lobby-mode-body">
       <p className="lobby-mode-desc">
         Play a live 1v1 against another connected player. Once you enter, you
         will be matched automatically when a second player joins.
       </p>
-      <button className="auth-submit lobby-play" type="button" onClick={() => onEnterGame("versus")}>
-        Find match
+      <button
+        className="auth-submit lobby-play"
+        type="button"
+        onClick={() => onEnterGame("versus")}
+        disabled={matchCooldown > 0}
+      >
+        {matchCooldown > 0 ? `Disponible en ${matchCooldown}s…` : "Find match"}
       </button>
     </div>
   );
@@ -120,15 +125,20 @@ function ModeAI({ onEnterGame }) {
 
 // ── Mode: Tournament ───────────────────────────────────────────────────────────
 
-function ModeTournament({ onEnterGame }) {
+function ModeTournament({ onEnterGame, matchCooldown = 0 }) {
   return (
     <div className="lobby-mode-body">
       <p className="lobby-mode-desc">
         Join the tournament queue. The server will start bracket matches once
         enough players are ready. You need at least 2 connected players.
       </p>
-      <button className="auth-submit lobby-play" type="button" onClick={() => onEnterGame("tournament")}>
-        Join tournament queue
+      <button
+        className="auth-submit lobby-play"
+        type="button"
+        onClick={() => onEnterGame("tournament")}
+        disabled={matchCooldown > 0}
+      >
+        {matchCooldown > 0 ? `Disponible en ${matchCooldown}s…` : "Join tournament queue"}
       </button>
     </div>
   );
@@ -228,6 +238,29 @@ export default function Lobby({ user, onEnterGame, onLogout, onPrivacy, onTerms 
   const [logoutLoading, setLogoutLoading] = useState(false);
   const [activeMode,    setActiveMode]    = useState("versus");
   const [sessionError,  setSessionError]  = useState("");
+  const [matchCooldown, setMatchCooldown] = useState(0); // seconds until matchmaking is safe
+
+  // Check if we reloaded after a grace-period forfeit and need to wait
+  useEffect(() => {
+    try {
+      const safeAt = parseInt(sessionStorage.getItem('matchmakingSafeAt') ?? '0', 10);
+      if (!safeAt) return;
+      const remaining = safeAt - Date.now();
+      if (remaining <= 0) { sessionStorage.removeItem('matchmakingSafeAt'); return; }
+      setMatchCooldown(Math.ceil(remaining / 1000));
+      const interval = setInterval(() => {
+        const secs = Math.ceil((safeAt - Date.now()) / 1000);
+        if (secs <= 0) {
+          clearInterval(interval);
+          setMatchCooldown(0);
+          sessionStorage.removeItem('matchmakingSafeAt');
+        } else {
+          setMatchCooldown(secs);
+        }
+      }, 250);
+      return () => clearInterval(interval);
+    } catch (_) {}
+  }, []);
 
 
   // Confirm session + pull stats
@@ -319,9 +352,9 @@ export default function Lobby({ user, onEnterGame, onLogout, onPrivacy, onTerms 
 
         {/* Mode content */}
         <div className="lobby-mode-panel">
-          {activeMode === "versus"     && <ModeVersus     onEnterGame={handleEnterGame} />}
+          {activeMode === "versus"     && <ModeVersus     onEnterGame={handleEnterGame} matchCooldown={matchCooldown} />}
           {activeMode === "training"   && <ModeAI         onEnterGame={handleEnterGame} />}
-          {activeMode === "tournament" && <ModeTournament  onEnterGame={handleEnterGame} />}
+          {activeMode === "tournament" && <ModeTournament  onEnterGame={handleEnterGame} matchCooldown={matchCooldown} />}
           {activeMode === "spectate"   && <ModeSpectator  onEnterGame={handleEnterGame} />}
         </div>
 

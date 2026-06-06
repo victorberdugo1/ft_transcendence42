@@ -215,20 +215,55 @@ function GameShell({ user, gameMode, gameOpts, inLobby, onBackToLobby }) {
 // ── Grace countdown banner ────────────────────────────────────────────────────
 
 function GraceBanner({ grace, myClientId, onRejoin }) {
-  const [secsLeft, setSecsLeft] = useState(null);
+  const [secsLeft,  setSecsLeft]  = useState(null);
+  const [defeated,  setDefeated]  = useState(false);
 
   useEffect(() => {
-    if (!grace) { setSecsLeft(null); return; }
+    if (!grace) { setSecsLeft(null); setDefeated(false); return; }
     function tick() {
       const ms = grace.expiresAt - Date.now();
-      setSecsLeft(Math.max(0, Math.ceil(ms / 1000)));
+      const secs = Math.max(0, Math.ceil(ms / 1000));
+      setSecsLeft(secs);
+      if (secs === 0 && grace.clientId === myClientId) {
+        clearInterval(id);
+        setDefeated(true);
+        // Wait for the server's 5s grace timer to fully expire and clean up
+        // the old slot before reloading, so the new join doesn't conflict.
+        setTimeout(() => {
+          try {
+            ['clientId', 'charSelectData', 'pendingCharSelect', 'watchSession', 'gameState', 'confirmedStageId']
+              .forEach(k => sessionStorage.removeItem(k));
+            // Tell the lobby to block matchmaking until the server has fully
+            // cleaned up the old slot (resolveMatchWinner takes another 6s).
+            sessionStorage.setItem('matchmakingSafeAt', String(Date.now() + 6500));
+          } catch (_) {}
+          window.location.reload();
+        }, 6000);
+      }
     }
     tick();
     const id = setInterval(tick, 250);
     return () => clearInterval(id);
   }, [grace]);
 
-  if (!grace || secsLeft === null) return null;
+  // Defeat screen — shown while we wait for the reload
+  if (defeated) {
+    return (
+      <div style={{
+        position: "fixed", inset: 0, zIndex: 200,
+        background: "rgba(0,0,0,0.82)",
+        display: "flex", flexDirection: "column",
+        alignItems: "center", justifyContent: "center",
+        fontFamily: "sans-serif", color: "#fff", gap: "12px",
+      }}>
+        <div style={{ fontSize: "3rem" }}>💀</div>
+        <div style={{ fontSize: "1.6rem", fontWeight: "bold" }}>¡Derrota!</div>
+        <div style={{ fontSize: "0.95rem", opacity: 0.7 }}>Volviendo al lobby…</div>
+      </div>
+    );
+  }
+
+  if (!grace || secsLeft === null || secsLeft === 0) return null;
 
   const isMe = grace.clientId === myClientId;
 

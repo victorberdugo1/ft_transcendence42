@@ -445,6 +445,19 @@ function connectWS() {
             });
             window.dispatchEvent(new CustomEvent('match_finished', { detail: { sessionId: msg.sessionId } }));
 
+            // Reload the page so the WASM/Emscripten runtime is fully reset and
+            // the player lands cleanly on the lobby. Only reload when there was a
+            // proper winner/loser (victoryState set), not for training sessions or
+            // spectators who were never in the fight.
+            if (window._victoryState?.winner != null && !window._isSpectator) {
+                try {
+                    // cleanupSession already ran, but give a small buffer for any
+                    // in-flight DB writes before the lobby allows matchmaking.
+                    sessionStorage.setItem('matchmakingSafeAt', String(Date.now() + 2500));
+                } catch (_) {}
+                window.location.reload();
+            }
+
         } else if (msg.type === 'match_end') {
             window._lastMatchResult = {
                 winner: msg.winner, loser: msg.loser,

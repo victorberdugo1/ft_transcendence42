@@ -39,44 +39,6 @@ let tournamentWaitingWinners = {};
 let confirmedStageId = -1;
 let DEBUG_AUTO_MATCH = true;
 
-// ─── Lobby host ownership ─────────────────────────────────────────────────────
-// The lobby host is the first authenticated player to select a character
-// (i.e. to press "Fight") after the lobby is empty. This is separate from
-// connection order. When the host leaves the lobby the next waiting player
-// inherits the role.
-
-let lobbyHostId = null;
-
-function getLobbyHost() { return lobbyHostId; }
-
-// Called when a player enters the lobby queue (char_select).
-// Only assigns if no host is currently set.
-function claimLobbyHost(clientId) {
-    if (lobbyHostId === null) {
-        lobbyHostId = clientId;
-        console.log(`[HOST] lobby host assigned → clientId=${clientId}`);
-    }
-}
-
-// Called when the current lobby host leaves (disconnect, leave, or enters a session).
-// Transfers ownership to the next waiting authenticated player, if any.
-function transferLobbyHost(leavingClientId) {
-    if (lobbyHostId !== leavingClientId) return;
-    lobbyHostId = null;
-
-    // Pick the next authenticated lobby player (not in any session, not CPU).
-    const candidates = Object.values(players)
-        .filter(p => !p.isCpu && p.dbUserId != null && !playerSession.has(p.id) && p.id !== leavingClientId)
-        .sort((a, b) => a.id - b.id);   // deterministic: lowest clientId among waiters
-
-    if (candidates.length) {
-        lobbyHostId = candidates[0].id;
-        console.log(`[HOST] lobby host transferred → clientId=${lobbyHostId}`);
-    } else {
-        console.log(`[HOST] lobby host cleared (no candidates)`);
-    }
-}
-
 // ─── Spectator helpers ────────────────────────────────────────────────────────
 
 function setSpectatorSession(spec, newSessionId) {
@@ -245,7 +207,9 @@ setInterval(tickSpectators, 1000 / 15);
 // ─── Session listings ─────────────────────────────────────────────────────────
 
 function listActiveSessions() {
-    return [...gameSessions.entries()].map(([id, sess]) => ({
+    return [...gameSessions.entries()]
+        .filter(([, sess]) => !sess.finished)
+        .map(([id, sess]) => ({
         sessionId:    id,
         mode:         sess.mode,
         tournamentId: sess.tournamentId ?? null,
@@ -351,11 +315,7 @@ function createSession(mode, playerIds, extra = {}) {
         playerIds:    new Set(playerIds),
         eliminated:   new Set(),
         tournamentId: null, round: null, matchDbId: null,
-        startedAt:    new Date(),
-        // Explicit lifecycle: 'active' → 'finished'.
-        // session.finished stays as a boolean alias so all existing guards work.
-        status:   'active',
-        finished: false,
+        startedAt:    new Date(), finished: false,
         loserDbId: null, loserStocks: 0, playerFlags: {},
         ...extra,
     };
@@ -364,8 +324,6 @@ function createSession(mode, playerIds, extra = {}) {
         playerSession.set(cid, id);
         const p = players[cid];
         if (p) p.stocks = 3;
-        // Player leaves the lobby queue; if they were lobby host, transfer now.
-        transferLobbyHost(cid);
     }
     gameSessions.set(id, session);
     return session;
@@ -527,61 +485,42 @@ function handleElimination(loser) {
         session.pendingWinner = { winnerId: remaining[0], loserId: eliminatedId };
     } else if (remaining.length === 0) {
         session.finished = true;
-        session.status   = 'finished';
         broadcastToSession(session, { type: 'match_end', winner: null, loser: eliminatedId, matchId: null, mode: session.mode });
         setTimeout(() => gameSessions.delete(session.id), 6000);
     }
 }
 
 function cleanupSession(session, winnerClientId) {
-    gameSessions.delete(session.id);
+    // Mark the exact time the session was cleaned up. The entry stays in gameSessions
+    // for CLEANUP_LINGER_MS so that a rejoin arriving within that window can detect
+    // "battle is over" and send match_finished instead of re-entering a zombie session.
+    const CLEANUP_LINGER_MS = 8000;
+    session.finished  = true;
+    session.cleanedAt = Date.now();
+    setTimeout(() => gameSessions.delete(session.id), CLEANUP_LINGER_MS);
     delete hitstopBySession[session.id];
 
-    // Reset the global lobby stage whenever a session ends.
-    // Any remaining lobby player's _pendingStageId was also cleared when they
-    // entered their own session, so the lobby starts fresh after every match.
-    const stillActive = [...gameSessions.values()].some(s => !s.finished);
-    if (!stillActive) {
-        confirmedStageId = -1;
-        // Notify lobby players that stage selection is reset.
-        const stageResetMsg = JSON.stringify({ type: 'stage_reset' });
-        for (const [, pl] of Object.entries(players)) {
-            if (playerSession.has(pl.id)) continue;   // skip in-session players
-            if (pl.ws?.readyState === WebSocket.OPEN) pl.ws.send(stageResetMsg);
-        }
-    }
+    // Reset stage only if no other active sessions remain
+    if ([...gameSessions.values()].every(s => s.finished)) confirmedStageId = -1;
 
     // Keep the winner in the player pool so they can queue for the next match.
-    // Always delete the session mapping — even if the winner disconnected mid-cleanup,
-    // this ensures they are never stuck with a stale/finished session in playerSession.
-    playerSession.delete(winnerClientId);
-
-    // Clear the winner's char selection so tryAutoMatch below does NOT immediately
-    // pair them into a new match before they have returned to the lobby UI and
-    // explicitly re-entered the queue. They will re-select their char from the lobby.
-    playerCharSelected.delete(winnerClientId);
-
+    // Just remove the session mapping and reset their state.
+    // Clear playerCharSelected so after the reload they go through char selection again.
     if (players[winnerClientId]) {
+        playerSession.delete(winnerClientId);
+        playerCharSelected.delete(winnerClientId);
         const w = players[winnerClientId];
-        // If the winner's WS is gone (they refreshed during the victory screen),
-        // remove them from the player pool entirely — the close handler or rejoin
-        // will re-add them cleanly when they reconnect.
-        if (!w.ws || w.ws.readyState !== WebSocket.OPEN) {
-            delete players[winnerClientId];
-        } else {
-            w.stocks        = 3;
-            w.voltage       = 0;
-            w.voltageMaxed  = false;
-            w.attacking     = false;
-            w.dashing       = false;
-            w.blocking      = false;
-            w.crouching     = false;
-            w.hitTargets    = new Set();
-            w.kbx = 0; w.kby = 0; w.vx = 0; w.vy = 0;
-            w.animation     = 'idle';
-            w.animTimer     = 0;
-            delete w._pendingStageId;
-        }
+        w.stocks        = 3;
+        w.voltage       = 0;
+        w.voltageMaxed  = false;
+        w.attacking     = false;
+        w.dashing       = false;
+        w.blocking      = false;
+        w.crouching     = false;
+        w.hitTargets    = new Set();
+        w.kbx = 0; w.kby = 0; w.vx = 0; w.vy = 0;
+        w.animation     = 'idle';
+        w.animTimer     = 0;
     }
 
     const nextSession = [...gameSessions.values()].find(s => !s.finished)?.id ?? null;
@@ -598,7 +537,6 @@ function cleanupSession(session, winnerClientId) {
 
 async function resolveMatchWinner(session, winnerClientId, loserClientId) {
     session.finished = true;
-    session.status   = 'finished';
 
     const winner     = players[winnerClientId];
     const winnerDbId = winner?.dbUserId ?? null;
@@ -915,7 +853,6 @@ module.exports = {
     createPlayer, startBrawl, startDuel, startTournament, startTraining,
     tryAutoMatch, handleElimination, resolveMatchWinner, getLastWatchedSession,
     disconnectPlayer,
-    getLobbyHost, claimLobbyHost, transferLobbyHost,
     MAX_PLAYERS, GHOST_TTL,
     ATTACK_RANGE, ATTACK_RANGE_Y, DASH_ATTACK_RANGE_X,
     CHAR_IDS, CHARACTER_DEFS, CHARACTER_ASSETS,
