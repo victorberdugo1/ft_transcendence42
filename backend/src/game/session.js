@@ -496,27 +496,47 @@ function handleElimination(loser) {
     }
 
     const { id: eliminatedId, dbUserId: eliminatedDbId, ws: eliminatedWs } = loser;
-    delete players[eliminatedId];
-    playerSession.delete(eliminatedId);
 
-    if (eliminatedWs?.readyState === WebSocket.OPEN) {
-        const newSpec = {
-            id: eliminatedId, dbUserId: eliminatedDbId, ws: eliminatedWs,
-            watchingSession: null, mode: 'overflow', dbRowId: null, eliminated: true,
-        };
-        spectators[eliminatedId] = newSpec;
-        setSpectatorSession(newSpec, sessionId ?? null);
-        eliminatedWs.send(JSON.stringify({
-            type: 'spectator_mode', clientId: eliminatedId, mode: 'overflow',
-            watchingSession: sessionId ?? null, activeSessions: listActiveSessions(), eliminated: true,
-        }));
+    // In 1v1 and tournament modes, check if this elimination decides the match
+    // (only 1 player remains = winner found).  In that case do NOT convert the
+    // loser into a spectator: resolveMatchWinner will broadcast victory/match_end/
+    // match_finished to everyone still in the session (including the loser), and
+    // cleanupSession will restore both players to the lobby pool.
+    // For brawl (multiple players) we still convert mid-game eliminations to
+    // spectators so they can watch the rest of the match.
+    const remaining = session
+        ? [...session.playerIds].filter(id => !session.eliminated.has(id))
+        : [];
+
+    const isDecidingElimination = remaining.length === 1 &&
+        (session?.mode === '1v1' || session?.mode === 'tournament');
+
+    if (!isDecidingElimination) {
+        // Brawl mid-game elimination (or no session): move player to spectator pool.
+        delete players[eliminatedId];
+        playerSession.delete(eliminatedId);
+
+        if (eliminatedWs?.readyState === WebSocket.OPEN) {
+            const newSpec = {
+                id: eliminatedId, dbUserId: eliminatedDbId, ws: eliminatedWs,
+                watchingSession: null, mode: 'overflow', dbRowId: null, eliminated: true,
+            };
+            spectators[eliminatedId] = newSpec;
+            setSpectatorSession(newSpec, sessionId ?? null);
+            eliminatedWs.send(JSON.stringify({
+                type: 'spectator_mode', clientId: eliminatedId, mode: 'overflow',
+                watchingSession: sessionId ?? null, activeSessions: listActiveSessions(), eliminated: true,
+            }));
+        }
     }
+    // For a deciding 1v1/tournament elimination the player object stays intact
+    // in `players` so resolveMatchWinner/cleanupSession can handle cleanup and
+    // the client receives the normal victory → match_finished → lobby flow.
 
     broadcastState();
     broadcastToAll({ type: 'player_eliminated', clientId: eliminatedId });
 
     if (!session) return;
-    const remaining = [...session.playerIds].filter(id => !session.eliminated.has(id));
 
     if (remaining.length === 1) {
         session.pendingWinner = { winnerId: remaining[0], loserId: eliminatedId };
@@ -540,24 +560,27 @@ function cleanupSession(session, winnerClientId) {
     // Reset stage only if no other active sessions remain
     if ([...gameSessions.values()].every(s => s.finished)) confirmedStageId = -1;
 
-    // Keep the winner in the player pool so they can queue for the next match.
-    // Just remove the session mapping and reset their state.
-    // Clear playerCharSelected so after the reload they go through char selection again.
-    if (players[winnerClientId]) {
-        playerSession.delete(winnerClientId);
-        playerCharSelected.delete(winnerClientId);
-        const w = players[winnerClientId];
-        w.stocks        = 3;
-        w.voltage       = 0;
-        w.voltageMaxed  = false;
-        w.attacking     = false;
-        w.dashing       = false;
-        w.blocking      = false;
-        w.crouching     = false;
-        w.hitTargets    = new Set();
-        w.kbx = 0; w.kby = 0; w.vx = 0; w.vy = 0;
-        w.animation     = 'idle';
-        w.animTimer     = 0;
+    // Reset and return BOTH winner and loser to the lobby pool.
+    // In 1v1/tournament the loser was kept in `players` (not converted to spectator)
+    // so they receive the normal match_finished flow and then the client rejoins lobby.
+    // We must clean up their session mapping here so tryAutoMatch doesn't see them
+    // as still in-game.
+    for (const cid of session.playerIds) {
+        const p = players[cid];
+        if (!p) continue;
+        playerSession.delete(cid);
+        playerCharSelected.delete(cid);
+        p.stocks        = 3;
+        p.voltage       = 0;
+        p.voltageMaxed  = false;
+        p.attacking     = false;
+        p.dashing       = false;
+        p.blocking      = false;
+        p.crouching     = false;
+        p.hitTargets    = new Set();
+        p.kbx = 0; p.kby = 0; p.vx = 0; p.vy = 0;
+        p.animation     = 'idle';
+        p.animTimer     = 0;
     }
 
     const nextSession = [...gameSessions.values()].find(s => !s.finished)?.id ?? null;
