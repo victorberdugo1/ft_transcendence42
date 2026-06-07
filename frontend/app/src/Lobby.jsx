@@ -88,20 +88,41 @@ function ModeVersus({ onEnterGame, matchCooldown = 0 }) {
 
 // ── Mode: vs AI ────────────────────────────────────────────────────────────────
 
-function ModeAI({ onEnterGame }) {
-  const [charId, setCharId] = useState("eld");
+const STAGE_NAMES = ["Karnamru", "Surya", "Vayusvara", "Daat"];
+
+function ModeAI({ onEnterGame, matchCooldown = 0 }) {
+  const [selectedChars, setSelectedChars] = useState(["eld"]);
+  const [stageId,       setStageId]       = useState(0);
+
+  function toggleChar(id) {
+    setSelectedChars(prev => {
+      if (prev.includes(id)) {
+        // Don't allow deselecting the last one
+        if (prev.length === 1) return prev;
+        return prev.filter(c => c !== id);
+      }
+      return [...prev, id];
+    });
+  }
+
+  const enemyLabel = selectedChars.length === 1
+    ? CHAR_NAMES[selectedChars[0]]
+    : `${selectedChars.length} enemies`;
+
   return (
     <div className="lobby-mode-body">
       <p className="lobby-mode-desc">
-        Train against a CPU opponent. Pick the character you want to face.
+        Train against CPU opponents. Select 1 to 4 enemies and a stage.
       </p>
+
+      <p className="lobby-section-label">Enemies (tap to toggle)</p>
       <div className="lobby-char-pick">
         {CHAR_IDS.map(id => (
           <button
             key={id}
             type="button"
-            className={`lobby-char-btn ${charId === id ? "lobby-char-active" : ""}`}
-            onClick={() => setCharId(id)}
+            className={`lobby-char-btn ${selectedChars.includes(id) ? "lobby-char-active" : ""}`}
+            onClick={() => toggleChar(id)}
           >
             <img
               src={CHAR_PORTRAITS[id]}
@@ -109,15 +130,32 @@ function ModeAI({ onEnterGame }) {
               onError={e => { e.currentTarget.style.display = "none"; }}
             />
             <span>{CHAR_NAMES[id]}</span>
+            {selectedChars.includes(id) && <span className="lobby-char-check">✓</span>}
           </button>
         ))}
       </div>
+
+      <p className="lobby-section-label">Stage</p>
+      <div className="lobby-stage-pick">
+        {STAGE_NAMES.map((name, idx) => (
+          <button
+            key={idx}
+            type="button"
+            className={`lobby-stage-btn ${stageId === idx ? "lobby-stage-active" : ""}`}
+            onClick={() => setStageId(idx)}
+          >
+            {name}
+          </button>
+        ))}
+      </div>
+
       <button
         className="auth-submit lobby-play"
         type="button"
-        onClick={() => onEnterGame("training", { cpuCharId: charId })}
+        onClick={() => onEnterGame("training", { cpuCharIds: selectedChars, stageId })}
+        disabled={matchCooldown > 0}
       >
-        Start training vs {CHAR_NAMES[charId]}
+        {matchCooldown > 0 ? `Disponible en ${matchCooldown}s…` : `Start training vs ${enemyLabel}`}
       </button>
     </div>
   );
@@ -228,7 +266,7 @@ function ModeSpectator({ onEnterGame }) {
 
 const MODES = [
   { id: "versus", label: "Versus" },
-  { id: "training", label: "vs AI", disabled: true },
+  { id: "training", label: "vs AI" },
   { id: "tournament", label: "Tournament", disabled: true },
   { id: "spectate", label: "Spectate", disabled: true },
 ];
@@ -362,7 +400,7 @@ export default function Lobby({ user, onEnterGame, onLogout, onPrivacy, onTerms 
         {/* Mode content */}
         <div className="lobby-mode-panel">
           {activeMode === "versus"     && <ModeVersus     onEnterGame={handleEnterGame} matchCooldown={matchCooldown} />}
-          {activeMode === "training"   && <ModeAI         onEnterGame={handleEnterGame} />}
+          {activeMode === "training"   && <ModeAI         onEnterGame={handleEnterGame} matchCooldown={matchCooldown} />}
           {activeMode === "tournament" && <ModeTournament  onEnterGame={handleEnterGame} matchCooldown={matchCooldown} />}
           {activeMode === "spectate"   && <ModeSpectator  onEnterGame={handleEnterGame} />}
         </div>

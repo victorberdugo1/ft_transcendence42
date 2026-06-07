@@ -322,7 +322,7 @@ function createPlayer(id, saved, ws) {
         comboStep: 0, comboWindow: 0, _isDashAttack: false,
         hitId: 0, hitTargets: new Set(), jumpId: 0,
         crouching: false, animation: 'idle', animTimer: 0,
-        stocks:          saved?.stocks ?? 3,
+        stocks:          3,
         prevSessionId:   saved?.sessionId ?? null,
         respawning: false, respawnTimer: 0,
         voltage: 0, voltageMaxed: false,
@@ -425,14 +425,32 @@ async function startTournament(clientIds, creatorDbId) {
     return tournamentId;
 }
 
-function startTraining(humanClientId, cpuCharId = 'eld') {
-    const cpu = createCpuPlayer(cpuCharId, CHARACTER_DEFS, GROUND_Y);
-    players[cpu.id] = cpu;
-    playerCharSelected.set(cpu.id, cpuCharId);
-    const session = createSession('1v1', [humanClientId, cpu.id], { isCpuSession: true, cpuId: cpu.id });
-    cpu.stocks = 3;
-    broadcastToSession(session, { type: 'match_start', mode: '1v1', sessionId: session.id, countdown: true, cpuId: cpu.id });
-    console.log(`[GAME] Training started: session ${session.id} — player ${humanClientId} vs CPU ${cpu.id}`);
+function startTraining(humanClientId, cpuCharIds = ['eld'], stageId = 0) {
+    // cpuCharIds: array of 1-4 character ids e.g. ['eld', 'hil']
+    const cpus = cpuCharIds.map(charId => {
+        const cpu = createCpuPlayer(charId, CHARACTER_DEFS, GROUND_Y);
+        players[cpu.id] = cpu;
+        playerCharSelected.set(cpu.id, charId);
+        return cpu;
+    });
+    const allIds = [humanClientId, ...cpus.map(c => c.id)];
+    const cpuIds = cpus.map(c => c.id);
+    // Use mode 'training' so handleElimination doesn't apply 1v1 win logic.
+    // Victory is resolved manually: human eliminated = loss, all CPUs eliminated = win.
+    const session = createSession('training', allIds, {
+        isCpuSession: true,
+        cpuIds,
+        cpuId: cpuIds[0],   // legacy single-cpu field kept for compatibility
+        stageId,
+        humanId: humanClientId,
+        cpusEliminated: new Set(),
+    });
+    for (const cpu of cpus) cpu.stocks = 3;
+    broadcastToSession(session, {
+        type: 'match_start', mode: 'training', sessionId: session.id,
+        countdown: true, cpuIds, cpuId: cpuIds[0], stageId,
+    });
+    console.log(`[GAME] Training started: session ${session.id} — player ${humanClientId} vs CPUs [${cpuCharIds.join(', ')}] stage=${stageId}`);
     return session;
 }
 
@@ -507,6 +525,31 @@ function handleElimination(loser) {
     const remaining = session
         ? [...session.playerIds].filter(id => !session.eliminated.has(id))
         : [];
+
+    // ── Training mode: special elimination logic ─────────────────────────────
+    if (session?.mode === 'training') {
+        const isHuman = eliminatedId === session.humanId;
+        if (!isHuman) {
+            // A CPU was eliminated — track it but keep fighting
+            if (session.cpusEliminated) session.cpusEliminated.add(eliminatedId);
+            delete players[eliminatedId];
+            playerSession.delete(eliminatedId);
+            broadcastState();
+            broadcastToAll({ type: 'player_eliminated', clientId: eliminatedId });
+            // Check if ALL cpus are now eliminated → human wins
+            const allCpusDead = session.cpuIds.every(cid => session.cpusEliminated.has(cid));
+            if (allCpusDead) {
+                session.pendingWinner = { winnerId: session.humanId, loserId: eliminatedId };
+            }
+        } else {
+            // Human eliminated → loss. Pick any surviving CPU as nominal winner.
+            const survivingCpu = session.cpuIds.find(cid => !session.cpusEliminated.has(cid)) ?? session.cpuId;
+            broadcastState();
+            broadcastToAll({ type: 'player_eliminated', clientId: eliminatedId });
+            session.pendingWinner = { winnerId: survivingCpu, loserId: eliminatedId };
+        }
+        return;
+    }
 
     const isDecidingElimination = remaining.length === 1 &&
         (session?.mode === '1v1' || session?.mode === 'tournament');
@@ -847,11 +890,15 @@ function tick() {
 
     for (const session of gameSessions.values()) {
         if (!session.isCpuSession || session.finished) continue;
-        const cpu    = players[session.cpuId];
-        const target = [...session.playerIds]
-            .filter(id => id !== session.cpuId && players[id] && !players[id].respawning)
+        // Support both single cpuId (legacy) and multi-cpu cpuIds array (training)
+        const cpuIdList = session.cpuIds ?? [session.cpuId];
+        const humanTarget = [...session.playerIds]
+            .filter(id => !cpuIdList.includes(id) && players[id] && !players[id].respawning)
             .map(id => players[id])[0] ?? null;
-        if (cpu) tickCpu(cpu, target);
+        for (const cid of cpuIdList) {
+            const cpu = players[cid];
+            if (cpu) tickCpu(cpu, humanTarget);
+        }
     }
 
     for (const session of gameSessions.values()) {
@@ -911,7 +958,7 @@ module.exports = {
     broadcastToSession, broadcastToAll, broadcastState, sendStateToSpectator,
     listActiveSessions, buildCharSelectAck, sendAllCharSelectsTo,
     createPlayer, startBrawl, startDuel, startTournament, startTraining,
-    tryAutoMatch, handleElimination, resolveMatchWinner, getLastWatchedSession,
+    tryAutoMatch, handleElimination, resolveMatchWinner, cleanupSession, getLastWatchedSession,
     addToLobbyQueue, removeFromLobbyQueue, getLobbyQueue,
     disconnectPlayer,
     MAX_PLAYERS, GHOST_TTL,

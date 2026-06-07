@@ -117,15 +117,19 @@ app.post('/api/duel', requireAuth, (req, res) => {
 
 app.post('/api/training', requireAuth, (req, res) => {
     const { players, playerSession, startTraining } = gameSession;
-    const { clientId, cpuCharId = 'eld' } = req.body ?? {};
+    const { clientId, cpuCharId, cpuCharIds, stageId = 0 } = req.body ?? {};
     if (!clientId)
         return res.status(400).json({ error: 'clientId is required' });
     if (!players[clientId])
         return res.status(404).json({ error: 'Player not connected' });
     if (playerSession.has(clientId))
         return res.status(409).json({ error: 'Player already in a session' });
-    const session = startTraining(clientId, cpuCharId);
-    res.json({ sessionId: session.id, cpuId: session.cpuId });
+    // Accept either cpuCharIds (array) or legacy cpuCharId (string)
+    const charIds = Array.isArray(cpuCharIds) && cpuCharIds.length
+        ? cpuCharIds
+        : [cpuCharId ?? 'eld'];
+    const session = startTraining(clientId, charIds, stageId);
+    res.json({ sessionId: session.id, cpuIds: session.cpuIds, cpuId: session.cpuId });
 });
 
 app.post('/api/tournament', requireAuth, async (req, res) => {
@@ -196,13 +200,16 @@ app.post('/api/dev/duel', (req, res) => {
 
 app.post('/api/dev/training', (req, res) => {
     const { players, playerSession, startTraining } = gameSession;
-    const { clientId, cpuCharId = 'qui' } = req.body ?? {};
+    const { clientId, cpuCharId, cpuCharIds, stageId = 0 } = req.body ?? {};
     if (!clientId || !players[clientId])
         return res.status(404).json({ error: 'Player not connected' });
     if (playerSession.has(clientId))
         return res.status(409).json({ error: 'Player already in a session' });
-    const session = startTraining(clientId, cpuCharId);
-    res.json({ sessionId: session.id, cpuId: session.cpuId });
+    const charIds = Array.isArray(cpuCharIds) && cpuCharIds.length
+        ? cpuCharIds
+        : [cpuCharId ?? 'qui'];
+    const session = startTraining(clientId, charIds, stageId);
+    res.json({ sessionId: session.id, cpuIds: session.cpuIds, cpuId: session.cpuId });
 });
 
 app.post('/api/dev/tournament', async (req, res) => {

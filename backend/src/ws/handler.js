@@ -797,6 +797,29 @@ async function onConnection(ws, req) {
                 return;
             }
 
+            // ── Training session: end immediately, no grace period ────────────
+            // There is no opponent to wait for — CPUs vanish with the session.
+            if (leavingSession.mode === 'training') {
+                const lp = players[clientId];
+                delete players[clientId];
+                playerSession.delete(clientId);
+                playerCharSelected.delete(clientId);
+                delete lastState[clientId];
+                removeFromLobbyQueue(clientId);
+                if (!leavingSession.finished) {
+                    leavingSession.finished = true;
+                    broadcastToSession(leavingSession, {
+                        type: 'match_finished', sessionId: leavingSession.id,
+                    });
+                    const { cleanupSession } = gameSession;
+                    if (cleanupSession) cleanupSession(leavingSession, null);
+                    else setTimeout(() => gameSessions.delete(leavingSession.id), 500);
+                }
+                broadcastState();
+                console.log(`[SERVER] Player ${clientId} left training session — ended immediately`);
+                return;
+            }
+
             // ── In an active match: start 5-second grace period ───────────────
             if (!leavingSession.pendingEliminations) leavingSession.pendingEliminations = {};
             if (leavingSession.pendingEliminations[clientId]) {
@@ -1030,6 +1053,26 @@ async function onConnection(ws, req) {
         playerSession.delete(clientId);
 
         if (disconnectedSession && !disconnectedSession.finished) {
+            // ── Training session: end immediately on disconnect, no grace ─────
+            if (disconnectedSession.mode === 'training') {
+                playerCharSelected.delete(clientId);
+                delete lastState[clientId];
+                removeFromLobbyQueue(clientId);
+                disconnectedSession.finished = true;
+                broadcastToSession(disconnectedSession, {
+                    type: 'match_finished', sessionId: disconnectedSession.id,
+                });
+                const { cleanupSession } = gameSession;
+                if (cleanupSession) cleanupSession(disconnectedSession, null);
+                else setTimeout(() => gameSessions.delete(disconnectedSession.id), 500);
+                broadcastState();
+                console.log(`[SERVER] Player ${clientId} disconnected from training — ended immediately`);
+                // Fall through to the broadcastState + log at end of close handler
+                // is skipped by the early return above in the leave path, but here
+                // we already called broadcastState so just return.
+                return;
+            }
+
             // ── Disconnect during active fight = grace period (same as 'leave') ──
             // Give the player 5 s to reconnect (F5, network blip, etc.) before
             // forfeiting.  If a grace timer is already running from a prior 'leave'

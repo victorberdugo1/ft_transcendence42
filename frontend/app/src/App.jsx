@@ -104,6 +104,24 @@ function GameShell({ user, gameMode, gameOpts, inLobby, onBackToLobby }) {
       } catch (_) {}
     }
 
+    // Training sessions: kill the WS immediately (prevents ws-client from
+    // writing a fresh clientId to sessionStorage after we clear it), wipe all
+    // state, then reload so the WASM runtime is fully reset.
+    // Order is critical: _manualReconnect=true → close WS → clear storage → reload.
+    if (gameMode === "training") {
+      window._manualReconnect = true;
+      window._pendingTraining = null;
+      window._pendingGameMode = "versus";
+      try { window._ws?.close(); } catch (_) {}
+      try {
+        ['clientId', 'charSelectData', 'pendingCharSelect', 'watchSession', 'gameState', 'confirmedStageId']
+          .forEach(k => sessionStorage.removeItem(k));
+        window._myClientId = -1;
+      } catch (_) {}
+      window.location.reload();
+      return;
+    }
+
     // Keep WS open and WASM alive — only reset UI/match state.
     Object.assign(window, {
       _isSpectator: false, _spectatorMode: null, _matchSession: null,
@@ -114,10 +132,9 @@ function GameShell({ user, gameMode, gameOpts, inLobby, onBackToLobby }) {
       _gameState: { players: {} },
       _eliminatedFromSession: null,
     });
-    try {
-      ["charSelectData","pendingCharSelect","watchSession","gameState","confirmedStageId"]
-        .forEach(k => sessionStorage.removeItem(k));
-    } catch (_) {}
+
+    const keysToRemove = ["charSelectData","pendingCharSelect","watchSession","gameState","confirmedStageId"];
+    try { keysToRemove.forEach(k => sessionStorage.removeItem(k)); } catch (_) {}
     setVisible(false);
     setStatus("Connecting\u2026");
     onBackToLobby();
@@ -157,6 +174,18 @@ function GameShell({ user, gameMode, gameOpts, inLobby, onBackToLobby }) {
     setStatus("Connecting\u2026");
     setSessionErr("");
 
+    // Training needs a fully clean WS connection so the server doesn't detect
+    // a duplicate slot (same dbUserId already in the lobby pool) and kick us.
+    // reconnectWS closes the current WS, wipes sessionStorage, and reconnects;
+    // connectWS reads _pendingGameMode on the new 'open' event and sends 'join'.
+    if (gameMode === "training") {
+      window._pendingGameMode = "training";
+      window._pendingGameOpts = gameOpts ?? {};
+      window._pendingTraining = gameOpts ?? { cpuCharIds: ["eld"], stageId: 0 };
+      if (typeof window.reconnectWS === "function") window.reconnectWS();
+      return;
+    }
+
     function sendIntent() {
       const savedId = sessionStorage.getItem("clientId");
       if (savedId) {
@@ -165,9 +194,6 @@ function GameShell({ user, gameMode, gameOpts, inLobby, onBackToLobby }) {
         window._ws.send(JSON.stringify({ type: "rejoin", clientId: parseInt(savedId, 10) }));
       } else if (gameMode === "spectate") {
         window._ws.send(JSON.stringify({ type: "watch", sessionId: gameOpts?.sessionId ?? null }));
-      } else if (gameMode === "training") {
-        window._pendingTraining = gameOpts?.cpuCharId ?? "eld";
-        window._ws.send(JSON.stringify({ type: "join" }));
       } else {
         window._pendingTournament = gameMode === "tournament";
         window._ws.send(JSON.stringify({ type: "join" }));

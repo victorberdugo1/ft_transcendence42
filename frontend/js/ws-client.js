@@ -167,7 +167,8 @@ function connectWS() {
             ws.send(JSON.stringify({ type: 'watch', sessionId: opts.sessionId ?? null }));
         } else if (mode === 'training') {
             // Join as player; GameShell will POST /api/training once we have a clientId.
-            window._pendingTraining = opts.cpuCharId ?? 'eld';
+            // Store full opts so the POST includes cpuCharIds + stageId.
+            window._pendingTraining = opts;
             ws.send(JSON.stringify({ type: 'join' }));
         } else {
             // versus / tournament — join the player pool and wait for a match.
@@ -263,16 +264,20 @@ function connectWS() {
             // ── Post-join mode actions ─────────────────────────────────────
             // Training: POST /api/training now that we have a clientId
             if (window._pendingTraining) {
-                const cpuCharId = window._pendingTraining;
+                const trainingOpts = window._pendingTraining;
                 window._pendingTraining = null;
+                const cpuCharIds = Array.isArray(trainingOpts.cpuCharIds)
+                    ? trainingOpts.cpuCharIds
+                    : [trainingOpts.cpuCharId ?? trainingOpts ?? 'eld'];
+                const stageId = trainingOpts.stageId ?? 0;
                 fetch('/api/training', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     credentials: 'include',
-                    body: JSON.stringify({ clientId: msg.clientId, cpuCharId }),
+                    body: JSON.stringify({ clientId: msg.clientId, cpuCharIds, stageId }),
                 }).then(r => r.json()).then(d => {
                     if (d.error) console.error('[WS] training start error:', d.error);
-                    else console.log('[WS] training session started:', d.sessionId);
+                    else console.log('[WS] training session started:', d.sessionId, 'cpuIds:', d.cpuIds);
                 }).catch(e => console.error('[WS] training fetch error:', e));
             }
             // Tournament: POST /api/tournament is handled server-side by tryAutoMatch;
