@@ -81,6 +81,7 @@ function buildPlayerSnapshot(p) {
     return {
         id:           p.id,
         charId:       p.charId ?? null,
+        username:     p.username ?? null,
         x:            Math.round(p.x * 1000) / 1000,
         y:            Math.round(p.y * 1000) / 1000,
         rotation:     p.facing === -1 ? Math.PI : 0,

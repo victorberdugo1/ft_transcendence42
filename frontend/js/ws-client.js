@@ -339,7 +339,11 @@ function connectWS() {
 
         } else if (msg.type === 'stage_reset') {
             window._confirmedStageId = undefined;
-            window._isHost = undefined;
+            // Do NOT reset _isHost here. host_status is always sent immediately
+            // after stage_reset during sendWelcomeToPlayer, so clobbering _isHost
+            // here causes a race where the first player (who IS host) briefly sees
+            // _isHost=undefined and never renders the stage selector.
+            // _isHost is owned exclusively by the 'host_status' handler.
             try {
                 sessionStorage.removeItem('confirmedStageId');
                 _sssClear();

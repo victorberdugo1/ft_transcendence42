@@ -218,22 +218,13 @@ INSERT INTO achievements (key, name, description) VALUES
     ('social',       'Sociable',          'Añade a tu primer amigo')
 ON CONFLICT (key) DO NOTHING;
 
--- ─── Usuario de prueba ────────────────────────────────────
--- ADVERTENCIA: eliminar o reemplazar el hash antes de desplegar en producción.
--- Para generar un hash válido: node -e "require('bcrypt').hash('test1234',10).then(console.log)"
-DO $$
-BEGIN
-    IF current_setting('server_version_num')::int >= 150000
-       AND current_database() = 'postgres' THEN
-        RAISE WARNING 'Recuerda eliminar el usuario de prueba antes de producción.';
-    END IF;
-END;
-$$;
-
-INSERT INTO users (username, email, password_hash, role)
-VALUES ('testuser', 'test@example.com', '$2b$10$placeholder_hash_change_me', 'admin')
-ON CONFLICT (username) DO NOTHING;
-
-INSERT INTO user_stats (user_id)
-SELECT id FROM users WHERE username = 'testuser'
-ON CONFLICT (user_id) DO NOTHING;
+-- ─── Usuario de prueba ─────────────────────────────
+-- ELIMINADO: el testuser con password_hash placeholder generaba sesiones
+-- de cookie reales que el servidor tomaba como un segundo jugador en el
+-- matchmaking. El primer usuario real quedaba emparejado contra ese fantasma
+-- y se quedaba esperando indefinidamente. Usa /api/register para crear cuentas de prueba.
+-- Si el volumen postgres ya existe con el testuser de una versión anterior,
+-- elimínalo manualmente una sola vez con:
+--   docker compose exec db psql -U postgres -d transcendence_db \
+--     -c "DELETE FROM sessions WHERE user_id = (SELECT id FROM users WHERE username='testuser'); DELETE FROM users WHERE username='testuser';"
+-- Después reinicia el backend: docker compose restart backend
