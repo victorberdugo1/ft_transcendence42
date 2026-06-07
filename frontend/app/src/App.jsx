@@ -78,7 +78,7 @@ function LoadingScreen({ onPrivacy, onTerms }) {
 // re-initialises (doing so crashes preMainLoop). inLobby=true hides the
 // canvas behind the lobby overlay without unmounting it.
 
-function GameShell({ user, gameMode, gameOpts, inLobby, onBackToLobby }) {
+function GameShell({ user, gameMode, gameOpts, inLobby, onBackToLobby, grace }) {
   const canvasRef   = useRef(null);
   const scriptRef   = useRef(null);
   const [visible,    setVisible]    = useState(false);
@@ -234,7 +234,10 @@ function GameShell({ user, gameMode, gameOpts, inLobby, onBackToLobby }) {
           <span className="game-user-label">{modeLabel[gameMode] ?? "Playing as"}</span>
           <strong>{user.username || user.email || "user"}</strong>
         </div>
-        <button type="button" className="logout-button" onClick={handleBackToLobby}>
+        <button type="button" className="logout-button" onClick={handleBackToLobby}
+          disabled={!!(grace && grace.clientId !== (window._myClientId ?? -1))}
+          title={grace && grace.clientId !== (window._myClientId ?? -1) ? "Tu rival tiene unos segundos para volver…" : undefined}
+        >
           ← Lobby
         </button>
       </div>
@@ -441,6 +444,7 @@ export default function App() {
           gameOpts={gameOpts}
           inLobby={page === "lobby"}
           onBackToLobby={() => setPage("lobby")}
+          grace={grace}
         />
       )}
 
