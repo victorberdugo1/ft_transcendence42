@@ -123,6 +123,20 @@ function GameShell({ user, gameMode, gameOpts, inLobby, onBackToLobby, grace }) 
       return;
     }
 
+    // Spectate: same as training — full reload so WASM and WS are clean.
+    if (gameMode === "spectate") {
+      window._manualReconnect = true;
+      window._pendingGameMode = "versus";
+      try { window._ws?.close(); } catch (_) {}
+      try {
+        ['clientId', 'charSelectData', 'pendingCharSelect', 'watchSession', 'gameState', 'confirmedStageId']
+          .forEach(k => sessionStorage.removeItem(k));
+        window._myClientId = -1;
+      } catch (_) {}
+      window.location.reload();
+      return;
+    }
+
     // Keep WS open and WASM alive — only reset UI/match state.
     Object.assign(window, {
       _isSpectator: false, _spectatorMode: null, _matchSession: null,
@@ -189,7 +203,7 @@ function GameShell({ user, gameMode, gameOpts, inLobby, onBackToLobby, grace }) 
 
     function sendIntent() {
       const savedId = sessionStorage.getItem("clientId");
-      if (savedId) {
+      if (savedId && gameMode !== "spectate") {
         try { sessionStorage.removeItem("gameState"); sessionStorage.removeItem("confirmedStageId"); } catch (_) {}
         Object.assign(window, { _matchSession: null, _victoryActive: false, _victoryConsumed: true, _hitstopState: null, _countdownStart: null, _countdownDone: false });
         window._ws.send(JSON.stringify({ type: "rejoin", clientId: parseInt(savedId, 10) }));

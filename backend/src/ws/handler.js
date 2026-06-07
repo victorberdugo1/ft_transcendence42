@@ -265,7 +265,7 @@ async function onConnection(ws, req) {
                 const { rows: dbRows } = await db.query(
                     `INSERT INTO spectators (user_id, session_id, tournament_id, mode)
                      VALUES ($1, $2, $3, $4) RETURNING id`,
-                    [dbUserId, watchingSession ?? 'lobby', tournamentId, specMode]
+                    [dbUserId, watchingSession ?? null, tournamentId, specMode]
                 );
                 current.dbRowId = dbRows[0]?.id ?? null;
             } catch (err) {
@@ -274,7 +274,7 @@ async function onConnection(ws, req) {
         } else {
             db.query(
                 `UPDATE spectators SET session_id = $1, tournament_id = $2, mode = $3 WHERE id = $4`,
-                [watchingSession ?? 'lobby', tournamentId, specMode, current.dbRowId]
+                [watchingSession ?? null, tournamentId, specMode, current.dbRowId]
             ).catch(err => console.error('[SPECTATOR] DB update error:', err.message));
         }
     }
@@ -325,12 +325,14 @@ async function onConnection(ws, req) {
         // NOTE: use type 'spectator_match_sync' (not 'match_start') so the client
         // does not treat this as joining the session as a player.
         if (session && !session.finished) {
+            const _syncStageId = session.stageId ?? gameSession.confirmedStageId ?? -1;
             ws.send(JSON.stringify({
                 type: 'spectator_match_sync',
                 mode: session.mode,
                 sessionId: session.id,
                 players: [...session.playerIds],
                 countdown: false,   // no countdown — game is already live
+                stageId: _syncStageId >= 0 ? _syncStageId : undefined,
             }));
         }
 

@@ -444,6 +444,13 @@ function connectWS() {
             };
             window._countdownStart = null;
             window._countdownDone  = true;
+            // Apply stageId from the sync message so the renderer uses the correct
+            // stage immediately — stage_confirmed arrives separately and may be
+            // processed after match_start fires, leaving _confirmedStageId undefined.
+            if (msg.stageId !== undefined && msg.stageId >= 0) {
+                window._confirmedStageId = msg.stageId;
+                try { sessionStorage.setItem('confirmedStageId', String(msg.stageId)); } catch (_) {}
+            }
             window.dispatchEvent(new CustomEvent('match_start', { detail: { ...window._matchSession, spectatorSync: true } }));
 
         } else if (msg.type === 'victory') {

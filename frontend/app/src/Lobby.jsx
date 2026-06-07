@@ -164,19 +164,175 @@ function ModeAI({ onEnterGame, matchCooldown = 0, graceActive = false }) {
 // ── Mode: Tournament ───────────────────────────────────────────────────────────
 
 function ModeTournament({ onEnterGame, matchCooldown = 0, graceActive = false }) {
+  const [room,       setRoom]       = useState(null);   // { players, started, tournamentId, maxPlayers }
+  const [inRoom,     setInRoom]     = useState(false);
+  const [roomError,  setRoomError]  = useState("");
+  const [launching,  setLaunching]  = useState(false);
+
+  // Listen for WS events from ws-client.js
+  useEffect(() => {
+    function onRoomUpdate(e) {
+      const data = e.detail;
+      setRoom(data);
+      // If we left the room (server ack) stop showing us as in-room
+      if (data.leftRoom) {
+        setInRoom(false);
+      }
+      // If tournament started and we are in it, enter game
+      if (data.started && data.tournamentId) {
+        const myId = window._myClientId ?? -1;
+        const amPlayer = data.players?.some(p => p.clientId === myId);
+        if (amPlayer && !data.leftRoom) {
+          onEnterGame("tournament", { tournamentId: data.tournamentId });
+        }
+      }
+    }
+    function onStarted(e) {
+      const data = e.detail;
+      setRoom(prev => prev ? { ...prev, started: true, tournamentId: data.tournamentId } : prev);
+      const myId = window._myClientId ?? -1;
+      const amPlayer = data.playerIds?.includes(myId);
+      if (amPlayer) {
+        onEnterGame("tournament", { tournamentId: data.tournamentId });
+      }
+    }
+    function onError(e) {
+      const reason = e.detail?.reason ?? "Unknown error";
+      const msgs = {
+        already_started:   "The tournament has already started. You can spectate it instead.",
+        room_full:         "The room is full (8 players max).",
+        not_authenticated: "You must be logged in to join.",
+        not_in_room:       "You are not in the room.",
+      };
+      setRoomError(msgs[reason] ?? reason);
+      setLaunching(false);
+    }
+    window.addEventListener("tournament_room_update", onRoomUpdate);
+    window.addEventListener("tournament_started",     onStarted);
+    window.addEventListener("tournament_room_error",  onError);
+    return () => {
+      window.removeEventListener("tournament_room_update", onRoomUpdate);
+      window.removeEventListener("tournament_started",     onStarted);
+      window.removeEventListener("tournament_room_error",  onError);
+    };
+  }, [onEnterGame]);
+
+  function handleJoin() {
+    setRoomError("");
+    if (!window._ws || window._ws.readyState !== 1) {
+      setRoomError("Not connected to server. Please wait…");
+      return;
+    }
+    window._ws.send(JSON.stringify({ type: "tournament_join" }));
+    setInRoom(true);
+  }
+
+  function handleLeave() {
+    setRoomError("");
+    if (window._ws?.readyState === 1) {
+      window._ws.send(JSON.stringify({ type: "tournament_leave" }));
+    }
+    setInRoom(false);
+    setRoom(null);
+  }
+
+  function handleLaunch() {
+    setRoomError("");
+    setLaunching(true);
+    if (window._ws?.readyState === 1) {
+      window._ws.send(JSON.stringify({ type: "tournament_launch" }));
+    }
+  }
+
+  const playerCount = room?.players?.length ?? 0;
+  const maxPlayers  = room?.maxPlayers ?? 8;
+  const canLaunch   = inRoom && playerCount >= 2 && !room?.started && !launching;
+  const isFirst     = inRoom && room?.players?.[0]?.clientId === (window._myClientId ?? -1);
+
+  if (!inRoom) {
+    return (
+      <div className="lobby-mode-body">
+        <p className="lobby-mode-desc">
+          Join the tournament waiting room. Up to 8 players can join. Once
+          ready, any player can launch the bracket. Eliminated players watch
+          as spectators. Players who arrive after launch can spectate.
+        </p>
+        {room && (
+          <p className="lobby-loading">
+            🏟️ {playerCount}/{maxPlayers} player{playerCount !== 1 ? "s" : ""} waiting
+            {room.started ? " — tournament in progress" : ""}
+          </p>
+        )}
+        {roomError && <p className="auth-error">{roomError}</p>}
+        <button
+          className="auth-submit lobby-play"
+          type="button"
+          onClick={handleJoin}
+          disabled={matchCooldown > 0 || graceActive || room?.started}
+        >
+          {graceActive          ? "Esperando…"
+           : matchCooldown > 0 ? `Disponible en ${matchCooldown}s…`
+           : room?.started     ? "Tournament in progress — Spectate instead"
+           :                     "Join tournament room"}
+        </button>
+      </div>
+    );
+  }
+
+  // In-room view
   return (
     <div className="lobby-mode-body">
       <p className="lobby-mode-desc">
-        Join the tournament queue. The server will start bracket matches once
-        enough players are ready. You need at least 2 connected players.
+        Waiting room · {playerCount}/{maxPlayers} players
+        {room?.started ? " — Tournament has started!" : ""}
       </p>
+
+      {/* Player list */}
+      <div className="lobby-sessions">
+        {(room?.players ?? []).map((p, i) => (
+          <div key={p.clientId} className="lobby-session-row">
+            <div className="lobby-session-info">
+              <span className="lobby-session-badge">#{i + 1}</span>
+              <span className="lobby-session-players">
+                {p.username ?? `Player ${p.clientId}`}
+              </span>
+              {p.clientId === (window._myClientId ?? -1) && (
+                <span className="lobby-session-specs">← you</span>
+              )}
+            </div>
+          </div>
+        ))}
+        {Array.from({ length: maxPlayers - playerCount }).map((_, i) => (
+          <div key={`empty-${i}`} className="lobby-session-row" style={{ opacity: 0.35 }}>
+            <div className="lobby-session-info">
+              <span className="lobby-session-badge">#{playerCount + i + 1}</span>
+              <span className="lobby-session-players" style={{ fontStyle: "italic" }}>Waiting…</span>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {roomError && <p className="auth-error">{roomError}</p>}
+
       <button
         className="auth-submit lobby-play"
         type="button"
-        onClick={() => onEnterGame("tournament")}
-        disabled={matchCooldown > 0 || graceActive}
+        onClick={handleLaunch}
+        disabled={!canLaunch}
+        title={playerCount < 2 ? "Need at least 2 players to start" : undefined}
       >
-        {graceActive ? "Esperando…" : matchCooldown > 0 ? `Disponible en ${matchCooldown}s…` : "Join tournament queue"}
+        {launching ? "Starting…"
+         : playerCount < 2 ? "Waiting for players…"
+         : `Start tournament (${playerCount} players)`}
+      </button>
+
+      <button
+        className="lobby-watch-btn lobby-watch-lobby"
+        type="button"
+        onClick={handleLeave}
+        style={{ marginTop: "4px" }}
+      >
+        ← Leave room
       </button>
     </div>
   );
@@ -267,7 +423,7 @@ function ModeSpectator({ onEnterGame }) {
 const MODES = [
   { id: "versus", label: "Versus" },
   { id: "training", label: "vs AI" },
-  { id: "tournament", label: "Tournament"},
+  { id: "tournament", label: "Tournament", disabled: true },  // Temporarily hidden until we can do some UI improvements
   { id: "spectate", label: "Spectate"},
 ];
 

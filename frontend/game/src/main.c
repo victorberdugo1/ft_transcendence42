@@ -1952,6 +1952,12 @@ static void MainLoop(void) {
 
     if (g_sss.phase != SSS_DONE) {
         if (ws_is_spectator()) {
+            int confirmed = ws_get_confirmed_stage();
+            if (confirmed >= 0) {
+                for (int i = 0; i < STAGES_COUNT; i++) {
+                    if (STAGES[i].id == confirmed) { g_sss.selected = i; break; }
+                }
+            }
             g_sss.phase = SSS_DONE;
         } else {
             FetchState();
