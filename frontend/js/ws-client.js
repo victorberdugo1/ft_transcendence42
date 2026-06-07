@@ -155,6 +155,16 @@ function connectWS() {
         const mode = window._pendingGameMode ?? 'versus';
         const opts = window._pendingGameOpts ?? {};
 
+        // If we just reloaded after leaving a training session, do NOT send join yet.
+        // The user is back in the lobby UI and hasn't pressed "Find Match".
+        // The join will be sent by GameShell when they actually choose a mode.
+        const postTraining = sessionStorage.getItem('postTrainingReload') === '1';
+        if (postTraining) {
+            try { sessionStorage.removeItem('postTrainingReload'); } catch (_) {}
+            // WS is open and ready; wait for the user to press Find Match.
+            return;
+        }
+
         if (savedId) {
             // Rejoin: send our clientId and let the server decide what state we're in.
             // Do NOT clear _matchSession or _victoryConsumed here — if the server still
@@ -168,8 +178,10 @@ function connectWS() {
         } else if (mode === 'training') {
             // Join as player; GameShell will POST /api/training once we have a clientId.
             // Store full opts so the POST includes cpuCharIds + stageId.
+            // seekingMatch:false tells the server NOT to add this player to the lobby
+            // matchmaking queue -- they must never be paired with a waiting 1v1 player.
             window._pendingTraining = opts;
-            ws.send(JSON.stringify({ type: 'join' }));
+            ws.send(JSON.stringify({ type: 'join', seekingMatch: false }));
         } else {
             // versus / tournament — join the player pool and wait for a match.
             window._pendingTournament = (mode === 'tournament');
@@ -244,7 +256,18 @@ function connectWS() {
             window._myClientId = msg.clientId;
             window._gameConfig = msg.config;
             window._isSpectator = false;
-            sessionStorage.setItem('clientId', msg.clientId);
+
+            // Training sessions must NOT persist their clientId to sessionStorage.
+            // If the user hits F5 mid-training, we want a clean `join` (with
+            // seekingMatch:false) rather than a `rejoin` that could land the
+            // returning training player in the 1v1 lobby queue.
+            const isTraining = !!(window._pendingTraining || window._pendingGameMode === 'training');
+            if (!isTraining) {
+                sessionStorage.setItem('clientId', msg.clientId);
+            } else {
+                // Make sure any stale id from a previous session is gone.
+                try { sessionStorage.removeItem('clientId'); } catch (_) {}
+            }
 
             // init = server placed us in the lobby pool (no active session).
             // Safe to clear any stale match state now.

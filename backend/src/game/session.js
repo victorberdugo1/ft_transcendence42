@@ -295,6 +295,9 @@ function buildCharSelectAck(selectorCharId, selectorClientId, stageId, session =
 
 function sendAllCharSelectsTo(ws) {
     for (const [cid, charId] of playerCharSelected.entries()) {
+        // Skip players that are already inside an active session (training, 1v1, etc.)
+        // — their char selection must not bleed into the lobby char-select screen.
+        if (playerSession.has(cid)) continue;
         const ack = buildCharSelectAck(charId, cid, 0);
         if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(ack));
     }
@@ -530,12 +533,15 @@ function handleElimination(loser) {
     if (session?.mode === 'training') {
         const isHuman = eliminatedId === session.humanId;
         if (!isHuman) {
-            // A CPU was eliminated — track it but keep fighting
+            // A CPU was eliminated — track it but keep fighting.
+            // Use broadcastToSession (not broadcastToAll) so players waiting in
+            // the lobby for a 1v1 never receive CPU-elimination events from an
+            // unrelated training session.
             if (session.cpusEliminated) session.cpusEliminated.add(eliminatedId);
             delete players[eliminatedId];
             playerSession.delete(eliminatedId);
             broadcastState();
-            broadcastToAll({ type: 'player_eliminated', clientId: eliminatedId });
+            broadcastToSession(session, { type: 'player_eliminated', clientId: eliminatedId });
             // Check if ALL cpus are now eliminated → human wins
             const allCpusDead = session.cpuIds.every(cid => session.cpusEliminated.has(cid));
             if (allCpusDead) {
@@ -543,9 +549,10 @@ function handleElimination(loser) {
             }
         } else {
             // Human eliminated → loss. Pick any surviving CPU as nominal winner.
+            // Same scoping: keep this event inside the training session only.
             const survivingCpu = session.cpuIds.find(cid => !session.cpusEliminated.has(cid)) ?? session.cpuId;
             broadcastState();
-            broadcastToAll({ type: 'player_eliminated', clientId: eliminatedId });
+            broadcastToSession(session, { type: 'player_eliminated', clientId: eliminatedId });
             session.pendingWinner = { winnerId: survivingCpu, loserId: eliminatedId };
         }
         return;

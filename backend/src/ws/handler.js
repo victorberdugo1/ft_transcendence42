@@ -20,6 +20,15 @@ const {
 
 const gameSession = require('../game/session');
 
+// --- Lobby reconnect grace ---
+// When a lobby player's WS closes (F5, network blip), we delay the
+// removeFromLobbyQueue + notifyNewLobbyHost calls by LOBBY_GRACE_MS.
+// If a rejoin arrives within that window we cancel the timer silently,
+// preserving the player's queue position and sparing their partner from a
+// spurious stage_reset.
+const LOBBY_GRACE_MS = 3000;
+const lobbyReconnectGrace = new Map(); // clientId -> { timer, savedState }
+
 // ─── WebSocket server setup ───────────────────────────────────────────────────
 
 function setupWebSocket(server, wss) {
@@ -356,7 +365,7 @@ async function onConnection(ws, req) {
 
     // ── Player promotion ──────────────────────────────────────────────────────
 
-    async function promoteToPlayer(initialMsg = null) {
+    async function promoteToPlayer(initialMsg = null, seekingMatch = true) {
         if (clientId == null) clientId = gameSession.nextClientId++;
         if (players[clientId]) return;
 
@@ -411,11 +420,17 @@ async function onConnection(ws, req) {
         isSpectator = false;
         mode = 'player';
 
-        // If the player is entering the lobby (no active session), register in the
-        // join-order queue.  addToLobbyQueue is idempotent: join paths already called
-        // it before promoteToPlayer, so this only adds players arriving via rejoin.
+        // Only add to the lobby matchmaking queue if this player is actively seeking
+        // a match (seekingMatch=true). Players joining for training (seekingMatch=false)
+        // must not enter the queue — they are not waiting for a versus opponent.
+        // addToLobbyQueue is idempotent: join paths already called it for versus/tournament,
+        // so this only adds players arriving via rejoin paths.
         // Players in an active session are NOT added — they are in-game, not waiting.
-        if (!playerSession.has(clientId)) addToLobbyQueue(clientId);
+        if (seekingMatch && !playerSession.has(clientId)) addToLobbyQueue(clientId);
+
+        // Stamp the flag on the player object so char_select / stage_select handlers
+        // can also skip matchmaking for training-only joins.
+        if (players[clientId]) players[clientId]._seekingMatch = seekingMatch;
 
         sendWelcomeToPlayer(ws, clientId);
 
@@ -423,11 +438,10 @@ async function onConnection(ws, req) {
 
         broadcastState();
         console.log(`[SERVER] Player ${clientId} connected (${Object.keys(players).length}/${MAX_PLAYERS})`);
-        // Trigger matchmaking if this player is fully ready (char + stage confirmed).
-        // Covers: rejoining host who had both set before leaving.
-        // Fresh joins without stage still need to go through stage_select first.
+        // Trigger matchmaking only if this player is actively seeking a match AND
+        // is fully ready (char + stage confirmed). Training joins must never auto-pair.
         const _rejoinPlayer = players[clientId];
-        if (playerCharSelected.has(clientId) && _rejoinPlayer?._pendingStageId !== undefined)
+        if (seekingMatch && playerCharSelected.has(clientId) && _rejoinPlayer?._pendingStageId !== undefined)
             tryAutoMatch();
     }
 
@@ -473,8 +487,8 @@ async function onConnection(ws, req) {
                     if (graceActive) {
                         console.log(`[WS] join: slot ${existingClientId} has active grace timer — assigning fresh clientId`);
                         clientId = gameSession.nextClientId++;
-                        addToLobbyQueue(clientId);   // button pressed — register join order now
-                        await promoteToPlayer(null);
+                        if (msg.seekingMatch !== false) addToLobbyQueue(clientId);   // only if actively seeking a match
+                        await promoteToPlayer(null, msg.seekingMatch !== false);
                         return;
                     }
 
@@ -495,9 +509,14 @@ async function onConnection(ws, req) {
                     if (players[clientId]) {
                         players[clientId].ws = ws;
                         players[clientId].dbUserId = dbUserId;
+                        players[clientId]._seekingMatch = (msg.seekingMatch !== false);
                         isSpectator = false; mode = 'player';
                         sendWelcomeToPlayer(ws, clientId);
-                        if (!playerSession.has(clientId) &&
+                        // Only trigger matchmaking if this join is actively seeking a match
+                        // AND the player has char+stage ready. Training re-joins (seekingMatch=false)
+                        // must NOT auto-pair with someone waiting in the lobby.
+                        if (msg.seekingMatch !== false &&
+                            !playerSession.has(clientId) &&
                             playerCharSelected.has(clientId) &&
                             players[clientId]?._pendingStageId !== undefined)
                             tryAutoMatch();
@@ -513,15 +532,15 @@ async function onConnection(ws, req) {
                     // Ghost state (disconnected, grace period active)
                     const ghostState = lastState[clientId];
                     if (ghostState) { clearTimeout(ghostState.timer); delete lastState[clientId]; }
-                    addToLobbyQueue(clientId);   // button pressed — register join order now
-                    await promoteToPlayer(null);
+                    if (msg.seekingMatch !== false) addToLobbyQueue(clientId);   // only if actively seeking a match
+                    await promoteToPlayer(null, msg.seekingMatch !== false);
                     return;
                 }
             }
 
             if (clientId === null) clientId = gameSession.nextClientId++;
-            addToLobbyQueue(clientId);   // button pressed — register join order now
-            await promoteToPlayer(null);
+            if (msg.seekingMatch !== false) addToLobbyQueue(clientId);   // only if actively seeking a match
+            await promoteToPlayer(null, msg.seekingMatch !== false);
             return;
         }
 
@@ -551,6 +570,12 @@ async function onConnection(ws, req) {
                 if (existingClientId === null) {
                     for (const [pid, spec] of Object.entries(spectators)) {
                         if (spec.dbUserId === dbUserId) { existingClientId = Number(pid); break; }
+                    }
+                }
+                // Then lobby reconnect grace (player just disconnected, grace window active)
+                if (existingClientId === null) {
+                    for (const [pid, gr] of lobbyReconnectGrace.entries()) {
+                        if (gr.snapshot.dbUserId === dbUserId) { existingClientId = Number(pid); break; }
                     }
                 }
 
@@ -592,18 +617,27 @@ async function onConnection(ws, req) {
                             playerSession.set(clientId, savedSession);
                         sendWelcomeToPlayer(ws, clientId);
                         if (!playerSession.has(clientId) &&
+                            players[clientId]?._seekingMatch !== false &&
                             playerCharSelected.has(clientId) &&
                             players[clientId]?._pendingStageId !== undefined)
                             tryAutoMatch();
                         return;
                     }
-                    // Ghost state: fall through to promoteToPlayer with the corrected clientId
+                    // Ghost state / lobby-grace: fall through to promoteToPlayer with corrected clientId.
+                    // Cancel any lobby reconnect grace for this slot first.
+                    if (lobbyReconnectGrace.has(clientId)) {
+                        clearTimeout(lobbyReconnectGrace.get(clientId).timer);
+                        lobbyReconnectGrace.delete(clientId);
+                        console.log(`[WS] rejoin: cancelled lobby grace for slot ${clientId}`);
+                    }
                     const ghostState = lastState[clientId];
                     if (ghostState) {
                         clearTimeout(ghostState.timer);
                         delete lastState[clientId];
                     }
-                    await promoteToPlayer(null);
+                    const _graceData = lobbyReconnectGrace.get(clientId); // already deleted above, just safety
+                    const _graceSeekingMatch = players[clientId]?._seekingMatch ?? true;
+                    await promoteToPlayer(null, _graceSeekingMatch);
                     return;
                 }
             }
@@ -618,6 +652,7 @@ async function onConnection(ws, req) {
                 players[requestedId]?.dbUserId ??
                 spectators[requestedId]?.dbUserId ??
                 lastState[requestedId]?.dbUserId ??
+                lobbyReconnectGrace.get(requestedId)?.snapshot?.dbUserId ??
                 null;
 
             const ownershipOk =
@@ -656,14 +691,19 @@ async function onConnection(ws, req) {
                 const savedSession = lastState[clientId]?.sessionId ?? null;
                 if (savedSession && gameSessions.has(savedSession) && !gameSessions.get(savedSession).finished && !playerSession.has(clientId))
                     playerSession.set(clientId, savedSession);
-                // Re-register at the END of the lobby queue so pairing order
-                // reflects when the player clicked "Find match", not page load order.
-                if (!playerSession.has(clientId)) {
-                    removeFromLobbyQueue(clientId);
+                // Restore lobby queue membership without changing queue position.
+                // A player who hits F5 while waiting for a 1v1 match must rejoin at
+                // their ORIGINAL position so their host/guest role and pair partner
+                // are unchanged.  addToLobbyQueue is already idempotent (no-op if
+                // already present), so we just call it -- never removeFromLobbyQueue
+                // here, which would move them to the tail and break the pairing.
+                // Skip for training-only players (_seekingMatch=false).
+                if (!playerSession.has(clientId) && players[clientId]?._seekingMatch !== false) {
                     addToLobbyQueue(clientId);
                 }
                 sendWelcomeToPlayer(ws, clientId);
                 if (!playerSession.has(clientId) &&
+                    players[clientId]?._seekingMatch !== false &&
                     playerCharSelected.has(clientId) &&
                     players[clientId]?._pendingStageId !== undefined)
                     tryAutoMatch();
@@ -703,6 +743,20 @@ async function onConnection(ws, req) {
                 } else {
                     await ensureSpectatorReady(ghostState.mode ?? 'overflow', watchSess, { eliminated: ghostState.eliminated ?? false });
                 }
+                return;
+            }
+
+            // ── Lobby reconnect grace: player hit F5 while waiting for a 1v1 ──
+            // The close handler started a grace timer instead of removing from queue.
+            // Cancel it now and restore the player slot at the SAME queue position.
+            if (lobbyReconnectGrace.has(clientId)) {
+                const gr = lobbyReconnectGrace.get(clientId);
+                clearTimeout(gr.timer);
+                lobbyReconnectGrace.delete(clientId);
+                console.log(`[WS] rejoin: cancelled lobby grace for slot ${clientId} -- restoring slot in place`);
+                // The player is still in the lobby queue (grace didn't fire yet).
+                // Restore _seekingMatch from the snapshot so promoteToPlayer preserves it.
+                await promoteToPlayer(null, gr.snapshot.seekingMatch !== false);
                 return;
             }
 
@@ -896,6 +950,12 @@ async function onConnection(ws, req) {
                     const _sessIds = _sess ? [..._sess.playerIds].filter(id => players[id]?.dbUserId != null) : [];
                     _isHost = _sessIds.length ? clientId === Math.min(..._sessIds) : true;
                 } else {
+                    // Training-only players (_seekingMatch=false) are not in the lobby queue,
+                    // so they can never be a pair host. Reject their stage_select immediately.
+                    if (players[clientId]?._seekingMatch === false) {
+                        console.log(`[STAGE_SELECT] ignored: client=${clientId} is training-only (not seeking match)`);
+                        return;
+                    }
                     const _lobbyQ = getLobbyQueue();  // join-time order
                     const _idx = _lobbyQ.indexOf(clientId);
                     // Host is the first player in the queue (idx 0, 2, 4…).
@@ -993,9 +1053,10 @@ async function onConnection(ws, req) {
                 }
             } else {
                 // Lobby: player hasn't been matched yet — send to lobby players only
-                // (those also without a session) and to the sender themselves.
+                // (those also without a session, and actively seeking a match).
                 for (const [, pl] of Object.entries(players)) {
                     if (playerSession.has(pl.id)) continue;   // skip in-session players
+                    if (pl._seekingMatch === false) continue;  // skip training-only players
                     if (pl.ws?.readyState === WebSocket.OPEN) pl.ws.send(ack);
                 }
             }
@@ -1003,7 +1064,8 @@ async function onConnection(ws, req) {
             // Trigger matchmaking in lobby: covers the common case where the host
             // already selected a stage but the guest hadn't chosen a char yet.
             // tryAutoMatch is idempotent and checks all preconditions internally.
-            if (!senderSession) tryAutoMatch();
+            // Skip if this player joined for training only (_seekingMatch=false).
+            if (!senderSession && players[clientId]?._seekingMatch !== false) tryAutoMatch();
         }
     });
 
@@ -1142,21 +1204,50 @@ async function onConnection(ws, req) {
                 }, GRACE_MS);
             }
         } else {
-            // Disconnected from lobby (no active session) — save state so they
-            // keep their selected character if they reconnect quickly.
-            // Remove from join-order queue; re-added on next promoteToPlayer.
-            removeFromLobbyQueue(clientId);
-            notifyNewLobbyHost();  // promote next host if queue shifted
-            lastState[clientId] = {
+            // Disconnected from lobby (no active session).
+            // Give the player LOBBY_GRACE_MS to reconnect (F5, network blip) before
+            // removing them from the queue and notifying their partner.  If they
+            // rejoin within the grace window the timer is cancelled and their queue
+            // position is preserved -- their partner never sees a spurious stage_reset.
+            const _graceCid      = clientId;
+            const _graceStageId  = p._pendingStageId;
+            const _graceDbUserId = disconnectedDbUserId;
+            const _graceSeek     = p._seekingMatch !== false;
+            const _graceSnap     = {
                 x: p.x, y: p.y, onGround: p.onGround, stocks: p.stocks,
-                dbUserId:  disconnectedDbUserId,
-                sessionId: null,
-                pendingStageId: p._pendingStageId,   // preserve host stage across disconnect/rejoin
-                timer: setTimeout(() => {
-                    delete lastState[clientId];
-                    playerCharSelected.delete(clientId);
-                }, GHOST_TTL),
+                dbUserId: _graceDbUserId, pendingStageId: _graceStageId,
+                seekingMatch: _graceSeek,
             };
+
+            // Cancel any pre-existing grace for this slot (double-close guard).
+            if (lobbyReconnectGrace.has(_graceCid)) {
+                clearTimeout(lobbyReconnectGrace.get(_graceCid).timer);
+                lobbyReconnectGrace.delete(_graceCid);
+            }
+
+            const _graceTimer = setTimeout(() => {
+                lobbyReconnectGrace.delete(_graceCid);
+                // Player did not reconnect in time -- commit the removal.
+                removeFromLobbyQueue(_graceCid);
+                if (_graceSeek) notifyNewLobbyHost();
+                if (!lastState[_graceCid]) {
+                    lastState[_graceCid] = {
+                        x: _graceSnap.x, y: _graceSnap.y,
+                        onGround: _graceSnap.onGround, stocks: _graceSnap.stocks,
+                        dbUserId: _graceDbUserId, sessionId: null,
+                        pendingStageId: _graceStageId,
+                        timer: setTimeout(() => {
+                            delete lastState[_graceCid];
+                            playerCharSelected.delete(_graceCid);
+                        }, GHOST_TTL),
+                    };
+                }
+                console.log(`[SERVER] Player ${_graceCid} lobby-grace expired -- removed from queue`);
+                broadcastState();
+            }, LOBBY_GRACE_MS);
+
+            lobbyReconnectGrace.set(_graceCid, { timer: _graceTimer, snapshot: _graceSnap });
+            console.log(`[SERVER] Player ${_graceCid} lobby-grace started (${LOBBY_GRACE_MS}ms)`);
         }
 
         console.log(`[SERVER] Player ${clientId} disconnected`);

@@ -117,6 +117,7 @@ function GameShell({ user, gameMode, gameOpts, inLobby, onBackToLobby, grace }) 
         ['clientId', 'charSelectData', 'pendingCharSelect', 'watchSession', 'gameState', 'confirmedStageId']
           .forEach(k => sessionStorage.removeItem(k));
         window._myClientId = -1;
+        sessionStorage.setItem('postTrainingReload', '1');
       } catch (_) {}
       window.location.reload();
       return;
@@ -461,6 +462,7 @@ export default function App() {
             onLogout={handleLogout}
             onPrivacy={() => openPrivacy("lobby")}
             onTerms={() => openTerms("lobby")}
+            graceActive={!!(grace && grace.clientId === (window._myClientId ?? -1))}
           />
         </div>
       )}

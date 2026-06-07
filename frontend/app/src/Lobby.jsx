@@ -67,7 +67,7 @@ function UserCard({ user, stats, onLogout, logoutLoading }) {
 
 // ── Mode: Versus ───────────────────────────────────────────────────────────────
 
-function ModeVersus({ onEnterGame, matchCooldown = 0 }) {
+function ModeVersus({ onEnterGame, matchCooldown = 0, graceActive = false }) {
   return (
     <div className="lobby-mode-body">
       <p className="lobby-mode-desc">
@@ -78,9 +78,9 @@ function ModeVersus({ onEnterGame, matchCooldown = 0 }) {
         className="auth-submit lobby-play"
         type="button"
         onClick={() => onEnterGame("versus")}
-        disabled={matchCooldown > 0}
+        disabled={matchCooldown > 0 || graceActive}
       >
-        {matchCooldown > 0 ? `Disponible en ${matchCooldown}s…` : "Find match"}
+        {graceActive ? "Esperando…" : matchCooldown > 0 ? `Disponible en ${matchCooldown}s…` : "Find match"}
       </button>
     </div>
   );
@@ -90,7 +90,7 @@ function ModeVersus({ onEnterGame, matchCooldown = 0 }) {
 
 const STAGE_NAMES = ["Karnamru", "Surya", "Vayusvara", "Daat"];
 
-function ModeAI({ onEnterGame, matchCooldown = 0 }) {
+function ModeAI({ onEnterGame, matchCooldown = 0, graceActive = false }) {
   const [selectedChars, setSelectedChars] = useState(["eld"]);
   const [stageId,       setStageId]       = useState(0);
 
@@ -153,9 +153,9 @@ function ModeAI({ onEnterGame, matchCooldown = 0 }) {
         className="auth-submit lobby-play"
         type="button"
         onClick={() => onEnterGame("training", { cpuCharIds: selectedChars, stageId })}
-        disabled={matchCooldown > 0}
+        disabled={matchCooldown > 0 || graceActive}
       >
-        {matchCooldown > 0 ? `Disponible en ${matchCooldown}s…` : `Start training vs ${enemyLabel}`}
+        {graceActive ? "Esperando…" : matchCooldown > 0 ? `Disponible en ${matchCooldown}s…` : `Start training vs ${enemyLabel}`}
       </button>
     </div>
   );
@@ -163,7 +163,7 @@ function ModeAI({ onEnterGame, matchCooldown = 0 }) {
 
 // ── Mode: Tournament ───────────────────────────────────────────────────────────
 
-function ModeTournament({ onEnterGame, matchCooldown = 0 }) {
+function ModeTournament({ onEnterGame, matchCooldown = 0, graceActive = false }) {
   return (
     <div className="lobby-mode-body">
       <p className="lobby-mode-desc">
@@ -174,9 +174,9 @@ function ModeTournament({ onEnterGame, matchCooldown = 0 }) {
         className="auth-submit lobby-play"
         type="button"
         onClick={() => onEnterGame("tournament")}
-        disabled={matchCooldown > 0}
+        disabled={matchCooldown > 0 || graceActive}
       >
-        {matchCooldown > 0 ? `Disponible en ${matchCooldown}s…` : "Join tournament queue"}
+        {graceActive ? "Esperando…" : matchCooldown > 0 ? `Disponible en ${matchCooldown}s…` : "Join tournament queue"}
       </button>
     </div>
   );
@@ -267,11 +267,11 @@ function ModeSpectator({ onEnterGame }) {
 const MODES = [
   { id: "versus", label: "Versus" },
   { id: "training", label: "vs AI" },
-  { id: "tournament", label: "Tournament", disabled: true },
-  { id: "spectate", label: "Spectate", disabled: true },
+  { id: "tournament", label: "Tournament"},
+  { id: "spectate", label: "Spectate"},
 ];
 
-export default function Lobby({ user, onEnterGame, onLogout, onPrivacy, onTerms }) {
+export default function Lobby({ user, onEnterGame, onLogout, onPrivacy, onTerms, graceActive = false }) {
   const [stats,         setStats]         = useState(null);
   const [logoutLoading, setLogoutLoading] = useState(false);
   const [activeMode,    setActiveMode]    = useState("versus");
@@ -338,6 +338,10 @@ export default function Lobby({ user, onEnterGame, onLogout, onPrivacy, onTerms 
 
 
   async function handleEnterGame(mode, opts = {}) {
+    // Block all game entry while a leave-grace is pending (the server still has
+    // us in an active session for up to 5s after pressing ← Lobby).
+    // Entering training in this window would reconnectWS() and destroy the session.
+    if (graceActive) return;
     setSessionError("");
     try {
       if (mode === "training") {
@@ -397,11 +401,19 @@ export default function Lobby({ user, onEnterGame, onLogout, onPrivacy, onTerms 
           ))}
         </div>
 
+        {/* Grace-period notice: all game buttons are locked until the server
+            releases the previous session (up to 5s after leaving mid-countdown) */}
+        {graceActive && (
+          <p className="auth-error" style={{ textAlign: "center", marginBottom: "0.5rem" }}>
+            ⏳ Esperando que el servidor libere la sesión anterior…
+          </p>
+        )}
+
         {/* Mode content */}
         <div className="lobby-mode-panel">
-          {activeMode === "versus"     && <ModeVersus     onEnterGame={handleEnterGame} matchCooldown={matchCooldown} />}
-          {activeMode === "training"   && <ModeAI         onEnterGame={handleEnterGame} matchCooldown={matchCooldown} />}
-          {activeMode === "tournament" && <ModeTournament  onEnterGame={handleEnterGame} matchCooldown={matchCooldown} />}
+          {activeMode === "versus"     && <ModeVersus     onEnterGame={handleEnterGame} matchCooldown={matchCooldown} graceActive={graceActive} />}
+          {activeMode === "training"   && <ModeAI         onEnterGame={handleEnterGame} matchCooldown={matchCooldown} graceActive={graceActive} />}
+          {activeMode === "tournament" && <ModeTournament  onEnterGame={handleEnterGame} matchCooldown={matchCooldown} graceActive={graceActive} />}
           {activeMode === "spectate"   && <ModeSpectator  onEnterGame={handleEnterGame} />}
         </div>
 
