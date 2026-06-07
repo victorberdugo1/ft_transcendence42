@@ -490,7 +490,7 @@ static void SSS_UnloadPreviews(void) {
 }
 
 static bool SSS_UpdateAndDraw(void) {
-    if (!g_sss.isHost) g_sss.isHost = (bool)ws_is_host();
+    g_sss.isHost = (bool)ws_is_host();  /* poll every frame — no latch */
 
     {
         int confirmed = ws_get_confirmed_stage();
@@ -673,6 +673,17 @@ EM_JS(int, ws_get_saved_char_id, (char *buf, int len), {
 EM_JS(void, ws_clear_char_select, (void), {
     window._charSelectData = null;
     try { sessionStorage.removeItem('pendingCharSelect'); sessionStorage.removeItem('charSelectData'); } catch(e){}
+});
+
+/* Called by the server (via a 'reset_screens' message) or by the client on
+   match_finished when the winner does NOT reload.  The C side polls this
+   every frame and calls ws_reset_screens() when it returns 1. */
+EM_JS(int, ws_needs_screen_reset, (void), {
+    if (window._pendingScreenReset) {
+        window._pendingScreenReset = false;
+        return 1;
+    }
+    return 0;
 });
 
 static void strcpy_safe(char *dst, const char *src, size_t n) {
@@ -1896,8 +1907,33 @@ static bool CSS_UpdateAndDraw(void) {
     return false;
 }
 
+/* ── Screen reset (between matches without WASM reload) ─────────────────── */
+static void ws_reset_screens(void) {
+    /* Reset SSS to initial state */
+    SSS_UnloadPreviews();
+    g_sss.phase         = SSS_SELECTING;
+    g_sss.hovered       = 0;
+    g_sss.selected      = 0;
+    g_sss.isHost        = false;
+    /* Reset CSS to initial state */
+    CSS_UnloadPortraits();
+    g_css.phase         = CSS_SELECTING;
+    g_css.hovered       = 0;
+    g_css.selected      = -1;
+    g_css.portraitsLoaded = false;
+    g_css.savedCharId[0] = '\0';
+    /* Clear any pending JS-side char/stage select data */
+    ws_clear_char_select();
+}
+
 static void MainLoop(void) {
     if (!game_ready) return;
+
+    /* Between matches (winner stays alive): server sets window._pendingScreenReset */
+    if (ws_needs_screen_reset()) {
+        ws_reset_screens();
+        return;
+    }
 
     {
         int newW = js_canvas_width();

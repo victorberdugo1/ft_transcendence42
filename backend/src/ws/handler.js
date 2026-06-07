@@ -12,6 +12,7 @@ const {
     buildCharSelectAck, sendAllCharSelectsTo,
     createPlayer, startDuel, startTournament, tryAutoMatch,
     handleElimination, resolveMatchWinner, getLastWatchedSession,
+    addToLobbyQueue, removeFromLobbyQueue, getLobbyQueue,
     MAX_PLAYERS, GHOST_TTL,
     ATTACK_RANGE, ATTACK_RANGE_Y, DASH_ATTACK_RANGE_X,
     CHAR_IDS, CHARACTER_DEFS,
@@ -68,13 +69,48 @@ function broadcastHostStatus() {
         groups.get(sid).push(Number(pid));
     }
 
+    // Pre-compute lobby pair assignments using JOIN-TIME ORDER (lobbyJoinOrder),
+    // not clientId order.  This ensures the first player to press "Find match"
+    // is the host of their pair regardless of connection sequence.
+    // A solo player waiting for a partner gets isHost=false until their partner arrives.
+    const _lobbyIds = getLobbyQueue();  // already filtered to unmatched authenticated players
+    const _lobbyHostSet = new Set();
+    for (let _i = 0; _i + 1 < _lobbyIds.length; _i += 2) {
+        _lobbyHostSet.add(_lobbyIds[_i]); // first-in-pair (join order) is host
+    }
+
     for (const [, pl] of Object.entries(players)) {
         if (!pl.ws || pl.ws.readyState !== WebSocket.OPEN) continue;
-        const sid   = playerSession.get(pl.id) ?? null;
-        const group = groups.get(sid) ?? [];
-        const minId = group.length ? Math.min(...group) : pl.id;
-        pl.ws.send(JSON.stringify({ type: 'host_status', isHost: pl.id === minId }));
+        const sid = playerSession.get(pl.id) ?? null;
+        let isHost;
+        if (sid === null) {
+            // Lobby: only the lower id of a complete pair is host.
+            isHost = _lobbyHostSet.has(pl.id);
+        } else {
+            // In-session: standard min-id host within the session group.
+            const group = groups.get(sid) ?? [];
+            const minId = group.length ? Math.min(...group) : pl.id;
+            isHost = pl.id === minId;
+        }
+        pl.ws.send(JSON.stringify({ type: 'host_status', isHost }));
     }
+}
+
+// After a lobby player leaves, promote the new head of each pair to host and
+// send them stage_reset so they can pick a stage fresh.
+function notifyNewLobbyHost() {
+    const q = getLobbyQueue();
+    // Even indices are hosts of their respective pairs.
+    for (let i = 0; i < q.length; i += 2) {
+        const hostId = q[i];
+        const pl = players[hostId];
+        if (!pl?.ws || pl.ws.readyState !== 1 /* OPEN */) continue;
+        // If this host has no pending stage yet, send stage_reset so SSS activates.
+        if (pl._pendingStageId === undefined) {
+            pl.ws.send(JSON.stringify({ type: 'stage_reset' }));
+        }
+    }
+    broadcastHostStatus();
 }
 
 // Kick any existing player/spectator that already has this dbUserId.
@@ -159,16 +195,19 @@ function sendWelcomeToPlayer(ws, clientId) {
         // stage already chosen by whoever is waiting (if any).
         sendAllCharSelectsTo(ws);
 
-        // If any lobby peer has already picked a stage, mirror it so the
-        // new joiner doesn't see a stale "no stage" state.
-        let lobbyStage = -1;
-        for (const [, pl] of Object.entries(players)) {
-            if (pl.id === clientId) continue;
-            if (playerSession.has(pl.id)) continue;   // skip in-session
-            if (pl._pendingStageId !== undefined) { lobbyStage = pl._pendingStageId; break; }
-        }
-        if (lobbyStage >= 0) {
-            ws.send(JSON.stringify({ type: 'stage_confirmed', stageId: lobbyStage }));
+        // Find the stage already chosen by this player's natural pair-partner.
+        // Use getLobbyQueue() (join-time order) so pairs are stable.
+        // Only the pair-partner's _pendingStageId is relevant — stages from other
+        // pairs must not bleed across.
+        const _lobbyQueue = getLobbyQueue();
+        const _myIdx      = _lobbyQueue.indexOf(clientId);
+        // Pair index: even slot is host, odd slot is guest.
+        const _pairIdx    = _myIdx >= 0 ? (_myIdx % 2 === 0 ? _myIdx + 1 : _myIdx - 1) : -1;
+        const _partnerId  = (_pairIdx >= 0 && _pairIdx < _lobbyQueue.length) ? _lobbyQueue[_pairIdx] : -1;
+        const _partnerPl  = _partnerId >= 0 ? players[_partnerId] : null;
+        const _pairStage  = _partnerPl?._pendingStageId ?? -1;
+        if (_pairStage >= 0) {
+            ws.send(JSON.stringify({ type: 'stage_confirmed', stageId: _pairStage }));
         } else {
             ws.send(JSON.stringify({ type: 'stage_reset' }));
         }
@@ -364,8 +403,19 @@ async function onConnection(ws, req) {
         const restoredChar = playerCharSelected.get(clientId);
         if (restoredChar) applyCharDef(players[clientId], restoredChar);
 
+        // Restore pending stage selection so a rejoining host can still be matched.
+        const restoredStageId = lastState[clientId]?.pendingStageId ?? saved?.pendingStageId;
+        if (restoredStageId !== undefined && players[clientId])
+            players[clientId]._pendingStageId = restoredStageId;
+
         isSpectator = false;
         mode = 'player';
+
+        // If the player is entering the lobby (no active session), register in the
+        // join-order queue.  addToLobbyQueue is idempotent: join paths already called
+        // it before promoteToPlayer, so this only adds players arriving via rejoin.
+        // Players in an active session are NOT added — they are in-game, not waiting.
+        if (!playerSession.has(clientId)) addToLobbyQueue(clientId);
 
         sendWelcomeToPlayer(ws, clientId);
 
@@ -373,7 +423,12 @@ async function onConnection(ws, req) {
 
         broadcastState();
         console.log(`[SERVER] Player ${clientId} connected (${Object.keys(players).length}/${MAX_PLAYERS})`);
-        tryAutoMatch();
+        // Trigger matchmaking if this player is fully ready (char + stage confirmed).
+        // Covers: rejoining host who had both set before leaving.
+        // Fresh joins without stage still need to go through stage_select first.
+        const _rejoinPlayer = players[clientId];
+        if (playerCharSelected.has(clientId) && _rejoinPlayer?._pendingStageId !== undefined)
+            tryAutoMatch();
     }
 
     // autoSpectatorTimer removed: clients always send join/rejoin/watch on ws.open.
@@ -418,6 +473,7 @@ async function onConnection(ws, req) {
                     if (graceActive) {
                         console.log(`[WS] join: slot ${existingClientId} has active grace timer — assigning fresh clientId`);
                         clientId = gameSession.nextClientId++;
+                        addToLobbyQueue(clientId);   // button pressed — register join order now
                         await promoteToPlayer(null);
                         return;
                     }
@@ -441,6 +497,10 @@ async function onConnection(ws, req) {
                         players[clientId].dbUserId = dbUserId;
                         isSpectator = false; mode = 'player';
                         sendWelcomeToPlayer(ws, clientId);
+                        if (!playerSession.has(clientId) &&
+                            playerCharSelected.has(clientId) &&
+                            players[clientId]?._pendingStageId !== undefined)
+                            tryAutoMatch();
                         return;
                     }
                     if (spectators[clientId]) {
@@ -453,12 +513,14 @@ async function onConnection(ws, req) {
                     // Ghost state (disconnected, grace period active)
                     const ghostState = lastState[clientId];
                     if (ghostState) { clearTimeout(ghostState.timer); delete lastState[clientId]; }
+                    addToLobbyQueue(clientId);   // button pressed — register join order now
                     await promoteToPlayer(null);
                     return;
                 }
             }
 
             if (clientId === null) clientId = gameSession.nextClientId++;
+            addToLobbyQueue(clientId);   // button pressed — register join order now
             await promoteToPlayer(null);
             return;
         }
@@ -529,13 +591,10 @@ async function onConnection(ws, req) {
                         if (savedSession && gameSessions.has(savedSession) && !gameSessions.get(savedSession).finished && !playerSession.has(clientId))
                             playerSession.set(clientId, savedSession);
                         sendWelcomeToPlayer(ws, clientId);
-                        return;
-                    }
-                    if (spectators[clientId]) {
-                        spectators[clientId].ws = ws;
-                        spectators[clientId].dbUserId = dbUserId;
-                        isSpectator = true; mode = spectators[clientId].mode;
-                        sendSpectatorWelcome(mode, spectators[clientId].watchingSession);
+                        if (!playerSession.has(clientId) &&
+                            playerCharSelected.has(clientId) &&
+                            players[clientId]?._pendingStageId !== undefined)
+                            tryAutoMatch();
                         return;
                     }
                     // Ghost state: fall through to promoteToPlayer with the corrected clientId
@@ -597,7 +656,17 @@ async function onConnection(ws, req) {
                 const savedSession = lastState[clientId]?.sessionId ?? null;
                 if (savedSession && gameSessions.has(savedSession) && !gameSessions.get(savedSession).finished && !playerSession.has(clientId))
                     playerSession.set(clientId, savedSession);
+                // Re-register at the END of the lobby queue so pairing order
+                // reflects when the player clicked "Find match", not page load order.
+                if (!playerSession.has(clientId)) {
+                    removeFromLobbyQueue(clientId);
+                    addToLobbyQueue(clientId);
+                }
                 sendWelcomeToPlayer(ws, clientId);
+                if (!playerSession.has(clientId) &&
+                    playerCharSelected.has(clientId) &&
+                    players[clientId]?._pendingStageId !== undefined)
+                    tryAutoMatch();
                 return;
             }
 
@@ -624,7 +693,11 @@ async function onConnection(ws, req) {
                 const sessStillActive = watchSess && gameSessions.has(watchSess) && !gameSessions.get(watchSess).finished;
                 clearTimeout(ghostState.timer);
                 delete lastState[clientId];
-                if (!sessStillActive) {
+                // An eliminated player who disconnected from spectator view must
+                // always re-enter as a fresh player, regardless of whether the
+                // finished session is still in its linger window. Sending them
+                // back into spectator_mode here is the zombie-spectator bug.
+                if (!sessStillActive || ghostState.eliminated) {
                     playerCharSelected.delete(clientId);
                     await promoteToPlayer(null);
                 } else {
@@ -688,7 +761,15 @@ async function onConnection(ws, req) {
                       .catch(() => {});
                 }
                 delete spectators[clientId];
-                console.log(`[SERVER] Spectator ${clientId} left voluntarily`);
+                // If this was an eliminated player-turned-spectator, also wipe
+                // lastState and playerCharSelected so the slot doesn't get
+                // re-entered as a zombie spectator on the next rejoin.
+                if (spec.eliminated) {
+                    if (lastState[clientId]?.timer) clearTimeout(lastState[clientId].timer);
+                    delete lastState[clientId];
+                    playerCharSelected.delete(clientId);
+                }
+                console.log(`[SERVER] Spectator ${clientId} left voluntarily${spec.eliminated ? ' (was eliminated)' : ''}`);
                 return;
             }
             if (!players[clientId]) return;
@@ -699,6 +780,7 @@ async function onConnection(ws, req) {
 
             // ── Not in an active match: just remove from pool ─────────────────
             if (!leavingSession || leavingSession.finished) {
+                removeFromLobbyQueue(clientId);
                 const lp = players[clientId];
                 delete players[clientId];
                 playerSession.delete(clientId);
@@ -706,8 +788,10 @@ async function onConnection(ws, req) {
                 lastState[clientId] = {
                     x: lp?.x, y: lp?.y, onGround: lp?.onGround, stocks: lp?.stocks,
                     dbUserId: lp?.dbUserId ?? null, sessionId: null,
+                    pendingStageId: lp?._pendingStageId,   // preserve host stage across leave/rejoin
                     timer: setTimeout(() => { delete lastState[clientId]; playerCharSelected.delete(clientId); }, GHOST_TTL),
                 };
+                notifyNewLobbyHost();  // promote next host if queue shifted
                 broadcastState();
                 console.log(`[SERVER] Player ${clientId} left voluntarily (lobby)`);
                 return;
@@ -779,6 +863,29 @@ async function onConnection(ws, req) {
             if (spectators[clientId]) return;
             const stageId = (msg.stageId ?? 0) | 0;
 
+            // Only the pair-host may send stage_select.
+            // In-session: lowest id in the session. In lobby: lowest id in the pair (even slot).
+            {
+                const _senderSid = playerSession.get(clientId) ?? null;
+                let _isHost;
+                if (_senderSid) {
+                    const _sess = gameSessions.get(_senderSid);
+                    const _sessIds = _sess ? [..._sess.playerIds].filter(id => players[id]?.dbUserId != null) : [];
+                    _isHost = _sessIds.length ? clientId === Math.min(..._sessIds) : true;
+                } else {
+                    const _lobbyQ = getLobbyQueue();  // join-time order
+                    const _idx = _lobbyQ.indexOf(clientId);
+                    // Host is the first player in the queue (idx 0, 2, 4…).
+                    // A solo host (no partner yet) can still select stage — they just
+                    // broadcast only to themselves until a partner joins.
+                    _isHost = _idx >= 0 && _idx % 2 === 0;
+                }
+                if (!_isHost) {
+                    console.log(`[STAGE_SELECT] ignored: client=${clientId} is not pair-host`);
+                    return;
+                }
+            }
+
             // Persist on the player's own session (or as a pending value before matchmaking).
             const senderSessionId = playerSession.get(clientId);
             const senderSession   = senderSessionId ? gameSessions.get(senderSessionId) : null;
@@ -801,17 +908,33 @@ async function onConnection(ws, req) {
                 }
                 console.log(`[STAGE_SELECT] client=${clientId} session=${senderSessionId} stage=${stageId} -> sent to ${sentCount} clients`);
             } else {
-                // Lobby — store as pending on the player object until a session is created.
+                // Lobby — store stage on the host player object.
+                // Only broadcast to the host's natural pair-partner (the player they will
+                // be matched with by tryAutoMatch: authenticated, no session, sorted by id).
+                // This prevents stage selections from crossing between concurrent pairs.
                 const p = players[clientId];
                 if (p) p._pendingStageId = stageId;
-                gameSession.confirmedStageId = stageId;
-                // Confirm to all lobby players (no session yet) so their UI unblocks.
-                const out = JSON.stringify({ type: 'stage_confirmed', stageId });
-                for (const [, pl] of Object.entries(players)) {
-                    if (playerSession.has(pl.id)) continue;   // skip in-session players
-                    if (pl.ws?.readyState === WebSocket.OPEN) pl.ws.send(out);
+
+                // Find the natural pair for this host: all lobby players sorted by id,
+                // the host is at some even index 2k, their partner is at 2k+1.
+                const lobbyQueue = getLobbyQueue();  // join-time order
+                const hostIdx = lobbyQueue.indexOf(clientId);
+                // hostIdx should be even (they are the host of their pair).
+                // Their partner is at hostIdx+1 (or nobody if queue is odd).
+                const partnerIds = new Set([clientId]);
+                if (hostIdx >= 0 && hostIdx % 2 === 0 && hostIdx + 1 < lobbyQueue.length) {
+                    partnerIds.add(lobbyQueue[hostIdx + 1]);
                 }
-                console.log(`[STAGE_SELECT] client=${clientId} lobby stage=${stageId} (pending, broadcast to lobby)`);
+
+                const out = JSON.stringify({ type: 'stage_confirmed', stageId });
+                for (const id of partnerIds) {
+                    const pl = players[id];
+                    if (pl?.ws?.readyState === WebSocket.OPEN) pl.ws.send(out);
+                }
+                console.log(`[STAGE_SELECT] client=${clientId} lobby stage=${stageId} -> pair=${[...partnerIds].join(',')}`);
+                // Stage confirmed in lobby: try to pair now.
+                // Both players must have char + stage confirmed to be matched.
+                tryAutoMatch();
             }
             return;
         }
@@ -854,7 +977,10 @@ async function onConnection(ws, req) {
                 }
             }
             console.log(`[CHAR_SELECT] client=${clientId} char=${charId}`);
-            tryAutoMatch();
+            // Trigger matchmaking in lobby: covers the common case where the host
+            // already selected a stage but the guest hadn't chosen a char yet.
+            // tryAutoMatch is idempotent and checks all preconditions internally.
+            if (!senderSession) tryAutoMatch();
         }
     });
 
@@ -975,10 +1101,14 @@ async function onConnection(ws, req) {
         } else {
             // Disconnected from lobby (no active session) — save state so they
             // keep their selected character if they reconnect quickly.
+            // Remove from join-order queue; re-added on next promoteToPlayer.
+            removeFromLobbyQueue(clientId);
+            notifyNewLobbyHost();  // promote next host if queue shifted
             lastState[clientId] = {
                 x: p.x, y: p.y, onGround: p.onGround, stocks: p.stocks,
                 dbUserId:  disconnectedDbUserId,
                 sessionId: null,
+                pendingStageId: p._pendingStageId,   // preserve host stage across disconnect/rejoin
                 timer: setTimeout(() => {
                     delete lastState[clientId];
                     playerCharSelected.delete(clientId);

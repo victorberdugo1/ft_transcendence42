@@ -238,16 +238,24 @@ export default function Lobby({ user, onEnterGame, onLogout, onPrivacy, onTerms 
   const [logoutLoading, setLogoutLoading] = useState(false);
   const [activeMode,    setActiveMode]    = useState("versus");
   const [sessionError,  setSessionError]  = useState("");
-  const [matchCooldown, setMatchCooldown] = useState(0); // seconds until matchmaking is safe
+  // Initialise directly from sessionStorage so the FIRST render already has
+  // the correct value — no frame where the button is incorrectly enabled.
+  const [matchCooldown, setMatchCooldown] = useState(() => {
+    try {
+      const safeAt = parseInt(sessionStorage.getItem('matchmakingSafeAt') ?? '0', 10);
+      if (!safeAt) return 0;
+      const remaining = safeAt - Date.now();
+      if (remaining <= 0) { sessionStorage.removeItem('matchmakingSafeAt'); return 0; }
+      return Math.ceil(remaining / 1000);
+    } catch (_) { return 0; }
+  });
 
-  // Check if we reloaded after a grace-period forfeit and need to wait
+  // Tick the cooldown while it is active.
   useEffect(() => {
+    if (matchCooldown <= 0) return;
     try {
       const safeAt = parseInt(sessionStorage.getItem('matchmakingSafeAt') ?? '0', 10);
       if (!safeAt) return;
-      const remaining = safeAt - Date.now();
-      if (remaining <= 0) { sessionStorage.removeItem('matchmakingSafeAt'); return; }
-      setMatchCooldown(Math.ceil(remaining / 1000));
       const interval = setInterval(() => {
         const secs = Math.ceil((safeAt - Date.now()) / 1000);
         if (secs <= 0) {
@@ -260,7 +268,8 @@ export default function Lobby({ user, onEnterGame, onLogout, onPrivacy, onTerms 
       }, 250);
       return () => clearInterval(interval);
     } catch (_) {}
-  }, []);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [matchCooldown > 0]);
 
 
   // Confirm session + pull stats

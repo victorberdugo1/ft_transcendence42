@@ -39,6 +39,34 @@ let tournamentWaitingWinners = {};
 let confirmedStageId = -1;
 let DEBUG_AUTO_MATCH = true;
 
+// ─── Lobby join order ─────────────────────────────────────────────────────────
+// Tracks the order in which authenticated players entered the lobby (pressed
+// "Find match" / "Join").  This determines host assignment and pair formation
+// independently of clientId, which reflects connection order and can differ
+// when a player reconnects after a match.
+//
+// Lifecycle:
+//   • addToLobbyQueue(clientId)    — called when a player enters the lobby pool
+//   • removeFromLobbyQueue(cid)    — called on disconnect / session start
+//   • getLobbyQueue()              — returns a copy of the ordered array
+//
+// IMPORTANT: pairs are formed in queue order (slot 0+1, 2+3 …).  The FIRST
+// player in each pair is the host (chooses stage).  This is independent of
+// clientId ordering.
+const _lobbyJoinOrder = [];   // ordered array of clientIds
+
+function addToLobbyQueue(cid) {
+    if (!_lobbyJoinOrder.includes(cid)) _lobbyJoinOrder.push(cid);
+}
+function removeFromLobbyQueue(cid) {
+    const idx = _lobbyJoinOrder.indexOf(cid);
+    if (idx !== -1) _lobbyJoinOrder.splice(idx, 1);
+}
+function getLobbyQueue() {
+    // Return only players that are still alive (not yet matched) and authenticated.
+    return _lobbyJoinOrder.filter(cid => players[cid]?.dbUserId != null && !playerSession.has(cid));
+}
+
 // ─── Spectator helpers ────────────────────────────────────────────────────────
 
 function setSpectatorSession(spec, newSessionId) {
@@ -323,6 +351,7 @@ function createSession(mode, playerIds, extra = {}) {
     for (const cid of playerIds) {
         session.playerFlags[cid] = { tookDamage: false, completedCombo: false };
         playerSession.set(cid, id);
+        removeFromLobbyQueue(cid);   // leaving lobby — no longer waiting for a pair
         const p = players[cid];
         if (p) p.stocks = 3;
     }
@@ -424,21 +453,28 @@ function tryAutoMatch() {
 
     // Only authenticated human players who have selected a character and are not already in a session.
     // Players with dbUserId === null are browsers connected without a login and must be ignored.
-    const ready = Object.values(players)
-        .filter(p =>
-            !p.isCpu &&
-            p.dbUserId != null &&
-            !playerSession.has(p.id) &&
-            !busyIds.has(p.id) &&          // ← belt-and-suspenders: not in any active session
-            playerCharSelected.has(p.id)
-        )
-        .map(p => p.id);
+    // Use getLobbyQueue() (join-time order) so host assignment is stable regardless of clientId.
+    const eligible = getLobbyQueue().filter(cid =>
+        !players[cid]?.isCpu &&
+        !busyIds.has(cid) &&
+        playerCharSelected.has(cid)
+    );
 
-    // Pair them into closed 1v1 duels two at a time.
-    // If an odd number is waiting the last one stays in the lobby until another joins.
-    for (let i = 0; i + 1 < ready.length; i += 2) {
-        const sess = startDuel(ready[i], ready[i + 1]);
-        console.log(`[AUTO-MATCH] 1v1 session ${sess.id} — ${ready[i]} vs ${ready[i + 1]}`);
+    // Pair them into closed 1v1 duels two at a time (queue order: slot 0+1, 2+3 …).
+    // The host (even slot) must have confirmed a stage (_pendingStageId set) before
+    // their pair can be matched.  If the host hasn't chosen yet the pair waits.
+    for (let i = 0; i + 1 < eligible.length; i += 2) {
+        const hostId  = eligible[i];
+        const guestId = eligible[i + 1];
+        const host    = players[hostId];
+        if (!host || host._pendingStageId === undefined) {
+            // Host hasn't selected stage yet — skip this pair but keep scanning
+            // in case a later pair (different host) is ready.
+            console.log(`[AUTO-MATCH] waiting for host ${hostId} to select stage`);
+            continue;
+        }
+        const sess = startDuel(hostId, guestId);
+        console.log(`[AUTO-MATCH] 1v1 session ${sess.id} — ${hostId} vs ${guestId}`);
     }
 }
 
@@ -853,6 +889,7 @@ module.exports = {
     listActiveSessions, buildCharSelectAck, sendAllCharSelectsTo,
     createPlayer, startBrawl, startDuel, startTournament, startTraining,
     tryAutoMatch, handleElimination, resolveMatchWinner, getLastWatchedSession,
+    addToLobbyQueue, removeFromLobbyQueue, getLobbyQueue,
     disconnectPlayer,
     MAX_PLAYERS, GHOST_TTL,
     ATTACK_RANGE, ATTACK_RANGE_Y, DASH_ATTACK_RANGE_X,

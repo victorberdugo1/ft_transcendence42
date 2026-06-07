@@ -91,6 +91,19 @@ function GameShell({ user, gameMode, gameOpts, inLobby, onBackToLobby }) {
         window._ws.send(JSON.stringify({ type: "leave" }));
       }
     } catch (_) {}
+
+    // If the player was eliminated and is watching as a forced spectator,
+    // stamp matchmakingSafeAt now so the lobby cooldown shows even if they
+    // leave before match_finished arrives (which is what triggers the stamp
+    // in the normal path). 9s gives the server time to finish cleanupSession.
+    if (window._eliminatedFromSession) {
+      try {
+        const existing = parseInt(sessionStorage.getItem('matchmakingSafeAt') ?? '0', 10);
+        const proposed = Date.now() + 9000;
+        if (proposed > existing) sessionStorage.setItem('matchmakingSafeAt', String(proposed));
+      } catch (_) {}
+    }
+
     // Keep WS open and WASM alive — only reset UI/match state.
     Object.assign(window, {
       _isSpectator: false, _spectatorMode: null, _matchSession: null,
@@ -99,6 +112,7 @@ function GameShell({ user, gameMode, gameOpts, inLobby, onBackToLobby }) {
       _confirmedStageId: undefined, _isHost: undefined,
       _charSelectData: null, _charSelectConfirmed: false,
       _gameState: { players: {} },
+      _eliminatedFromSession: null,
     });
     try {
       ["charSelectData","pendingCharSelect","watchSession","gameState","confirmedStageId"]
