@@ -37,7 +37,6 @@ let nextSessionId = 1;
 let frameId       = 0;
 let tournamentWaitingWinners = {};
 let confirmedStageId = -1;
-let DEBUG_AUTO_MATCH = true;
 
 // ─── Lobby join order ─────────────────────────────────────────────────────────
 // Tracks the order in which authenticated players entered the lobby (pressed
@@ -460,8 +459,6 @@ function startTraining(humanClientId, cpuCharIds = ['eld'], stageId = 0) {
 // ─── Auto-match ───────────────────────────────────────────────────────────────
 
 function tryAutoMatch() {
-    if (!DEBUG_AUTO_MATCH) return;
-
     // Build a set of all clientIds that are already inside an active (non-finished) session.
     // This guards against playerSession being momentarily out of sync (e.g. right after
     // cleanupSession deletes the mapping but before the player object is fully reset).
@@ -961,7 +958,6 @@ module.exports = {
     set nextClientId(v)     { nextClientId = v; },
     get nextSessionId()     { return nextSessionId; },
     get confirmedStageId()  { return confirmedStageId; },
-    set confirmedStageId(v) { confirmedStageId = v; },
     broadcastToSession, broadcastToAll, broadcastState, sendStateToSpectator,
     listActiveSessions, buildCharSelectAck, sendAllCharSelectsTo,
     createPlayer, startBrawl, startDuel, startTournament, startTraining,

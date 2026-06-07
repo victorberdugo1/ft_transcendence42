@@ -637,7 +637,6 @@ async function onConnection(ws, req) {
                         clearTimeout(ghostState.timer);
                         delete lastState[clientId];
                     }
-                    const _graceData = lobbyReconnectGrace.get(clientId); // already deleted above, just safety
                     const _graceSeekingMatch = players[clientId]?._seekingMatch ?? true;
                     await promoteToPlayer(null, _graceSeekingMatch);
                     return;
@@ -867,9 +866,7 @@ async function onConnection(ws, req) {
                     broadcastToSession(leavingSession, {
                         type: 'match_finished', sessionId: leavingSession.id,
                     });
-                    const { cleanupSession } = gameSession;
-                    if (cleanupSession) cleanupSession(leavingSession, null);
-                    else setTimeout(() => gameSessions.delete(leavingSession.id), 500);
+                    gameSession.cleanupSession(leavingSession, null);
                 }
                 broadcastState();
                 console.log(`[SERVER] Player ${clientId} left training session — ended immediately`);
@@ -1126,9 +1123,7 @@ async function onConnection(ws, req) {
                 broadcastToSession(disconnectedSession, {
                     type: 'match_finished', sessionId: disconnectedSession.id,
                 });
-                const { cleanupSession } = gameSession;
-                if (cleanupSession) cleanupSession(disconnectedSession, null);
-                else setTimeout(() => gameSessions.delete(disconnectedSession.id), 500);
+                gameSession.cleanupSession(disconnectedSession, null);
                 broadcastState();
                 console.log(`[SERVER] Player ${clientId} disconnected from training — ended immediately`);
                 // Fall through to the broadcastState + log at end of close handler

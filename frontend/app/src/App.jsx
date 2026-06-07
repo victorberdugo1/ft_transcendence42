@@ -187,7 +187,6 @@ function GameShell({ user, gameMode, gameOpts, inLobby, onBackToLobby, grace }) 
     window._pendingGameOpts = gameOpts ?? {};
     setVisible(false);
     setStatus("Connecting\u2026");
-    setSessionErr("");
 
     // Training needs a fully clean WS connection so the server doesn't detect
     // a duplicate slot (same dbUserId already in the lobby pool) and kick us.

@@ -247,7 +247,6 @@ function ModeTournament({ onEnterGame, matchCooldown = 0, graceActive = false })
   const playerCount = room?.players?.length ?? 0;
   const maxPlayers  = room?.maxPlayers ?? 8;
   const canLaunch   = inRoom && playerCount >= 2 && !room?.started && !launching;
-  const isFirst     = inRoom && room?.players?.[0]?.clientId === (window._myClientId ?? -1);
 
   if (!inRoom) {
     return (
@@ -493,29 +492,25 @@ export default function Lobby({ user, onEnterGame, onLogout, onPrivacy, onTerms,
 
 
 
-  async function handleEnterGame(mode, opts = {}) {
+  function handleEnterGame(mode, opts = {}) {
     // Block all game entry while a leave-grace is pending (the server still has
     // us in an active session for up to 5s after pressing ← Lobby).
     // Entering training in this window would reconnectWS() and destroy the session.
     if (graceActive) return;
     setSessionError("");
-    try {
-      if (mode === "training") {
-        // Start a training session: need our own clientId first.
-        // The WS join happens inside GameShell; we just pass the intent.
-        onEnterGame("training", opts);
-        return;
-      }
-      if (mode === "spectate") {
-        onEnterGame("spectate", opts);
-        return;
-      }
-      // For versus and tournament we also just pass the intent —
-      // GameShell will send the right WS message after joining.
-      onEnterGame(mode, opts);
-    } catch (e) {
-      setSessionError(e.message);
+    if (mode === "training") {
+      // Start a training session: need our own clientId first.
+      // The WS join happens inside GameShell; we just pass the intent.
+      onEnterGame("training", opts);
+      return;
     }
+    if (mode === "spectate") {
+      onEnterGame("spectate", opts);
+      return;
+    }
+    // For versus and tournament we also just pass the intent —
+    // GameShell will send the right WS message after joining.
+    onEnterGame(mode, opts);
   }
 
   async function handleLogout() {
