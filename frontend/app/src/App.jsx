@@ -1,11 +1,14 @@
 import { useEffect, useRef, useState } from "react";
 import logoImage from "../assets/logo.png";
-import Lobby from "./Lobby.jsx";
-import Login from "./Login.jsx";
-import Privacy from "./Privacy.jsx";
-import Register from "./Register.jsx";
-import Terms from "./Terms.jsx";
-import "./auth.css";
+import Login from "./pages/auth/Login.jsx";
+import Privacy from "./pages/auth/Privacy.jsx";
+import Register from "./pages/auth/Register.jsx";
+import Terms from "./pages/auth/Terms.jsx";
+import FightLobby from "./pages/fight/FightLobby.jsx";
+import Lobby from "./pages/lobby/Lobby.jsx";
+import "./pages/auth/auth.css";
+import "./pages/fight/fight.css";
+import "./pages/lobby/lobby.css";
 
 const GAME_RATIO = 800 / 600;
 
@@ -118,45 +121,102 @@ function LoadingScreen({ onPrivacy, onTerms }) {
   );
 }
 
-function GameShell({ onBackToLobby }) {
+function GameShell({ user, gameMode, gameOpts, inLobby, onBackToLobby, grace }) {
   const canvasRef = useRef(null);
-  const [status, setStatus] = useState("Conectando...");
+  const scriptRef = useRef(null);
   const [visible, setVisible] = useState(false);
+  const [status, setStatus] = useState("Connecting...");
+  const [sessionErr] = useState("");
+
+  function handleBackToLobby() {
+    try {
+      if (window._ws?.readyState === 1) {
+        window._ws.send(JSON.stringify({ type: "leave" }));
+      }
+    } catch (_) {}
+
+    if (window._eliminatedFromSession) {
+      try {
+        const existing = parseInt(sessionStorage.getItem("matchmakingSafeAt") ?? "0", 10);
+        const proposed = Date.now() + 9000;
+        if (proposed > existing) sessionStorage.setItem("matchmakingSafeAt", String(proposed));
+      } catch (_) {}
+    }
+
+    if (gameMode === "training") {
+      window._manualReconnect = true;
+      window._pendingTraining = null;
+      window._pendingGameMode = "versus";
+      try {
+        window._ws?.close();
+      } catch (_) {}
+      try {
+        ["clientId", "charSelectData", "pendingCharSelect", "watchSession", "gameState", "confirmedStageId"]
+          .forEach((key) => sessionStorage.removeItem(key));
+        window._myClientId = -1;
+        sessionStorage.setItem("postTrainingReload", "1");
+      } catch (_) {}
+      window.location.reload();
+      return;
+    }
+
+    if (gameMode === "spectate") {
+      window._manualReconnect = true;
+      window._pendingGameMode = "versus";
+      try {
+        window._ws?.close();
+      } catch (_) {}
+      try {
+        ["clientId", "charSelectData", "pendingCharSelect", "watchSession", "gameState", "confirmedStageId"]
+          .forEach((key) => sessionStorage.removeItem(key));
+        window._myClientId = -1;
+      } catch (_) {}
+      window.location.reload();
+      return;
+    }
+
+    Object.assign(window, {
+      _isSpectator: false,
+      _spectatorMode: null,
+      _matchSession: null,
+      _victoryActive: false,
+      _victoryConsumed: true,
+      _hitstopState: null,
+      _countdownStart: null,
+      _countdownDone: false,
+      _confirmedStageId: undefined,
+      _isHost: undefined,
+      _charSelectData: null,
+      _charSelectConfirmed: false,
+      _gameState: { players: {} },
+      _eliminatedFromSession: null,
+    });
+
+    try {
+      ["charSelectData", "pendingCharSelect", "watchSession", "gameState", "confirmedStageId"]
+        .forEach((key) => sessionStorage.removeItem(key));
+    } catch (_) {}
+
+    setVisible(false);
+    setStatus("Connecting...");
+    onBackToLobby();
+  }
 
   useEffect(() => {
     const { w, h } = calcResolution();
     window._canvasWidth = w;
     window._canvasHeight = h;
+    window._pendingGameMode = gameMode;
+    window._pendingGameOpts = gameOpts ?? {};
+    window.Module = { canvas: canvasRef.current, locateFile: (path) => `/${path}` };
 
-    window.Module = {
-      canvas: canvasRef.current,
-      locateFile: (path) => `/${path}`,
-      onRuntimeInitialized: () => setStatus("Juego cargado"),
-    };
-
-    const script = document.createElement("script");
-    script.src = "/game.js";
-    script.async = false;
-    script.onload = () => setStatus("Juego inicializado");
-    script.onerror = () => setStatus("Error cargando game.js");
-    document.body.appendChild(script);
-
-    const poll = setInterval(() => {
-      if (window._isSpectator && window._myClientId > 0) {
-        setVisible(true);
-        clearInterval(poll);
-        return;
-      }
-
-      const id = window._myClientId;
-      if (id <= 0) return;
-
-      const state = window._gameState;
-      if (!state || !state.players || !state.players[id]) return;
-
-      setVisible(true);
-      clearInterval(poll);
-    }, 50);
+    if (!scriptRef.current) {
+      const script = document.createElement("script");
+      script.src = "/game.js";
+      script.async = false;
+      document.body.appendChild(script);
+      scriptRef.current = script;
+    }
 
     const onResize = () => {
       const { w, h } = calcResolution();
@@ -165,21 +225,143 @@ function GameShell({ onBackToLobby }) {
     };
 
     window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+
+  useEffect(() => {
+    if (inLobby) return;
+
+    window._pendingGameMode = gameMode;
+    window._pendingGameOpts = gameOpts ?? {};
+    setVisible(false);
+    setStatus("Connecting...");
+
+    if (gameMode === "training") {
+      window._pendingGameMode = "training";
+      window._pendingGameOpts = gameOpts ?? {};
+      window._pendingTraining = gameOpts ?? { cpuCharIds: ["eld"], stageId: 0 };
+      if (typeof window.reconnectWS === "function") window.reconnectWS();
+      return;
+    }
+
+    function sendIntent() {
+      const savedId = sessionStorage.getItem("clientId");
+
+      if (savedId && gameMode !== "spectate") {
+        try {
+          sessionStorage.removeItem("gameState");
+          sessionStorage.removeItem("confirmedStageId");
+        } catch (_) {}
+        Object.assign(window, {
+          _matchSession: null,
+          _victoryActive: false,
+          _victoryConsumed: true,
+          _hitstopState: null,
+          _countdownStart: null,
+          _countdownDone: false,
+        });
+        window._ws.send(JSON.stringify({ type: "rejoin", clientId: parseInt(savedId, 10) }));
+      } else if (gameMode === "spectate") {
+        window._ws.send(JSON.stringify({ type: "watch", sessionId: gameOpts?.sessionId ?? null }));
+      } else if (gameMode === "tournament") {
+        window._pendingTournament = true;
+        window._ws.send(JSON.stringify({ type: "join", seekingMatch: false }));
+      } else {
+        window._ws.send(JSON.stringify({ type: "join" }));
+      }
+    }
+
+    if (window._ws?.readyState === 1) {
+      sendIntent();
+      return;
+    }
+
+    const timer = setInterval(() => {
+      if (window._ws?.readyState === 1) {
+        clearInterval(timer);
+        sendIntent();
+      }
+    }, 50);
+
+    return () => clearInterval(timer);
+  }, [inLobby, gameMode, gameOpts]);
+
+  useEffect(() => {
+    if (inLobby) return;
+
+    const poll = setInterval(() => {
+      if (window._isSpectator && window._myClientId > 0) {
+        setVisible(true);
+        setStatus("");
+        clearInterval(poll);
+        return;
+      }
+
+      const id = window._myClientId;
+      if (id > 0 && window._gameState?.players?.[id]) {
+        setVisible(true);
+        setStatus("");
+        clearInterval(poll);
+      }
+    }, 50);
+
+    const onStart = () => setStatus("");
+    const onSpectate = () => {
+      setVisible(true);
+      setStatus("");
+    };
+
+    window.addEventListener("match_start", onStart);
+    window.addEventListener("spectator_mode", onSpectate);
 
     return () => {
       clearInterval(poll);
-      window.removeEventListener("resize", onResize);
-      script.parentNode?.removeChild(script);
+      window.removeEventListener("match_start", onStart);
+      window.removeEventListener("spectator_mode", onSpectate);
     };
-  }, []);
+  }, [inLobby]);
+
+  const modeLabel = {
+    versus: "Playing as",
+    training: "Training vs AI",
+    tournament: "Tournament",
+    spectate: "Spectating",
+  };
 
   return (
-    <div className="game-page">
-      <button type="button" className="game-back-button" onClick={onBackToLobby}>
-        Back to lobby
-      </button>
+    <div
+      className="game-page"
+      style={inLobby ? { visibility: "hidden", pointerEvents: "none" } : undefined}
+    >
+      <div className="game-toolbar">
+        <div className="game-user">
+          <span className="game-user-label">{modeLabel[gameMode] ?? "Playing as"}</span>
+          <strong>{user.username || user.email || "user"}</strong>
+        </div>
+        <button
+          type="button"
+          className="logout-button"
+          onClick={handleBackToLobby}
+          disabled={!!(grace && grace.clientId !== (window._myClientId ?? -1))}
+          title={
+            grace && grace.clientId !== (window._myClientId ?? -1)
+              ? "Tu rival tiene unos segundos para volver..."
+              : undefined
+          }
+        >
+          Back to lobby
+        </button>
+      </div>
 
-      <img src={logoImage} alt="Enuma Fighter logo" className="game-corner-logo" />
+      {status && <div className="game-status-overlay"><p>{status}</p></div>}
+      {sessionErr && (
+        <div className="game-status-overlay game-status-error">
+          <p>{sessionErr}</p>
+          <button type="button" className="auth-link" onClick={handleBackToLobby}>
+            Back to lobby
+          </button>
+        </div>
+      )}
 
       <div className="game-frame">
         <canvas
@@ -189,8 +371,73 @@ function GameShell({ onBackToLobby }) {
           style={{ opacity: visible ? 1 : 0 }}
         />
       </div>
+    </div>
+  );
+}
 
-      <div className="game-status">{status}</div>
+function GraceBanner({ grace, myClientId, onRejoin }) {
+  const [secsLeft, setSecsLeft] = useState(null);
+  const [defeated, setDefeated] = useState(false);
+
+  useEffect(() => {
+    if (!grace) {
+      setSecsLeft(null);
+      setDefeated(false);
+      return;
+    }
+
+    let intervalId = 0;
+
+    function tick() {
+      const ms = grace.expiresAt - Date.now();
+      const secs = Math.max(0, Math.ceil(ms / 1000));
+      setSecsLeft(secs);
+
+      if (secs === 0 && grace.clientId === myClientId) {
+        clearInterval(intervalId);
+        setDefeated(true);
+        setTimeout(() => {
+          try {
+            ["clientId", "charSelectData", "pendingCharSelect", "watchSession", "gameState", "confirmedStageId"]
+              .forEach((key) => sessionStorage.removeItem(key));
+            sessionStorage.setItem("matchmakingSafeAt", String(Date.now() + 6500));
+          } catch (_) {}
+          window.location.reload();
+        }, 6000);
+      }
+    }
+
+    tick();
+    intervalId = window.setInterval(tick, 250);
+    return () => clearInterval(intervalId);
+  }, [grace, myClientId]);
+
+  if (defeated) {
+    return (
+      <div className="grace-defeat-screen">
+        <div className="grace-defeat-icon">X</div>
+        <div className="grace-defeat-title">Defeat</div>
+        <div className="grace-defeat-copy">Returning to the lobby...</div>
+      </div>
+    );
+  }
+
+  if (!grace || secsLeft === null || secsLeft === 0) return null;
+
+  const isMe = grace.clientId === myClientId;
+
+  return (
+    <div className={secsLeft <= 2 ? "grace-banner grace-banner-danger" : "grace-banner"}>
+      <span>
+        {isMe
+          ? `You have ${secsLeft}s to return to the fight or lose the match.`
+          : `Your rival has ${secsLeft}s to reconnect...`}
+      </span>
+      {isMe && (
+        <button type="button" className="grace-rejoin-button" onClick={onRejoin}>
+          Rejoin fight
+        </button>
+      )}
     </div>
   );
 }
@@ -201,6 +448,54 @@ export default function App() {
   const [user, setUser] = useState(null);
   const [page, setPage] = useState("auth");
   const [legalBackPage, setLegalBackPage] = useState("auth");
+  const [gameMode, setGameMode] = useState("versus");
+  const [gameOpts, setGameOpts] = useState({});
+  const [grace, setGrace] = useState(null);
+  const pageRef = useRef(page);
+  const authStatusRef = useRef(authStatus);
+  const legalBackPageRef = useRef(legalBackPage);
+
+  useEffect(() => {
+    pageRef.current = page;
+  }, [page]);
+
+  useEffect(() => {
+    authStatusRef.current = authStatus;
+  }, [authStatus]);
+
+  useEffect(() => {
+    legalBackPageRef.current = legalBackPage;
+  }, [legalBackPage]);
+
+  useEffect(() => {
+    const historyState = { enumaHistoryGuard: true };
+
+    // Keep browser back inside the SPA so Chrome does not jump to old localhost ports.
+    window.history.replaceState(historyState, "", window.location.href);
+    window.history.pushState(historyState, "", window.location.href);
+
+    function handleBrowserBack() {
+      const currentPage = pageRef.current;
+
+      if (currentPage === "game") {
+        setPage("fightLobby");
+      } else if (currentPage === "fightLobby") {
+        setPage("lobby");
+      } else if (currentPage === "privacy" || currentPage === "terms") {
+        setPage(legalBackPageRef.current || "lobby");
+      } else if (authStatusRef.current === "authenticated") {
+        setPage("lobby");
+      }
+
+      window.history.pushState(historyState, "", window.location.href);
+    }
+
+    window.addEventListener("popstate", handleBrowserBack);
+
+    return () => {
+      window.removeEventListener("popstate", handleBrowserBack);
+    };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -251,6 +546,26 @@ export default function App() {
     };
   }, []);
 
+  useEffect(() => {
+    function handleGrace(event) {
+      setGrace(event.detail);
+    }
+
+    function clearGrace() {
+      setGrace(null);
+    }
+
+    window.addEventListener("leave_grace", handleGrace);
+    window.addEventListener("leave_grace_expired", clearGrace);
+    window.addEventListener("player_reconnected", clearGrace);
+
+    return () => {
+      window.removeEventListener("leave_grace", handleGrace);
+      window.removeEventListener("leave_grace_expired", clearGrace);
+      window.removeEventListener("player_reconnected", clearGrace);
+    };
+  }, []);
+
   function openPrivacy(fromPage) {
     setLegalBackPage(fromPage);
     setPage("privacy");
@@ -277,6 +592,18 @@ export default function App() {
     setAuthStatus("guest");
     setAuthView("login");
     setPage("auth");
+  }
+
+  function handleEnterGame(mode, opts = {}) {
+    setGameMode(mode);
+    setGameOpts(opts);
+    setGrace(null);
+    setPage("game");
+  }
+
+  function handleRejoinFight() {
+    setGrace(null);
+    setPage("game");
   }
 
   if (authStatus === "loading") {
@@ -308,9 +635,40 @@ export default function App() {
     );
   }
 
-  if (page === "game") {
-    return <GameShell onBackToLobby={() => setPage("lobby")} />;
-  }
+  const gameActive = page === "fightLobby" || page === "game";
+  const myClientId = window._myClientId ?? -1;
 
-  return <Lobby user={user} onPlay={() => setPage("game")} onLogout={handleLogout} />;
+  return (
+    <>
+      {gameActive && (
+        <GameShell
+          user={user}
+          gameMode={gameMode}
+          gameOpts={gameOpts}
+          inLobby={page === "fightLobby"}
+          onBackToLobby={() => setPage("fightLobby")}
+          grace={grace}
+        />
+      )}
+
+      {page === "lobby" && (
+        <Lobby user={user} onPlay={() => setPage("fightLobby")} onLogout={handleLogout} />
+      )}
+
+      {page === "fightLobby" && (
+        <div className="fight-lobby-overlay">
+          <GraceBanner grace={grace} myClientId={myClientId} onRejoin={handleRejoinFight} />
+          <FightLobby
+            user={user}
+            onEnterGame={handleEnterGame}
+            onBack={() => setPage("lobby")}
+            onLogout={handleLogout}
+            onPrivacy={() => openPrivacy("fightLobby")}
+            onTerms={() => openTerms("fightLobby")}
+            graceActive={!!(grace && grace.clientId === myClientId)}
+          />
+        </div>
+      )}
+    </>
+  );
 }
