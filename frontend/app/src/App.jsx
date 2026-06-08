@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState } from "react";
+import logoImage from "../assets/logo.png";
+import Lobby from "./Lobby.jsx";
 import Login from "./Login.jsx";
 import Privacy from "./Privacy.jsx";
 import Register from "./Register.jsx";
@@ -34,6 +36,19 @@ function normalizeUser(rawUser) {
   };
 }
 
+function AuthHeader({ title, subtitle }) {
+  return (
+    <>
+      <div className="auth-brandmark">
+        <img src={logoImage} alt="Enuma Fighter logo" className="auth-brandmark-image" />
+      </div>
+      <p className="auth-eyebrow">ft_transcendence</p>
+      <h1 className="auth-title">{title}</h1>
+      {subtitle ? <p className="auth-subtitle">{subtitle}</p> : null}
+    </>
+  );
+}
+
 function LegalFooter({ onPrivacy, onTerms }) {
   return (
     <div className="legal-footer">
@@ -52,8 +67,7 @@ function AuthGate({ view, onChangeView, onLogin, onPrivacy, onTerms }) {
   return (
     <div className="auth-page">
       <div className="auth-card">
-        <p className="auth-eyebrow">ft_transcendence</p>
-        <h1 className="auth-title">Sign in to play</h1>
+        <AuthHeader title="Sign in to play" />
 
         <div className="auth-tabs">
           <button
@@ -88,12 +102,15 @@ function LoadingScreen({ onPrivacy, onTerms }) {
   return (
     <div className="auth-page">
       <div className="auth-card">
-        <p className="auth-eyebrow">ft_transcendence</p>
-        <h1 className="auth-title">Checking session</h1>
-        <p className="auth-subtitle">
-          The app is asking the backend whether the <code>sid</code> cookie is
-          still valid.
-        </p>
+        <AuthHeader
+          title="Checking session"
+          subtitle={
+            <>
+              The app is asking the backend whether the <code>sid</code> cookie is
+              still valid.
+            </>
+          }
+        />
 
         <LegalFooter onPrivacy={onPrivacy} onTerms={onTerms} />
       </div>
@@ -101,11 +118,10 @@ function LoadingScreen({ onPrivacy, onTerms }) {
   );
 }
 
-function GameShell({ user, onLogout, onPrivacy, onTerms }) {
+function GameShell({ onBackToLobby }) {
   const canvasRef = useRef(null);
   const [status, setStatus] = useState("Conectando...");
   const [visible, setVisible] = useState(false);
-  const [logoutLoading, setLogoutLoading] = useState(false);
 
   useEffect(() => {
     const { w, h } = calcResolution();
@@ -124,8 +140,7 @@ function GameShell({ user, onLogout, onPrivacy, onTerms }) {
     script.onload = () => setStatus("Juego inicializado");
     script.onerror = () => setStatus("Error cargando game.js");
     document.body.appendChild(script);
-  // sendStageSelect está definido en ws-client.js y maneja tanto la
-    // confirmación local como el envío al servidor vía WebSocket.
+
     const poll = setInterval(() => {
       if (window._isSpectator && window._myClientId > 0) {
         setVisible(true);
@@ -158,37 +173,13 @@ function GameShell({ user, onLogout, onPrivacy, onTerms }) {
     };
   }, []);
 
-  async function handleLogoutClick() {
-    setLogoutLoading(true);
-
-    try {
-      await fetch("/api/logout", {
-        method: "POST",
-        credentials: "include",
-      });
-    } finally {
-      setLogoutLoading(false);
-      onLogout();
-    }
-  }
-
   return (
     <div className="game-page">
-      <div className="game-toolbar">
-        <div className="game-user">
-          <span className="game-user-label">Playing as</span>
-          <strong>{user.username || user.email || "user"}</strong>
-        </div>
+      <button type="button" className="game-back-button" onClick={onBackToLobby}>
+        Back to lobby
+      </button>
 
-        <button
-          type="button"
-          className="logout-button"
-          onClick={handleLogoutClick}
-          disabled={logoutLoading}
-        >
-          {logoutLoading ? "Logging out..." : "Logout"}
-        </button>
-      </div>
+      <img src={logoImage} alt="Enuma Fighter logo" className="game-corner-logo" />
 
       <div className="game-frame">
         <canvas
@@ -200,7 +191,6 @@ function GameShell({ user, onLogout, onPrivacy, onTerms }) {
       </div>
 
       <div className="game-status">{status}</div>
-      <LegalFooter onPrivacy={onPrivacy} onTerms={onTerms} />
     </div>
   );
 }
@@ -241,7 +231,7 @@ export default function App() {
         if (!cancelled) {
           setUser(normalizeUser(data.user));
           setAuthStatus("authenticated");
-          setPage("game");
+          setPage("lobby");
         }
       } catch (error) {
         console.error("[auth] /api/me failed:", error);
@@ -274,10 +264,15 @@ export default function App() {
   function handleAuthSuccess(rawUser) {
     setUser(normalizeUser(rawUser));
     setAuthStatus("authenticated");
-    setPage("game");
+    setPage("lobby");
   }
 
-  function handleLogout() {
+  async function handleLogout() {
+    await fetch("/api/logout", {
+      method: "POST",
+      credentials: "include",
+    }).catch(() => {});
+
     setUser(null);
     setAuthStatus("guest");
     setAuthView("login");
@@ -313,12 +308,9 @@ export default function App() {
     );
   }
 
-  return (
-    <GameShell
-      user={user}
-      onLogout={handleLogout}
-      onPrivacy={() => openPrivacy("game")}
-      onTerms={() => openTerms("game")}
-    />
-  );
+  if (page === "game") {
+    return <GameShell onBackToLobby={() => setPage("lobby")} />;
+  }
+
+  return <Lobby user={user} onPlay={() => setPage("game")} onLogout={handleLogout} />;
 }

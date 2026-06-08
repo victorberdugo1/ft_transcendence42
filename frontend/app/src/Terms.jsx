@@ -1,3 +1,5 @@
+import logoImage from "../assets/logo.png";
+
 export default function Terms({ onBack }) {
   return (
     <div className="auth-page">
@@ -5,6 +7,10 @@ export default function Terms({ onBack }) {
         <button type="button" className="auth-link legal-back" onClick={onBack}>
           Back
         </button>
+
+        <div className="legal-crest">
+          <img src={logoImage} alt="Enuma Fighter logo" className="legal-crest-image" />
+        </div>
 
         <p className="auth-eyebrow">ft_transcendence</p>
         <h1 className="auth-title">Terms of Service</h1>

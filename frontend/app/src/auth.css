@@ -39,6 +39,23 @@ input {
   gap: 18px;
 }
 
+.auth-brandmark,
+.legal-crest {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 8px;
+}
+
+.auth-brandmark-image {
+  width: min(250px, 62vw);
+  filter: drop-shadow(0 18px 30px rgba(0, 0, 0, 0.38));
+}
+
+.legal-crest-image {
+  width: min(160px, 42vw);
+  filter: drop-shadow(0 16px 24px rgba(0, 0, 0, 0.32));
+}
+
 .auth-eyebrow {
   margin: 0 0 8px;
   font-size: 0.78rem;
@@ -126,8 +143,7 @@ input {
 
 .auth-submit:disabled,
 .logout-button:disabled {
-  opacity: 0.7;
-  cursor: wait;
+  cursor: not-allowed;
 }
 
 .auth-switch {
@@ -182,29 +198,27 @@ input {
   background: #0a0a0a;
 }
 
-.game-toolbar {
+.game-back-button {
   position: fixed;
   top: 16px;
   left: 16px;
-  right: 16px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 16px;
   z-index: 10;
-}
-
-.game-user {
-  padding: 10px 14px;
+  padding: 12px 18px;
+  border: 0;
   border-radius: 999px;
-  background: rgba(0, 0, 0, 0.45);
-  color: #f5f5f5;
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  cursor: pointer;
   backdrop-filter: blur(10px);
 }
 
-.game-user-label {
-  margin-right: 8px;
-  color: #bfc8d0;
+.game-corner-logo {
+  position: fixed;
+  right: 20px;
+  top: 18px;
+  width: 120px;
+  opacity: 0.8;
+  filter: drop-shadow(0 14px 22px rgba(0, 0, 0, 0.35));
 }
 
 .game-frame {
@@ -233,22 +247,906 @@ input {
   pointer-events: none;
 }
 
-.game-page .legal-footer {
-  position: fixed;
-  left: 50%;
-  bottom: 28px;
-  transform: translateX(-50%);
-  margin-top: 0;
-  z-index: 10;
+@media (max-width: 1180px) {
+  .lobby-page {
+    padding: 16px 20px;
+  }
+
+  .lobby-command-center {
+    width: min(90vw, 1120px);
+    height: min(76vh, 700px);
+  }
+
+  .lobby-stage {
+    --lobby-cut: 32px;
+    --lobby-cut-lg: 58px;
+    border-radius: 34px;
+    padding: 16px;
+  }
+
+  .lobby-stage-header {
+    min-height: 80px;
+  }
+
+  .lobby-brandmark-wrap-center {
+    width: clamp(200px, 20vw, 280px);
+  }
+
+  .lobby-user-chip {
+    padding: 8px 12px;
+    font-size: 0.86rem;
+  }
+
+  .lobby-logout-button {
+    width: 40px;
+    height: 40px;
+  }
+
+  .lobby-priority-shell {
+    grid-template-columns: minmax(0, 1.12fr) minmax(0, 0.98fr);
+    grid-template-rows: minmax(0, 1fr) minmax(0, 0.58fr);
+    gap: 10px;
+  }
+
+  .lobby-play-core {
+    padding: 22px 22px 24px;
+  }
+
+  .lobby-play-title {
+    font-size: clamp(3.7rem, 6.2vw, 5.2rem);
+  }
+
+  .lobby-play-copy {
+    max-width: 20ch;
+    font-size: 0.9rem;
+  }
+
+  .lobby-node {
+    padding: 16px;
+  }
+
+  .lobby-node-title {
+    font-size: clamp(1.5rem, 2.6vw, 2.4rem);
+  }
+
+  .lobby-node-copy {
+    max-width: 15ch;
+    font-size: 0.82rem;
+  }
+
+  .lobby-stage-link-upper,
+  .lobby-stage-link-lower {
+    left: 39%;
+  }
 }
 
-@media (max-width: 640px) {
+@media (max-width: 900px) {
+  .lobby-page {
+    padding: 12px 14px;
+  }
+
+  .lobby-command-center {
+    width: min(94vw, 940px);
+    height: min(82vh, 620px);
+  }
+
+  .lobby-stage {
+    --lobby-cut: 26px;
+    --lobby-cut-lg: 46px;
+    border-radius: 28px;
+    padding: 14px;
+  }
+
+  .lobby-stage-header {
+    min-height: 72px;
+  }
+
+  .lobby-brandmark-wrap-center {
+    width: clamp(180px, 24vw, 240px);
+  }
+
+  .lobby-user-zone {
+    gap: 8px;
+  }
+
+  .lobby-user-chip {
+    padding: 7px 10px;
+    font-size: 0.8rem;
+  }
+
+  .lobby-user-label {
+    display: none;
+  }
+
+  .lobby-priority-shell {
+    gap: 8px;
+  }
+
+  .lobby-play-core {
+    padding: 18px 18px 20px;
+  }
+
+  .lobby-play-ring {
+    inset: 14px;
+    clip-path: polygon(0 0, calc(100% - 38px) 0, 100% 38px, 100% 100%, 38px 100%, 0 calc(100% - 38px));
+  }
+
+  .lobby-play-rank,
+  .lobby-node-rank {
+    min-width: 38px;
+    height: 28px;
+    font-size: 0.72rem;
+  }
+
+  .lobby-play-kicker,
+  .lobby-node-kicker {
+    margin-top: 12px;
+    font-size: 0.66rem;
+  }
+
+  .lobby-play-title {
+    font-size: clamp(3.1rem, 6vw, 4.2rem);
+  }
+
+  .lobby-play-copy {
+    font-size: 0.82rem;
+  }
+
+  .lobby-play-badge {
+    margin-top: 14px;
+    padding: 8px 12px;
+    font-size: 0.74rem;
+  }
+
+  .lobby-node {
+    padding: 14px;
+  }
+
+  .lobby-node-title {
+    font-size: clamp(1.2rem, 2.3vw, 1.9rem);
+  }
+
+  .lobby-node-copy {
+    display: none;
+  }
+
+  .lobby-stage-link-upper,
+  .lobby-stage-link-lower {
+    display: none;
+  }
+}
+
+@media (max-width: 720px) {
   .auth-card {
     padding: 24px;
   }
 
-  .game-toolbar {
-    flex-direction: column;
-    align-items: stretch;
+  .lobby-page {
+    padding: 10px;
+  }
+
+  .lobby-command-center {
+    width: 96vw;
+    height: min(84vh, 560px);
+  }
+
+  .lobby-stage {
+    border-radius: 24px;
+    padding: 12px;
+  }
+
+  .lobby-stage::before {
+    width: min(52vh, 360px);
+    top: 58%;
+  }
+
+  .lobby-stage-header {
+    min-height: 68px;
+  }
+
+  .lobby-brandmark-wrap-center {
+    width: clamp(150px, 30vw, 200px);
+  }
+
+  .lobby-user-chip {
+    padding: 6px 8px;
+  }
+
+  .lobby-logout-button {
+    width: 36px;
+    height: 36px;
+    border-radius: 14px;
+  }
+
+  .lobby-logout-icon {
+    width: 18px;
+    height: 18px;
+  }
+
+  .lobby-priority-shell {
+    grid-template-columns: minmax(0, 1.02fr) minmax(0, 0.98fr);
+    grid-template-rows: minmax(0, 1fr) minmax(0, 0.62fr);
+    gap: 6px;
+  }
+
+  .lobby-priority-group-upper {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .lobby-priority-group-lower {
+    grid-template-columns: 1fr 1fr 1fr;
+  }
+
+  .lobby-play-title {
+    font-size: clamp(2.6rem, 5.3vw, 3.5rem);
+  }
+
+  .lobby-node-title {
+    font-size: clamp(1rem, 2vw, 1.45rem);
+  }
+
+  .auth-brandmark-image {
+    width: min(210px, 58vw);
+  }
+
+  .legal-crest-image,
+  .game-corner-logo {
+    width: min(120px, 34vw);
+  }
+}
+
+/* Exact hub composition from the provided sketch. */
+.lobby-page {
+  width: 100vw;
+  height: 100vh;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 53% 48%, rgba(255, 255, 255, 0.18), transparent 8%),
+    radial-gradient(circle at 53% 56%, rgba(255, 57, 36, 0.26), transparent 23%),
+    linear-gradient(118deg, transparent 0 18%, rgba(255, 255, 255, 0.035) 18% 18.35%, transparent 18.35% 100%),
+    linear-gradient(62deg, transparent 0 24%, rgba(0, 210, 255, 0.045) 24% 24.35%, transparent 24.35% 100%),
+    linear-gradient(180deg, #05080e 0%, #10141c 48%, #07070b 100%);
+  color: #fffaf2;
+}
+
+.lobby-command-center {
+  width: min(86vw, 1120px, calc(82vh * 1.52));
+  aspect-ratio: 1.52;
+  min-width: 0;
+  min-height: 0;
+}
+
+.lobby-stage {
+  --panel-gap: 6px;
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  display: block;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  overflow: visible;
+  background: transparent;
+  box-shadow: none;
+}
+
+.lobby-stage::before,
+.lobby-stage::after {
+  content: "";
+  position: absolute;
+  pointer-events: none;
+}
+
+.lobby-stage::before {
+  inset: -9%;
+  background:
+    linear-gradient(90deg, transparent 0 8%, rgba(255, 255, 255, 0.08) 8% 8.2%, transparent 8.2% 100%),
+    linear-gradient(0deg, transparent 0 57%, rgba(255, 255, 255, 0.07) 57% 57.25%, transparent 57.25% 100%),
+    linear-gradient(135deg, transparent 0 44%, rgba(255, 255, 255, 0.055) 44% 44.35%, transparent 44.35% 100%);
+  opacity: 0.75;
+}
+
+.lobby-stage::after {
+  left: 53.5%;
+  top: 57%;
+  width: 42%;
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.3), rgba(255, 76, 47, 0.18) 34%, transparent 68%);
+  filter: blur(4px);
+  z-index: 1;
+}
+
+.lobby-stage-aura,
+.lobby-stage-grid,
+.lobby-stage-orbit {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.lobby-stage-aura {
+  background:
+    radial-gradient(circle at 13% 13%, rgba(255, 56, 42, 0.2), transparent 20%),
+    radial-gradient(circle at 86% 15%, rgba(226, 92, 255, 0.18), transparent 22%),
+    radial-gradient(circle at 18% 86%, rgba(255, 238, 54, 0.16), transparent 22%),
+    radial-gradient(circle at 82% 86%, rgba(118, 142, 158, 0.22), transparent 24%);
+  z-index: 0;
+}
+
+.lobby-stage-grid {
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.045) 1px, transparent 1px);
+  background-size: 46px 46px;
+  mask-image: radial-gradient(circle at 53.5% 57%, rgba(0, 0, 0, 0.88), transparent 68%);
+  z-index: 0;
+}
+
+.lobby-stage-orbit {
+  left: 53.5%;
+  top: 57%;
+  width: 46%;
+  aspect-ratio: 1;
+  inset: auto;
+  transform: translate(-50%, -50%) rotate(-13deg);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-left-color: rgba(255, 83, 54, 0.58);
+  border-right-color: rgba(0, 210, 255, 0.28);
+  border-radius: 50%;
+  opacity: 0.7;
+  z-index: 1;
+}
+
+.lobby-tile {
+  position: absolute;
+  border: 0;
+  border-radius: 0;
+  padding: 28px 34px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-start;
+  background:
+    linear-gradient(128deg, rgba(255, 255, 255, 0.32), transparent 18%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.13), transparent 42%),
+    var(--tile-bg);
+  color: var(--tile-stroke);
+  text-align: left;
+  cursor: not-allowed;
+  box-shadow:
+    inset 0 0 0 2px rgba(255, 255, 255, 0.16),
+    inset 0 0 0 var(--panel-gap) currentColor,
+    inset 0 18px 34px rgba(255, 255, 255, 0.1),
+    inset 0 -28px 42px rgba(0, 0, 0, 0.28),
+    0 24px 42px rgba(0, 0, 0, 0.36);
+  overflow: hidden;
+  clip-path: var(--tile-shape, polygon(0 0, calc(100% - 44px) 0, 100% 44px, 100% 100%, 44px 100%, 0 calc(100% - 44px)));
+  transform: skewX(var(--tile-skew, 0deg));
+  isolation: isolate;
+}
+
+.lobby-tile::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(112deg, transparent 0 12%, rgba(255, 255, 255, 0.32) 12% 14%, transparent 14% 100%),
+    linear-gradient(0deg, rgba(255, 255, 255, 0.14), transparent 36%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.lobby-tile::after {
+  content: "";
+  position: absolute;
+  inset: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  clip-path: inherit;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.lobby-tile span {
+  position: relative;
+  z-index: 1;
+  color: #fffaf2;
+  font-family: Impact, Haettenschweiler, "Arial Narrow Bold", sans-serif;
+  font-size: 44px;
+  line-height: 0.9;
+  letter-spacing: 0;
+  text-transform: uppercase;
+  text-shadow:
+    0 4px 0 rgba(0, 0, 0, 0.28),
+    0 0 18px rgba(255, 255, 255, 0.24);
+  transform: skewX(calc(var(--tile-skew, 0deg) * -1));
+}
+
+.lobby-tile:disabled {
+  opacity: 1;
+}
+
+.lobby-tile-play {
+  --tile-bg: radial-gradient(circle at 24% 28%, rgba(255, 235, 205, 0.24), transparent 22%), linear-gradient(150deg, #ff6b47 0%, #df1d1f 52%, #7f080c 100%);
+  --tile-stroke: #ff3340;
+  --tile-shape: polygon(0 0, calc(100% - 58px) 0, 100% 42px, 100% calc(100% - 18px), calc(100% - 24px) 100%, 0 100%);
+  --tile-skew: -1.4deg;
+  left: 0;
+  top: 0;
+  width: 47%;
+  height: 57%;
+  z-index: 2;
+  cursor: pointer;
+  box-shadow:
+    inset 0 0 0 2px rgba(255, 226, 214, 0.22),
+    inset 0 0 0 var(--panel-gap) #ff2933,
+    inset 0 24px 42px rgba(255, 255, 255, 0.14),
+    inset 0 -34px 54px rgba(67, 0, 0, 0.42),
+    0 0 34px rgba(255, 43, 38, 0.34),
+    0 28px 52px rgba(0, 0, 0, 0.42);
+}
+
+.lobby-tile-profile {
+  --tile-bg: radial-gradient(circle at 50% 20%, rgba(225, 248, 255, 0.26), transparent 22%), linear-gradient(155deg, #30d3ff 0%, #096ec5 60%, #053b78 100%);
+  --tile-stroke: #00a2e8;
+  --tile-shape: polygon(16px 0, calc(100% - 26px) 0, 100% 34px, calc(100% - 6px) 100%, 0 100%, 0 20px);
+  --tile-skew: 0.7deg;
+  left: 47%;
+  top: 0;
+  width: 20%;
+  height: 57%;
+  z-index: 2;
+}
+
+.lobby-tile-achievements {
+  --tile-bg: radial-gradient(circle at 55% 35%, rgba(255, 230, 128, 0.22), transparent 20%), linear-gradient(145deg, #e58cff 0%, #8e42c6 48%, #3e1d6d 100%);
+  --tile-stroke: #a84ec4;
+  --tile-shape: polygon(22px 0, 100% 0, 100% 100%, 38px 100%, 0 calc(100% - 36px), 0 18px);
+  --tile-skew: 1.2deg;
+  left: 67%;
+  top: 0;
+  width: 33%;
+  height: 57%;
+  z-index: 2;
+  align-items: center;
+  justify-content: center;
+}
+
+.lobby-tile-chat {
+  --tile-bg: radial-gradient(circle at 24% 32%, rgba(255, 255, 255, 0.28), transparent 20%), linear-gradient(145deg, #fff260 0%, #e4c400 48%, #8e7800 100%);
+  --tile-stroke: #fff200;
+  --tile-shape: polygon(0 0, 100% 0, calc(100% - 34px) 100%, 0 100%);
+  --tile-skew: 0.8deg;
+  left: 0;
+  top: 57%;
+  width: 38%;
+  height: 43%;
+  z-index: 2;
+}
+
+.lobby-tile-friends {
+  --tile-bg: radial-gradient(circle at 56% 28%, rgba(208, 255, 222, 0.24), transparent 20%), linear-gradient(150deg, #49ed8b 0%, #0ea75a 54%, #075531 100%);
+  --tile-stroke: #20c763;
+  --tile-shape: polygon(18px 0, 100% 0, 100% 100%, 0 100%, 0 26px);
+  --tile-skew: -0.8deg;
+  left: 38%;
+  top: 57%;
+  width: 22%;
+  height: 43%;
+  z-index: 2;
+}
+
+.lobby-tile-settings {
+  --tile-bg: linear-gradient(145deg, #9aa3aa 0%, #535d65 46%, #20262c 100%);
+  --tile-stroke: #5c5c5c;
+  --tile-shape: polygon(28px 0, 100% 0, 100% 100%, 0 100%, 0 30px);
+  --tile-skew: -0.6deg;
+  left: 60%;
+  top: 57%;
+  width: 40%;
+  height: 29%;
+  z-index: 2;
+  align-items: center;
+  justify-content: center;
+}
+
+.lobby-tile-logout {
+  --tile-bg: linear-gradient(150deg, #282828 0%, #080808 100%);
+  --tile-stroke: #111;
+  --tile-shape: polygon(18px 0, 100% 0, 100% 100%, 0 100%, 0 22px);
+  --tile-skew: 0.4deg;
+  left: 60%;
+  top: 86%;
+  width: 40%;
+  height: 14%;
+  z-index: 2;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.lobby-tile-play:hover,
+.lobby-tile-logout:hover {
+  filter: brightness(1.08) saturate(1.04);
+  z-index: 4;
+}
+
+.lobby-logo-core {
+  position: absolute;
+  left: 53.5%;
+  top: 57%;
+  width: 32%;
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+  z-index: 8;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+}
+
+.lobby-logo-core::before,
+.lobby-logo-core::after,
+.lobby-logo-flare {
+  content: "";
+  position: absolute;
+  inset: -16%;
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.lobby-logo-core::before {
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.46), rgba(255, 64, 40, 0.24) 30%, transparent 68%);
+  filter: blur(8px);
+}
+
+.lobby-logo-core::after {
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-top-color: rgba(255, 69, 44, 0.66);
+  border-bottom-color: rgba(0, 210, 255, 0.3);
+  transform: rotate(18deg);
+  opacity: 0.78;
+}
+
+.lobby-logo-flare {
+  inset: 14%;
+  background:
+    linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.42), transparent),
+    linear-gradient(0deg, transparent, rgba(255, 62, 42, 0.34), transparent);
+  filter: blur(12px);
+  opacity: 0.8;
+}
+
+.lobby-logo-image {
+  position: relative;
+  z-index: 1;
+  width: 86%;
+  max-height: 86%;
+  object-fit: contain;
+  filter:
+    drop-shadow(0 18px 24px rgba(0, 0, 0, 0.55))
+    drop-shadow(0 0 18px rgba(255, 255, 255, 0.34))
+    drop-shadow(0 0 34px rgba(255, 59, 42, 0.36));
+}
+
+@media (max-width: 920px), (max-height: 680px) {
+  .lobby-command-center {
+    width: min(94vw, calc(86vh * 1.52));
+    aspect-ratio: 1.52;
+  }
+
+  .lobby-tile {
+    border-width: 4px;
+    padding: 18px 20px;
+  }
+
+  .lobby-tile span {
+    font-size: 30px;
+  }
+
+}
+
+@media (max-width: 640px), (max-height: 520px) {
+  .lobby-command-center {
+    width: min(96vw, calc(90vh * 1.52));
+    aspect-ratio: 1.52;
+  }
+
+  .lobby-tile {
+    border-width: 3px;
+    padding: 12px 14px;
+  }
+
+  .lobby-tile span {
+    font-size: 20px;
+  }
+
+  .lobby-logo-core {
+    width: 34%;
+  }
+}
+
+/* Full-screen arcade art direction pass. Keeps the requested block layout intact. */
+.lobby-page {
+  background:
+    radial-gradient(circle at 53% 56%, rgba(255, 245, 217, 0.3), transparent 7%),
+    radial-gradient(circle at 20% 20%, rgba(255, 35, 32, 0.26), transparent 24%),
+    radial-gradient(circle at 78% 22%, rgba(212, 78, 255, 0.2), transparent 25%),
+    radial-gradient(circle at 19% 82%, rgba(255, 226, 36, 0.18), transparent 25%),
+    radial-gradient(circle at 82% 82%, rgba(69, 88, 100, 0.28), transparent 25%),
+    linear-gradient(125deg, transparent 0 16%, rgba(255, 255, 255, 0.055) 16% 16.22%, transparent 16.22% 100%),
+    linear-gradient(58deg, transparent 0 31%, rgba(0, 226, 255, 0.055) 31% 31.22%, transparent 31.22% 100%),
+    linear-gradient(180deg, #02040a 0%, #10131b 46%, #020307 100%);
+}
+
+.lobby-command-center {
+  width: 100vw;
+  height: 100vh;
+  aspect-ratio: auto;
+}
+
+.lobby-stage {
+  --panel-gap: 7px;
+  overflow: hidden;
+}
+
+.lobby-stage::before {
+  inset: 0;
+  background:
+    linear-gradient(90deg, transparent 0 8%, rgba(255, 255, 255, 0.08) 8% 8.16%, transparent 8.16% 100%),
+    linear-gradient(90deg, transparent 0 47%, rgba(255, 255, 255, 0.07) 47% 47.16%, transparent 47.16% 100%),
+    linear-gradient(0deg, transparent 0 57%, rgba(255, 255, 255, 0.08) 57% 57.18%, transparent 57.18% 100%),
+    linear-gradient(143deg, transparent 0 36%, rgba(255, 72, 48, 0.12) 36% 36.35%, transparent 36.35% 100%),
+    linear-gradient(37deg, transparent 0 62%, rgba(0, 215, 255, 0.08) 62% 62.28%, transparent 62.28% 100%);
+  opacity: 0.95;
+}
+
+.lobby-stage::after {
+  width: 38vw;
+  max-width: 560px;
+  min-width: 280px;
+  background:
+    radial-gradient(circle, rgba(255, 255, 255, 0.42), rgba(255, 66, 38, 0.28) 28%, rgba(255, 66, 38, 0.08) 52%, transparent 72%);
+  filter: blur(2px);
+  opacity: 0.95;
+}
+
+.lobby-stage-aura {
+  background:
+    linear-gradient(122deg, transparent 0 12%, rgba(255, 255, 255, 0.07) 12% 12.45%, transparent 12.45% 100%),
+    linear-gradient(62deg, transparent 0 72%, rgba(255, 255, 255, 0.06) 72% 72.35%, transparent 72.35% 100%),
+    radial-gradient(circle at 9% 8%, rgba(255, 41, 32, 0.34), transparent 30%),
+    radial-gradient(circle at 86% 15%, rgba(205, 92, 255, 0.3), transparent 31%),
+    radial-gradient(circle at 15% 88%, rgba(255, 228, 0, 0.22), transparent 32%),
+    radial-gradient(circle at 86% 84%, rgba(119, 133, 141, 0.34), transparent 30%);
+}
+
+.lobby-stage-grid {
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+  background-size: 56px 56px;
+  mask-image: radial-gradient(circle at 53.5% 57%, rgba(0, 0, 0, 0.9), transparent 72%);
+  opacity: 0.75;
+}
+
+.lobby-stage-orbit {
+  width: 36vw;
+  max-width: 520px;
+  min-width: 270px;
+  border-color: rgba(255, 255, 255, 0.12);
+  border-top-color: rgba(255, 62, 40, 0.72);
+  border-left-color: rgba(255, 238, 181, 0.32);
+  border-right-color: rgba(0, 225, 255, 0.36);
+  animation: lobbyEnergySpin 16s linear infinite;
+}
+
+.lobby-tile {
+  padding: 42px 52px;
+  background:
+    linear-gradient(126deg, rgba(255, 255, 255, 0.42), transparent 14%),
+    linear-gradient(182deg, rgba(255, 255, 255, 0.15), transparent 34%),
+    linear-gradient(0deg, rgba(0, 0, 0, 0.22), transparent 48%),
+    var(--tile-bg);
+  box-shadow:
+    inset 0 0 0 2px rgba(255, 255, 255, 0.18),
+    inset 0 0 0 var(--panel-gap) currentColor,
+    inset 0 24px 44px rgba(255, 255, 255, 0.13),
+    inset 0 -44px 70px rgba(0, 0, 0, 0.38),
+    0 34px 60px rgba(0, 0, 0, 0.42);
+}
+
+.lobby-tile::before {
+  background:
+    linear-gradient(112deg, transparent 0 10%, rgba(255, 255, 255, 0.42) 10% 11.35%, transparent 11.35% 100%),
+    linear-gradient(154deg, transparent 0 55%, rgba(255, 255, 255, 0.12) 55% 57%, transparent 57% 100%),
+    linear-gradient(0deg, rgba(255, 255, 255, 0.14), transparent 30%);
+}
+
+.lobby-tile::after {
+  inset: 12px;
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.lobby-tile span {
+  font-size: 58px;
+  text-shadow:
+    0 5px 0 rgba(0, 0, 0, 0.3),
+    0 0 24px rgba(255, 255, 255, 0.28);
+}
+
+.lobby-tile-play {
+  --tile-bg:
+    radial-gradient(circle at 24% 28%, rgba(255, 245, 206, 0.34), transparent 24%),
+    radial-gradient(circle at 76% 72%, rgba(255, 37, 24, 0.34), transparent 35%),
+    linear-gradient(142deg, #ff8a4f 0%, #ff2d28 34%, #ab090e 70%, #3a0104 100%);
+  --tile-shape: polygon(0 0, calc(100% - 96px) 0, 100% 58px, 96% 100%, 0 100%);
+  width: 50%;
+  height: 61%;
+  box-shadow:
+    inset 0 0 0 2px rgba(255, 231, 216, 0.24),
+    inset 0 0 0 var(--panel-gap) #ff2f35,
+    inset 0 32px 58px rgba(255, 255, 255, 0.18),
+    inset 0 -54px 88px rgba(67, 0, 0, 0.54),
+    0 0 46px rgba(255, 36, 28, 0.56),
+    0 38px 78px rgba(0, 0, 0, 0.5);
+  animation: lobbyPlayPulse 2.8s ease-in-out infinite;
+}
+
+.lobby-tile-play span {
+  font-size: 90px;
+}
+
+.lobby-tile-profile {
+  left: 50%;
+  width: 17%;
+  --tile-bg:
+    radial-gradient(circle at 50% 18%, rgba(233, 255, 255, 0.34), transparent 24%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.14), transparent 46%),
+    linear-gradient(155deg, #37efff 0%, #087acc 56%, #04274f 100%);
+  --tile-shape: polygon(22px 0, calc(100% - 34px) 0, 100% 42px, calc(100% - 10px) 100%, 0 100%, 0 28px);
+}
+
+.lobby-tile-achievements {
+  left: 67%;
+  width: 33%;
+  --tile-bg:
+    radial-gradient(circle at 56% 34%, rgba(255, 238, 125, 0.34), transparent 23%),
+    radial-gradient(circle at 78% 22%, rgba(255, 255, 255, 0.2), transparent 16%),
+    linear-gradient(145deg, #ff9cf4 0%, #a950d6 42%, #5d2592 70%, #220b3d 100%);
+  --tile-shape: polygon(42px 0, 100% 0, 100% 100%, 56px 100%, 0 calc(100% - 58px), 0 26px);
+  box-shadow:
+    inset 0 0 0 2px rgba(255, 238, 185, 0.2),
+    inset 0 0 0 var(--panel-gap) #b756d4,
+    inset 0 26px 56px rgba(255, 255, 255, 0.16),
+    inset 0 -46px 72px rgba(32, 4, 55, 0.48),
+    0 0 40px rgba(196, 76, 255, 0.38),
+    0 34px 64px rgba(0, 0, 0, 0.42);
+}
+
+.lobby-tile-chat {
+  top: 61%;
+  height: 39%;
+  --tile-bg:
+    radial-gradient(circle at 26% 36%, rgba(255, 255, 255, 0.38), transparent 21%),
+    radial-gradient(circle at 76% 76%, rgba(255, 130, 0, 0.22), transparent 30%),
+    linear-gradient(145deg, #fff66b 0%, #ffd21e 38%, #b88600 72%, #514100 100%);
+  --tile-shape: polygon(0 0, 100% 0, calc(100% - 64px) 100%, 0 100%);
+}
+
+.lobby-tile-friends {
+  left: 38%;
+  top: 61%;
+  height: 39%;
+  --tile-bg:
+    radial-gradient(circle at 52% 28%, rgba(209, 255, 223, 0.36), transparent 22%),
+    radial-gradient(circle at 26% 78%, rgba(101, 255, 158, 0.22), transparent 28%),
+    linear-gradient(150deg, #67ff9a 0%, #13be63 50%, #07663b 78%, #032515 100%);
+  --tile-shape: polygon(32px 0, 100% 0, 94% 100%, 0 100%, 0 42px);
+}
+
+.lobby-tile-settings {
+  top: 61%;
+  height: 27%;
+  --tile-bg:
+    linear-gradient(90deg, rgba(255, 255, 255, 0.12), transparent 28%),
+    linear-gradient(145deg, #b1bbc0 0%, #66737b 42%, #303942 70%, #0f141a 100%);
+  --tile-shape: polygon(44px 0, 100% 0, 100% 100%, 0 100%, 0 48px);
+}
+
+.lobby-tile-logout {
+  top: 88%;
+  height: 12%;
+  --tile-bg:
+    linear-gradient(90deg, rgba(255, 255, 255, 0.08), transparent 34%),
+    linear-gradient(150deg, #333 0%, #101010 62%, #030303 100%);
+  --tile-shape: polygon(28px 0, 100% 0, 100% 100%, 0 100%, 0 30px);
+}
+
+.lobby-logo-core {
+  width: 25%;
+  mix-blend-mode: screen;
+}
+
+.lobby-logo-core::before {
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.54), rgba(255, 64, 40, 0.3) 24%, rgba(0, 220, 255, 0.14) 44%, transparent 68%);
+  filter: blur(14px);
+}
+
+.lobby-logo-core::after {
+  inset: 5%;
+  border-style: dashed;
+  opacity: 0.42;
+}
+
+.lobby-logo-image {
+  width: 100%;
+  max-height: 100%;
+  opacity: 0.92;
+  filter:
+    drop-shadow(0 20px 26px rgba(0, 0, 0, 0.5))
+    drop-shadow(0 0 18px rgba(255, 255, 255, 0.44))
+    drop-shadow(0 0 42px rgba(255, 59, 42, 0.42));
+}
+
+@keyframes lobbyPlayPulse {
+  0%,
+  100% {
+    filter: saturate(1) brightness(1);
+  }
+
+  50% {
+    filter: saturate(1.12) brightness(1.06);
+  }
+}
+
+@keyframes lobbyEnergySpin {
+  from {
+    transform: translate(-50%, -50%) rotate(-13deg);
+  }
+
+  to {
+    transform: translate(-50%, -50%) rotate(347deg);
+  }
+}
+
+@media (max-width: 920px), (max-height: 680px) {
+  .lobby-command-center {
+    width: 100vw;
+    height: 100vh;
+    aspect-ratio: auto;
+  }
+
+  .lobby-tile {
+    padding: 26px 30px;
+  }
+
+  .lobby-tile span {
+    font-size: 34px;
+  }
+
+  .lobby-tile-play span {
+    font-size: 62px;
+  }
+}
+
+@media (max-width: 640px), (max-height: 520px) {
+  .lobby-tile {
+    padding: 16px 18px;
+  }
+
+  .lobby-tile span {
+    font-size: 22px;
+  }
+
+  .lobby-tile-play span {
+    font-size: 42px;
+  }
+
+  .lobby-logo-core {
+    width: 28%;
   }
 }
