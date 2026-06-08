@@ -1,4 +1,4 @@
-import logoImage from "../../assets/logo.png";
+import logoImage from "../../../assets/logo.png";
 
 export default function Lobby({ user, onPlay, onLogout }) {
   const playerName = user.username || user.email || "player";
