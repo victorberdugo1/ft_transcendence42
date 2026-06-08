@@ -89,6 +89,7 @@ function tickCpu(cpu, target) {
 
     if (dist < 0.8) {
         next.attack = true;
+        next.moveX  = dir;          // face the target before attacking
     } else if (dist < 3.0) {
         next.moveX = dir;
         if (dy > 0.8 && cpu.jumpsLeft > 0) next.jump = true;
@@ -101,6 +102,7 @@ function tickCpu(cpu, target) {
 
     ai.pendingInput  = next;
     ai.reactionTimer = rand(REACT_MIN, REACT_MAX);
+    if (next.attack) ai.actionCooldown = rand(0.3, 0.55);  // prevent attack spam
 }
 
 module.exports = { createCpuPlayer, tickCpu };

@@ -251,6 +251,7 @@ typedef struct {
     AnimatedCharacter *character;
 
     char charId[32];
+    char username[64];
     int  slotIndex;
 
     /* victoria: aterrizaje suave y camara de zoom */
@@ -393,14 +394,23 @@ EM_JS(int, ws_get_player, (int idx, char *buf, int len), {
     stringToUTF8(fields, buf, len);
     return 1;
 });
-EM_JS(int, ws_get_player_char_id_by_client, (int playerId, char *buf, int len), {
-    buf = buf | 0;
+EM_JS(int, ws_get_player_char_id_by_client, (int playerId, char *buf, int len), {    buf = buf | 0;
     if (!window._gameState || !window._gameState.players) {
         stringToUTF8("", buf, len); return 0;
     }
     var p = window._gameState.players[playerId];
     if (!p || !p.charId) { stringToUTF8("", buf, len); return 0; }
     stringToUTF8(p.charId, buf, len);
+    return 1;
+});
+EM_JS(int, ws_get_player_username, (int playerId, char *buf, int len), {
+    buf = buf | 0;
+    if (!window._gameState || !window._gameState.players) {
+        stringToUTF8("", buf, len); return 0;
+    }
+    var p = window._gameState.players[playerId];
+    if (!p || !p.username) { stringToUTF8("", buf, len); return 0; }
+    stringToUTF8(p.username, buf, len);
     return 1;
 });
 
@@ -480,7 +490,7 @@ static void SSS_UnloadPreviews(void) {
 }
 
 static bool SSS_UpdateAndDraw(void) {
-    if (!g_sss.isHost) g_sss.isHost = (bool)ws_is_host();
+    g_sss.isHost = (bool)ws_is_host();  /* poll every frame — no latch */
 
     {
         int confirmed = ws_get_confirmed_stage();
@@ -663,6 +673,17 @@ EM_JS(int, ws_get_saved_char_id, (char *buf, int len), {
 EM_JS(void, ws_clear_char_select, (void), {
     window._charSelectData = null;
     try { sessionStorage.removeItem('pendingCharSelect'); sessionStorage.removeItem('charSelectData'); } catch(e){}
+});
+
+/* Called by the server (via a 'reset_screens' message) or by the client on
+   match_finished when the winner does NOT reload.  The C side polls this
+   every frame and calls ws_reset_screens() when it returns 1. */
+EM_JS(int, ws_needs_screen_reset, (void), {
+    if (window._pendingScreenReset) {
+        window._pendingScreenReset = false;
+        return 1;
+    }
+    return 0;
 });
 
 static void strcpy_safe(char *dst, const char *src, size_t n) {
@@ -996,12 +1017,17 @@ static void FetchState(void) {
                 char _cid[32] = {0};
                 if (ws_get_player_char_id_by_client(pid, _cid, sizeof(_cid)) && _cid[0]) {
                     strncpy(players[slot].charId, _cid, sizeof(players[slot].charId)-1);
-                } else if (ws_get_slot_char_id(slot, _cid, sizeof(_cid)) && _cid[0]) {
-                    strncpy(players[slot].charId, _cid, sizeof(players[slot].charId)-1);
+                } else if (ws_get_slot_char_id(slot, _cid, sizeof(_cid)) && _cid[0]) {                    strncpy(players[slot].charId, _cid, sizeof(players[slot].charId)-1);
                 }
             }
             if (!players[slot].charId[0])
                 strncpy(players[slot].charId, "default", sizeof(players[slot].charId)-1);
+
+            {
+                char _uname[64] = {0};
+                ws_get_player_username(pid, _uname, sizeof(_uname));
+                strncpy(players[slot].username, _uname, sizeof(players[slot].username)-1);
+            }
 
             players[slot].animIndex = AnimIndex(panim);
             strcpy_safe(players[slot].animation, panim, sizeof(players[slot].animation));
@@ -1009,6 +1035,13 @@ static void FetchState(void) {
         }
 
         seen[slot] = 1;
+
+        /* Refresh username in case it arrived after initial slot creation */
+        if (!players[slot].username[0]) {
+            char _uname[64] = {0};
+            if (ws_get_player_username(pid, _uname, sizeof(_uname)) && _uname[0])
+                strncpy(players[slot].username, _uname, sizeof(players[slot].username)-1);
+        }
 
         {
             char _newCid[32] = {0};
@@ -1550,8 +1583,12 @@ static void DrawGame(void) {
         const bool  isMe    = (!is_spectator && p->id == my_id);
         const Color nameCol = isMe ? YELLOW : WHITE;
 
-        char hud[48];
-        snprintf(hud, sizeof(hud), "P%d: %d stocks", p->id, p->stocks);
+        char hud[80];
+        const char *dispName = (p->username[0]) ? p->username : NULL;
+        if (dispName)
+            snprintf(hud, sizeof(hud), "%s: %d stocks", dispName, p->stocks);
+        else
+            snprintf(hud, sizeof(hud), "P%d: %d stocks", p->id, p->stocks);
         DrawText(hud, 8, hudY, 12, nameCol);
         hudY += 14;
 
@@ -1584,9 +1621,15 @@ static void DrawGame(void) {
     if (is_spectator) {
         DrawText("SPECTATOR", SCREEN_W - 90, 8, 12, (Color){80,200,255,255});
     } else if (my_id > 0) {
-        char txt[24];
-        snprintf(txt, sizeof(txt), "Player %d", my_id);
-        DrawText(txt, SCREEN_W - 80, 8, 12, YELLOW);
+        char txt[80];
+        const Player *me = NULL;
+        for (int s = 0; s < MAX_PLAYERS; s++)
+            if (players[s].active && players[s].id == my_id) { me = &players[s]; break; }
+        if (me && me->username[0])
+            snprintf(txt, sizeof(txt), "%s", me->username);
+        else
+            snprintf(txt, sizeof(txt), "Player %d", my_id);
+        DrawText(txt, SCREEN_W - (int)(MeasureText(txt, 12) + 4), 8, 12, YELLOW);
     } else if (no_id_frames > 60) {
         DrawText("Connecting...", SCREEN_W - 100, 8, 12, (Color){220,140,40,255});
         if (ws_player_count() > 0)
@@ -1654,8 +1697,14 @@ static void DrawGame(void) {
             int l1w = MeasureText(line1, fsize1);
             DrawText(line1, BOX_X + (BOX_W - l1w) / 2, BOX_Y + 16, fsize1, (Color){80,200,255,255});
 
-            char wline[48];
-            snprintf(wline, sizeof(wline), "Ganador: Player %d", winner_id);
+            char wline[80];
+            const Player *winnerP = NULL;
+            for (int s = 0; s < MAX_PLAYERS; s++)
+                if (players[s].active && players[s].id == winner_id) { winnerP = &players[s]; break; }
+            if (winnerP && winnerP->username[0])
+                snprintf(wline, sizeof(wline), "Ganador: %s", winnerP->username);
+            else
+                snprintf(wline, sizeof(wline), "Ganador: Player %d", winner_id);
             int wlw = MeasureText(wline, 18);
             DrawText(wline, BOX_X + (BOX_W - wlw) / 2, BOX_Y + 62, 18, YELLOW);
 
@@ -1858,8 +1907,33 @@ static bool CSS_UpdateAndDraw(void) {
     return false;
 }
 
+/* ── Screen reset (between matches without WASM reload) ─────────────────── */
+static void ws_reset_screens(void) {
+    /* Reset SSS to initial state */
+    SSS_UnloadPreviews();
+    g_sss.phase         = SSS_SELECTING;
+    g_sss.hovered       = 0;
+    g_sss.selected      = 0;
+    g_sss.isHost        = false;
+    /* Reset CSS to initial state */
+    CSS_UnloadPortraits();
+    g_css.phase         = CSS_SELECTING;
+    g_css.hovered       = 0;
+    g_css.selected      = -1;
+    g_css.portraitsLoaded = false;
+    g_css.savedCharId[0] = '\0';
+    /* Clear any pending JS-side char/stage select data */
+    ws_clear_char_select();
+}
+
 static void MainLoop(void) {
     if (!game_ready) return;
+
+    /* Between matches (winner stays alive): server sets window._pendingScreenReset */
+    if (ws_needs_screen_reset()) {
+        ws_reset_screens();
+        return;
+    }
 
     {
         int newW = js_canvas_width();
@@ -1878,6 +1952,12 @@ static void MainLoop(void) {
 
     if (g_sss.phase != SSS_DONE) {
         if (ws_is_spectator()) {
+            int confirmed = ws_get_confirmed_stage();
+            if (confirmed >= 0) {
+                for (int i = 0; i < STAGES_COUNT; i++) {
+                    if (STAGES[i].id == confirmed) { g_sss.selected = i; break; }
+                }
+            }
             g_sss.phase = SSS_DONE;
         } else {
             FetchState();
@@ -1987,7 +2067,7 @@ int main(void) {
 
     SetTraceLogLevel(LOG_NONE);
     InitWindow(SCREEN_W, SCREEN_H, "Enuma Fighter");
-    SetTargetFPS(60);
+    SetTargetFPS(0);
 
     scene_cam = (Camera){
         .position   = { 0.0f, CAM_Y_DEFAULT, 9.0f },

@@ -2,7 +2,7 @@
 
 const {
     TICK_DT, TICK_RATE,
-    GRAVITY, MOVE_SPEED, DASH_SPEED, DASH_DURATION, DASH_COOLDOWN,
+    GRAVITY, JUMP_FORCE, MOVE_SPEED, DASH_SPEED, DASH_DURATION, DASH_COOLDOWN,
     GROUND_Y, KNOCKBACK_DECAY, MIN_KNOCKBACK,
     STAGE_LEFT, STAGE_RIGHT, STAGE_BOTTOM,
     ATTACK_DURATION, ATTACK_COOLDOWN, ATTACK_RANGE, ATTACK_RANGE_Y,
@@ -170,7 +170,7 @@ function tickMovement(p, moveX, jump, crouch) {
     p.crouching = p.onGround && !p.dashing && !p.attacking && !p.blocking && crouch;
 
     if (jump && p.jumpsLeft > 0 && !p.blocking) {
-        p.vy = 10.8; p.onGround = false; p.jumpsLeft--; p.jumpId++;
+        p.vy = JUMP_FORCE; p.onGround = false; p.jumpsLeft--; p.jumpId++;
         p.animation = 'jump'; p.animTimer = ANIM_DURATIONS.jump;
         if (!p.dashing && moveX !== 0) { p.vx = moveX * (p.moveSpeed ?? MOVE_SPEED); p.facing = Math.sign(moveX); }
     }
