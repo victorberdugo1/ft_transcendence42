@@ -16,6 +16,7 @@ const {
     MAX_PLAYERS, GHOST_TTL,
     ATTACK_RANGE, ATTACK_RANGE_Y, DASH_ATTACK_RANGE_X,
     CHAR_IDS, CHARACTER_DEFS,
+    tournamentRoom,
 } = require('../game/session');
 
 const gameSession = require('../game/session');
@@ -93,8 +94,15 @@ function broadcastHostStatus() {
         const sid = playerSession.get(pl.id) ?? null;
         let isHost;
         if (sid === null) {
-            // Lobby: only the lower id of a complete pair is host.
-            isHost = _lobbyHostSet.has(pl.id);
+            // Tournament waiting room players (_seekingMatch===false, not in lobby
+            // queue) still need isHost:true so the SSS activates and they can pick
+            // a character before the bracket starts.
+            if (pl._seekingMatch === false) {
+                isHost = true;
+            } else {
+                // Lobby: only the lower id of a complete pair is host.
+                isHost = _lobbyHostSet.has(pl.id);
+            }
         } else {
             // In-session: standard min-id host within the session group.
             const group = groups.get(sid) ?? [];
@@ -924,6 +932,147 @@ async function onConnection(ws, req) {
             return;
         }
 
+        // ── Tournament waiting room ───────────────────────────────────────────
+        if (msg.type === 'tournament_join') {
+            if (!dbUserId) {
+                if (players[clientId]?.ws?.readyState === WebSocket.OPEN)
+                    players[clientId].ws.send(JSON.stringify({ type: 'tournament_room_error', reason: 'not_authenticated' }));
+                return;
+            }
+            if (tournamentRoom.started) {
+                if (players[clientId]?.ws?.readyState === WebSocket.OPEN)
+                    players[clientId].ws.send(JSON.stringify({ type: 'tournament_room_error', reason: 'already_started' }));
+                return;
+            }
+            if (tournamentRoom.players.length >= tournamentRoom.maxPlayers) {
+                if (players[clientId]?.ws?.readyState === WebSocket.OPEN)
+                    players[clientId].ws.send(JSON.stringify({ type: 'tournament_room_error', reason: 'room_full' }));
+                return;
+            }
+            const alreadyIn = tournamentRoom.players.some(p => p.dbUserId === dbUserId);
+            if (!alreadyIn) {
+                // Resolve username: prefer already-loaded player object, fall back to DB query.
+                let username = players[clientId]?.username ?? null;
+                if (!username && dbUserId) {
+                    try {
+                        const { rows: uRows } = await db.query('SELECT username FROM users WHERE id = $1', [dbUserId]);
+                        username = uRows[0]?.username ?? null;
+                        if (players[clientId]) players[clientId].username = username;
+                    } catch (_) {}
+                }
+                tournamentRoom.players.push({ clientId, dbUserId, username });
+            }
+            const roomMsg = JSON.stringify({
+                type: 'tournament_room_update',
+                players:    tournamentRoom.players,
+                started:    tournamentRoom.started,
+                tournamentId: tournamentRoom.tournamentId,
+                maxPlayers: tournamentRoom.maxPlayers,
+            });
+            for (const entry of tournamentRoom.players) {
+                const pl = players[entry.clientId];
+                if (pl?.ws?.readyState === WebSocket.OPEN) pl.ws.send(roomMsg);
+            }
+            console.log(`[TOURNAMENT-ROOM] ${dbUserId} joined — ${tournamentRoom.players.length}/${tournamentRoom.maxPlayers}`);
+            return;
+        }
+
+        if (msg.type === 'tournament_leave') {
+            if (!dbUserId) return;
+            const idx = tournamentRoom.players.findIndex(p => p.dbUserId === dbUserId);
+            if (idx === -1) return;
+            tournamentRoom.players.splice(idx, 1);
+            if (players[clientId]?.ws?.readyState === WebSocket.OPEN) {
+                players[clientId].ws.send(JSON.stringify({
+                    type: 'tournament_room_update',
+                    players:    tournamentRoom.players,
+                    started:    tournamentRoom.started,
+                    tournamentId: tournamentRoom.tournamentId,
+                    maxPlayers: tournamentRoom.maxPlayers,
+                    leftRoom: true,
+                }));
+            }
+            const roomMsgLeave = JSON.stringify({
+                type: 'tournament_room_update',
+                players:    tournamentRoom.players,
+                started:    tournamentRoom.started,
+                tournamentId: tournamentRoom.tournamentId,
+                maxPlayers: tournamentRoom.maxPlayers,
+            });
+            for (const entry of tournamentRoom.players) {
+                const pl = players[entry.clientId];
+                if (pl?.ws?.readyState === WebSocket.OPEN) pl.ws.send(roomMsgLeave);
+            }
+            console.log(`[TOURNAMENT-ROOM] ${dbUserId} left — ${tournamentRoom.players.length}/${tournamentRoom.maxPlayers}`);
+            return;
+        }
+
+        if (msg.type === 'tournament_launch') {
+            if (!dbUserId) {
+                if (players[clientId]?.ws?.readyState === WebSocket.OPEN)
+                    players[clientId].ws.send(JSON.stringify({ type: 'tournament_room_error', reason: 'not_authenticated' }));
+                return;
+            }
+            if (tournamentRoom.started) {
+                if (players[clientId]?.ws?.readyState === WebSocket.OPEN)
+                    players[clientId].ws.send(JSON.stringify({ type: 'tournament_room_error', reason: 'already_started' }));
+                return;
+            }
+            const inRoom = tournamentRoom.players.some(p => p.dbUserId === dbUserId);
+            if (!inRoom) {
+                if (players[clientId]?.ws?.readyState === WebSocket.OPEN)
+                    players[clientId].ws.send(JSON.stringify({ type: 'tournament_room_error', reason: 'not_in_room' }));
+                return;
+            }
+            // Resolve current clientIds by dbUserId (handles reconnections where clientId may have changed).
+            const participantIds = [];
+            for (const entry of tournamentRoom.players) {
+                // Find the live player slot for this dbUserId
+                let liveCid = null;
+                for (const [pid, pl] of Object.entries(players)) {
+                    if (pl.dbUserId === entry.dbUserId && pl.ws?.readyState === WebSocket.OPEN) {
+                        liveCid = Number(pid); break;
+                    }
+                }
+                if (liveCid !== null) participantIds.push(liveCid);
+            }
+            if (participantIds.length < 2) {
+                if (players[clientId]?.ws?.readyState === WebSocket.OPEN)
+                    players[clientId].ws.send(JSON.stringify({ type: 'tournament_room_error', reason: 'not_enough_players' }));
+                return;
+            }
+            tournamentRoom.started = true;
+            try {
+                const tournamentId = await startTournament(participantIds, dbUserId);
+                tournamentRoom.tournamentId = tournamentId;
+                const startedMsg = JSON.stringify({
+                    type: 'tournament_started',
+                    tournamentId,
+                    playerIds: participantIds,
+                });
+                for (const entry of tournamentRoom.players) {
+                    const pl = players[entry.clientId];
+                    if (pl?.ws?.readyState === WebSocket.OPEN) pl.ws.send(startedMsg);
+                }
+                console.log(`[TOURNAMENT-ROOM] Launched tournament ${tournamentId} with ${participantIds.length} players`);
+                // Reset room after 30s so it can be reused
+                setTimeout(() => {
+                    tournamentRoom.players    = [];
+                    tournamentRoom.started    = false;
+                    tournamentRoom.tournamentId = null;
+                }, 30000);
+            } catch (err) {
+                console.error('[TOURNAMENT-ROOM] launch error:', err.message);
+                tournamentRoom.started = false;
+                const errMsg = JSON.stringify({ type: 'tournament_room_error', reason: 'launch_failed' });
+                for (const entry of tournamentRoom.players) {
+                    const pl = players[entry.clientId];
+                    if (pl?.ws?.readyState === WebSocket.OPEN) pl.ws.send(errMsg);
+                }
+            }
+            return;
+        }
+
         if (msg.type === 'input') {
             if (spectators[clientId]) return;
             if (!players[clientId]) { await promoteToPlayer(msg); return; }
@@ -949,10 +1098,16 @@ async function onConnection(ws, req) {
                     const _sessIds = _sess ? [..._sess.playerIds].filter(id => players[id]?.dbUserId != null) : [];
                     _isHost = _sessIds.length ? clientId === Math.min(..._sessIds) : true;
                 } else {
-                    // Training-only players (_seekingMatch=false) are not in the lobby queue,
-                    // so they can never be a pair host. Reject their stage_select immediately.
+                    // Tournament waiting room players (_seekingMatch=false) are not
+                    // in the lobby queue but ARE allowed to select stage — it will be
+                    // stored in _pendingStageId and used when their bracket match starts.
                     if (players[clientId]?._seekingMatch === false) {
-                        console.log(`[STAGE_SELECT] ignored: client=${clientId} is training-only (not seeking match)`);
+                        const p = players[clientId];
+                        if (p) p._pendingStageId = stageId;
+                        // Confirm stage only to this player (no pair partner yet).
+                        if (ws.readyState === WebSocket.OPEN)
+                            ws.send(JSON.stringify({ type: 'stage_confirmed', stageId }));
+                        console.log(`[STAGE_SELECT] tournament client=${clientId} stage=${stageId}`);
                         return;
                     }
                     const _lobbyQ = getLobbyQueue();  // join-time order
@@ -1051,11 +1206,11 @@ async function onConnection(ws, req) {
                     }
                 }
             } else {
-                // Lobby: player hasn't been matched yet — send to lobby players only
-                // (those also without a session, and actively seeking a match).
+                // Lobby: send to lobby players (seeking match) AND tournament waiting
+                // room players (_seekingMatch:false, no session) so they all see
+                // each other's character selections before the bracket starts.
                 for (const [, pl] of Object.entries(players)) {
                     if (playerSession.has(pl.id)) continue;   // skip in-session players
-                    if (pl._seekingMatch === false) continue;  // skip training-only players
                     if (pl.ws?.readyState === WebSocket.OPEN) pl.ws.send(ack);
                 }
             }
@@ -1080,6 +1235,26 @@ async function onConnection(ws, req) {
             (currentSpectatorWs && currentSpectatorWs !== ws && !players[clientId])) {
             console.log(`[WS] close ignored for stale ws on slot ${clientId}`);
             return;
+        }
+
+        // Remove from tournament waiting room if the player disconnects before launch.
+        if (!tournamentRoom.started && dbUserId) {
+            const tIdx = tournamentRoom.players.findIndex(p => p.dbUserId === dbUserId);
+            if (tIdx !== -1) {
+                tournamentRoom.players.splice(tIdx, 1);
+                const roomMsg = JSON.stringify({
+                    type: 'tournament_room_update',
+                    players:    tournamentRoom.players,
+                    started:    tournamentRoom.started,
+                    tournamentId: tournamentRoom.tournamentId,
+                    maxPlayers: tournamentRoom.maxPlayers,
+                });
+                for (const entry of tournamentRoom.players) {
+                    const pl = players[entry.clientId];
+                    if (pl?.ws?.readyState === WebSocket.OPEN) pl.ws.send(roomMsg);
+                }
+                console.log(`[TOURNAMENT-ROOM] ${dbUserId} removed on disconnect — ${tournamentRoom.players.length}/${tournamentRoom.maxPlayers}`);
+            }
         }
 
         if (spectators[clientId]) {

@@ -208,8 +208,10 @@ function GameShell({ user, gameMode, gameOpts, inLobby, onBackToLobby, grace }) 
         window._ws.send(JSON.stringify({ type: "rejoin", clientId: parseInt(savedId, 10) }));
       } else if (gameMode === "spectate") {
         window._ws.send(JSON.stringify({ type: "watch", sessionId: gameOpts?.sessionId ?? null }));
+      } else if (gameMode === "tournament") {
+        window._pendingTournament = true;
+        window._ws.send(JSON.stringify({ type: "join", seekingMatch: false }));
       } else {
-        window._pendingTournament = gameMode === "tournament";
         window._ws.send(JSON.stringify({ type: "join" }));
       }
     }

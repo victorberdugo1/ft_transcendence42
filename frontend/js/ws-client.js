@@ -182,9 +182,14 @@ function connectWS() {
             // matchmaking queue -- they must never be paired with a waiting 1v1 player.
             window._pendingTraining = opts;
             ws.send(JSON.stringify({ type: 'join', seekingMatch: false }));
+        } else if (mode === 'tournament') {
+            // Join the player pool but NOT the lobby matchmaking queue.
+            // The tournament room handler sends the actual tournament_join after
+            // receiving init (clientId assigned). tournament_launch fires startTournament.
+            window._pendingTournament = true;
+            ws.send(JSON.stringify({ type: 'join', seekingMatch: false }));
         } else {
-            // versus / tournament — join the player pool and wait for a match.
-            window._pendingTournament = (mode === 'tournament');
+            // versus — join the player pool and wait for auto-match.
             ws.send(JSON.stringify({ type: 'join' }));
         }
     });
@@ -303,8 +308,11 @@ function connectWS() {
                     else console.log('[WS] training session started:', d.sessionId, 'cpuIds:', d.cpuIds);
                 }).catch(e => console.error('[WS] training fetch error:', e));
             }
-            // Tournament: POST /api/tournament is handled server-side by tryAutoMatch;
-            // the join message already put us in the player pool.
+            // Tournament: now that we have a clientId, auto-join the waiting room.
+            if (window._pendingTournament) {
+                window._pendingTournament = false;
+                ws.send(JSON.stringify({ type: 'tournament_join' }));
+            }
 
         } else if (msg.type === 'char_select_ack') {
             window._charSelectData = msg;
@@ -375,7 +383,6 @@ function connectWS() {
 
         } else if (msg.type === 'stage_reset') {
             window._confirmedStageId = undefined;
-            window._isHost = false;
             try {
                 sessionStorage.removeItem('confirmedStageId');
                 _sssClear();
@@ -542,6 +549,15 @@ function connectWS() {
             if (msg.type === 'tournament_end') window._tournamentResult = msg;
             if (msg.type === 'player_reconnected') window._leaveGrace = null;
             window.dispatchEvent(new CustomEvent(msg.type, { detail: msg }));
+
+        } else if (msg.type === 'tournament_room_update') {
+            window.dispatchEvent(new CustomEvent('tournament_room_update', { detail: msg }));
+
+        } else if (msg.type === 'tournament_started') {
+            window.dispatchEvent(new CustomEvent('tournament_started', { detail: msg }));
+
+        } else if (msg.type === 'tournament_room_error') {
+            window.dispatchEvent(new CustomEvent('tournament_room_error', { detail: msg }));
 
         } else {
             console.warn('[WS] unhandled message type:', msg.type, msg);

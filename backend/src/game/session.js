@@ -35,8 +35,17 @@ const spectatorsBySession = new Map();
 let nextClientId  = 1;
 let nextSessionId = 1;
 let frameId       = 0;
-let tournamentWaitingWinners = {};
 let confirmedStageId = -1;
+
+// ─── Tournament waiting room ──────────────────────────────────────────────────
+// Shared state for the pre-launch lobby. Persists between connections so
+// players who join later can see who is already in the room.
+const tournamentRoom = {
+    players:    [],   // [{ clientId, dbUserId, username }]
+    started:    false,
+    tournamentId: null,
+    maxPlayers: 8,
+};
 
 // ─── Lobby join order ─────────────────────────────────────────────────────────
 // Tracks the order in which authenticated players entered the lobby (pressed
@@ -395,21 +404,21 @@ function startDuel(clientId1, clientId2) {
     return session;
 }
 
-async function startTournamentMatch(clientId1, clientId2, tournamentId, round) {
-    const session = createSession('tournament', [clientId1, clientId2], { tournamentId, round });
-    broadcastToSession(session, { type: 'match_start', mode: 'tournament', sessionId: session.id, tournamentId, round });
-    return session;
-}
+// ─── Tournament Survivor mode ─────────────────────────────────────────────────
+// All participants fight in a single session. Eliminated players become
+// spectators. The last player standing wins the tournament.
 
 async function startTournament(clientIds, creatorDbId) {
     if (clientIds.length < 2) throw new Error('Need at least 2 players for a tournament');
 
+    // Create the tournament record.
     const { rows } = await db.query(
         `INSERT INTO tournaments (name, status, created_by) VALUES ($1, 'ongoing', $2) RETURNING id`,
         [`Tournament #${nextSessionId}`, creatorDbId]
     );
     const tournamentId = rows[0].id;
 
+    // Register all participants.
     const dbUserIds = clientIds.map(cid => players[cid]?.dbUserId).filter(Boolean);
     if (dbUserIds.length) {
         const placeholders = dbUserIds.map((_, i) => `($1, $${i + 2})`).join(', ');
@@ -419,11 +428,33 @@ async function startTournament(clientIds, creatorDbId) {
         );
     }
 
-    const shuffled = [...clientIds].sort(() => Math.random() - 0.5);
-    for (let i = 0; i < shuffled.length - 1; i += 2) {
-        const sess = await startTournamentMatch(shuffled[i], shuffled[i + 1], tournamentId, 1);
-        console.log(`[TOURNAMENT] Round 1: ${shuffled[i]} vs ${shuffled[i + 1]} → session ${sess.id}`);
+    // Pick a stage from any participant that already selected one, or choose randomly.
+    let stageId = Math.floor(Math.random() * STAGE_LAYOUTS.length);
+    for (const cid of clientIds) {
+        const p = players[cid];
+        if (p?._pendingStageId !== undefined) { stageId = p._pendingStageId; delete p._pendingStageId; break; }
     }
+
+    // Launch one survivor session with all participants.
+    const session = createSession('tournament', clientIds, { tournamentId, round: 1, stageId });
+
+    // Move lobby spectators into the new session.
+    for (const spec of Object.values(spectators)) {
+        if (spec.watchingSession !== null) continue;
+        setSpectatorSession(spec, session.id);
+        if (spec.ws.readyState === WebSocket.OPEN) {
+            spec.ws.send(JSON.stringify({ type: 'spectator_session_changed', watchingSession: session.id, activeSessions: listActiveSessions() }));
+            sendStateToSpectator(spec);
+        }
+    }
+
+    broadcastToSession(session, {
+        type: 'match_start', mode: 'tournament', sessionId: session.id,
+        tournamentId, round: 1, countdown: true, stageId,
+        players: clientIds,
+    });
+
+    console.log(`[TOURNAMENT] Survivor started: id=${tournamentId} session=${session.id} — ${clientIds.length} players stage=${stageId}`);
     return tournamentId;
 }
 
@@ -607,29 +638,44 @@ function cleanupSession(session, winnerClientId) {
     // Reset stage only if no other active sessions remain
     if ([...gameSessions.values()].every(s => s.finished)) confirmedStageId = -1;
 
-    // Reset and return BOTH winner and loser to the lobby pool.
-    // In 1v1/tournament the loser was kept in `players` (not converted to spectator)
-    // so they receive the normal match_finished flow and then the client rejoins lobby.
-    // We must clean up their session mapping here so tryAutoMatch doesn't see them
-    // as still in-game.
+    // Clean up every participant of this session, whether they are still in
+    // `players` (winner / 1v1 loser) or already in `spectators` (survivor-mode
+    // eliminations). Not doing this left stale playerCharSelected entries and
+    // kept eliminated spectators floating without a proper lobby reset.
     for (const cid of session.playerIds) {
-        const p = players[cid];
-        if (!p) continue;
         playerSession.delete(cid);
         playerCharSelected.delete(cid);
-        p.stocks        = 3;
-        p.voltage       = 0;
-        p.voltageMaxed  = false;
-        p.attacking     = false;
-        p.dashing       = false;
-        p.blocking      = false;
-        p.crouching     = false;
-        p.hitTargets    = new Set();
-        p.kbx = 0; p.kby = 0; p.vx = 0; p.vy = 0;
-        p.animation     = 'idle';
-        p.animTimer     = 0;
+        const p = players[cid];
+        if (p) {
+            p.stocks        = 3;
+            p.voltage       = 0;
+            p.voltageMaxed  = false;
+            p.attacking     = false;
+            p.dashing       = false;
+            p.blocking      = false;
+            p.crouching     = false;
+            p.hitTargets    = new Set();
+            p.kbx = 0; p.kby = 0; p.vx = 0; p.vy = 0;
+            p.animation     = 'idle';
+            p.animTimer     = 0;
+        }
+        // Eliminated spectators that belong to this session: wipe their ghost
+        // state so they re-enter as fresh lobby players on the next join/rejoin,
+        // rather than staying stuck as zombie spectators.
+        const spec = spectators[cid];
+        if (spec?.eliminated) {
+            if (spec.dbRowId) {
+                db.query('UPDATE spectators SET left_at = NOW() WHERE id = $1', [spec.dbRowId])
+                  .catch(() => {});
+            }
+            delete spectators[cid];
+            if (lastState[cid]?.timer) clearTimeout(lastState[cid].timer);
+            delete lastState[cid];
+        }
     }
 
+    // Non-eliminated voluntary spectators watching this session: redirect them
+    // to another active session, or back to the lobby spectator view.
     const nextSession = [...gameSessions.values()].find(s => !s.finished)?.id ?? null;
     for (const spec of Object.values(spectators)) {
         if (spec.watchingSession !== session.id) continue;
@@ -708,39 +754,12 @@ async function resolveMatchWinner(session, winnerClientId, loserClientId) {
 
     broadcastToSession(session, { type: 'match_end', winner: winnerClientId, loser: loserClientId, matchId: session.matchDbId, mode: session.mode });
 
-    if (session.mode === 'tournament') advanceTournament(session.tournamentId, winnerClientId);
+    if (session.mode === 'tournament') finalizeTournament(session.tournamentId, winnerClientId);
 
     setTimeout(() => {
         broadcastToSession(session, { type: 'match_finished', sessionId: session.id });
         cleanupSession(session, winnerClientId);
     }, 6000);
-}
-
-async function advanceTournament(tournamentId, newWinnerId) {
-    if (!tournamentWaitingWinners[tournamentId]) tournamentWaitingWinners[tournamentId] = [];
-    tournamentWaitingWinners[tournamentId].push(newWinnerId);
-    const waiting = tournamentWaitingWinners[tournamentId];
-
-    if (waiting.length < 2) {
-        broadcastToAll({ type: 'tournament_waiting', tournamentId, waitingCount: waiting.length });
-        return;
-    }
-
-    const { rows } = await db.query(
-        `SELECT MAX(round) AS max_round FROM tournament_matches WHERE tournament_id = $1`,
-        [tournamentId]
-    );
-    const nextRound = (rows[0].max_round ?? 0) + 1;
-
-    while (waiting.length >= 2) {
-        const [a, b] = waiting.splice(0, 2);
-        const sess = await startTournamentMatch(a, b, tournamentId, nextRound);
-        console.log(`[TOURNAMENT] Round ${nextRound}: ${a} vs ${b} → session ${sess.id}`);
-    }
-
-    if (waiting.length === 1) {
-        await finalizeTournament(tournamentId, waiting.splice(0, 1)[0]);
-    }
 }
 
 async function finalizeTournament(tournamentId, championClientId) {
@@ -759,7 +778,6 @@ async function finalizeTournament(tournamentId, championClientId) {
         console.error('[TOURNAMENT] finalize error:', err.message);
     }
     broadcastToAll({ type: 'tournament_end', tournamentId, champion: championClientId, championDbId: champion?.dbUserId ?? null });
-    delete tournamentWaitingWinners[tournamentId];
     console.log(`[TOURNAMENT] ${tournamentId} finished — champion: ${championClientId}`);
 }
 
@@ -964,6 +982,7 @@ module.exports = {
     tryAutoMatch, handleElimination, resolveMatchWinner, cleanupSession, getLastWatchedSession,
     addToLobbyQueue, removeFromLobbyQueue, getLobbyQueue,
     disconnectPlayer,
+    tournamentRoom,
     MAX_PLAYERS, GHOST_TTL,
     ATTACK_RANGE, ATTACK_RANGE_Y, DASH_ATTACK_RANGE_X,
     CHAR_IDS, CHARACTER_DEFS, CHARACTER_ASSETS,

@@ -422,7 +422,7 @@ function ModeSpectator({ onEnterGame }) {
 const MODES = [
   { id: "versus", label: "Versus" },
   { id: "training", label: "vs AI" },
-  { id: "tournament", label: "Tournament", disabled: true },  // Temporarily hidden until we can do some UI improvements
+  { id: "tournament", label: "Tournament" },
   { id: "spectate", label: "Spectate"},
 ];
 
