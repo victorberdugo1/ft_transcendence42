@@ -548,3 +548,60 @@ input {
   cursor: not-allowed;
   filter: grayscale(1);
 }
+
+/* ═══════════════════════════════════════════════════════════
+   AI MODE — Stage picker & char check patch
+   Añade esto al final de auth.css
+   ══════════════════════════════════════════════════════════= */
+
+/* ── Section label ──────────────────────────────────────── */
+.lobby-section-label {
+  margin: 0;
+  font-size: 0.75rem;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: #91a0af;
+}
+
+/* ── Char check badge ───────────────────────────────────── */
+.lobby-char-check {
+  font-size: 0.7rem;
+  color: #d7c29a;
+  line-height: 1;
+}
+
+/* ── Stage picker ───────────────────────────────────────── */
+.lobby-stage-pick {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+
+.lobby-stage-btn {
+  padding: 11px 10px;
+  border-radius: 12px;
+  border: 1px solid rgba(236, 213, 175, 0.18);
+  background: transparent;
+  color: #cfdae5;
+  cursor: pointer;
+  font-size: 0.82rem;
+  letter-spacing: 0.04em;
+  transition: background 0.12s, border-color 0.12s, color 0.12s;
+  text-align: center;
+}
+
+.lobby-stage-btn:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.lobby-stage-active {
+  background: rgba(215, 194, 154, 0.14);
+  border-color: rgba(215, 194, 154, 0.6);
+  color: #f6f1e9;
+  font-weight: 600;
+}
+
+/* ── Responsive ─────────────────────────────────────────── */
+@media (max-width: 540px) {
+  .lobby-stage-pick { grid-template-columns: repeat(2, 1fr); }
+}
