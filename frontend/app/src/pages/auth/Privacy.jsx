@@ -1,3 +1,5 @@
+import logoImage from "../../assets/logo.png";
+
 export default function Privacy({ onBack }) {
   return (
     <div className="auth-page">
@@ -5,6 +7,10 @@ export default function Privacy({ onBack }) {
         <button type="button" className="auth-link legal-back" onClick={onBack}>
           Back
         </button>
+
+        <div className="legal-crest">
+          <img src={logoImage} alt="Enuma Fighter logo" className="legal-crest-image" />
+        </div>
 
         <p className="auth-eyebrow">Enuma Fighter</p>
         <h1 className="auth-title">Privacy Policy</h1>

@@ -1,0 +1,2204 @@
+/* Smash-inspired home menu pass. Scoped to .lobby-page so FightLobby keeps its form UI. */
+.lobby-page {
+  --menu-ink: #050609;
+  --menu-paper: #fffaf2;
+  --menu-line: rgba(255, 255, 255, 0.2);
+  width: 100vw;
+  height: 100vh;
+  padding: 0;
+  display: block;
+  overflow: hidden;
+  color: var(--menu-paper);
+  background:
+    linear-gradient(118deg, transparent 0 14%, rgba(255, 255, 255, 0.08) 14% 14.35%, transparent 14.35% 100%),
+    linear-gradient(64deg, transparent 0 74%, rgba(255, 255, 255, 0.08) 74% 74.3%, transparent 74.3% 100%),
+    radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.18), transparent 9rem),
+    linear-gradient(135deg, #020309 0%, #101014 42%, #040507 100%);
+  font-family: Impact, Haettenschweiler, "Arial Black", "Arial Narrow Bold", sans-serif;
+}
+
+.lobby-page::before,
+.lobby-page::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.lobby-page::before {
+  background:
+    linear-gradient(90deg, rgba(255, 255, 255, 0.1) 1px, transparent 1px),
+    linear-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 1px);
+  background-size: 96px 96px;
+  opacity: 0.14;
+  transform: rotate(-8deg) scale(1.15);
+}
+
+.lobby-page::after {
+  background:
+    linear-gradient(117deg, transparent 0 18%, rgba(255, 255, 255, 0.18) 18% 18.4%, transparent 18.4% 100%),
+    linear-gradient(117deg, transparent 0 68%, rgba(255, 255, 255, 0.16) 68% 68.35%, transparent 68.35% 100%),
+    linear-gradient(26deg, transparent 0 54%, rgba(0, 0, 0, 0.32) 54% 54.8%, transparent 54.8% 100%);
+  mix-blend-mode: screen;
+  opacity: 0.7;
+}
+
+.lobby-command-center {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  aspect-ratio: auto;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.lobby-topbar {
+  position: absolute;
+  top: 18px;
+  left: 22px;
+  right: 22px;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  pointer-events: none;
+}
+
+.lobby-title-lockup,
+.lobby-player-chip {
+  display: flex;
+  align-items: center;
+  min-height: 46px;
+  box-shadow: 0 16px 28px rgba(0, 0, 0, 0.3);
+  transform: skewX(-11deg);
+}
+
+.lobby-title-lockup {
+  background: #f8f5eb;
+  color: #090b10;
+  border-left: 8px solid #ff302f;
+  padding: 0 20px 0 16px;
+  gap: 8px;
+  text-transform: uppercase;
+}
+
+.lobby-title-lockup span,
+.lobby-title-lockup strong,
+.lobby-player-chip span,
+.lobby-player-chip strong {
+  display: block;
+  transform: skewX(11deg);
+  letter-spacing: 0;
+}
+
+.lobby-title-mark {
+  color: #e52725;
+  font-size: 1rem;
+}
+
+.lobby-title-lockup strong {
+  font-size: 1.35rem;
+}
+
+.lobby-player-chip {
+  justify-content: flex-end;
+  background: rgba(4, 5, 8, 0.86);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-right: 8px solid #22d7ff;
+  padding: 0 16px 0 18px;
+  gap: 12px;
+  text-transform: uppercase;
+}
+
+.lobby-player-status {
+  color: #22d7ff;
+  font-size: 0.78rem;
+}
+
+.lobby-player-chip strong {
+  max-width: 28ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 1rem;
+}
+
+.lobby-stage {
+  --panel-gap: 7px;
+  position: absolute;
+  inset: 82px 0 46px;
+  width: auto;
+  height: auto;
+  display: block;
+  padding: 0;
+  overflow: visible;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.lobby-stage::before,
+.lobby-stage::after,
+.lobby-stage-aura,
+.lobby-stage-grid,
+.lobby-stage-orbit,
+.lobby-stage-cross {
+  position: absolute;
+  pointer-events: none;
+}
+
+.lobby-stage::before {
+  content: "";
+  inset: -28px 0;
+  z-index: 1;
+  background:
+    linear-gradient(90deg, transparent 0 50%, rgba(0, 0, 0, 0.8) 50% 50.8%, transparent 50.8% 100%),
+    linear-gradient(0deg, transparent 0 58%, rgba(0, 0, 0, 0.74) 58% 59.3%, transparent 59.3% 100%);
+  opacity: 0.62;
+}
+
+.lobby-stage::after {
+  content: "";
+  left: 53.5%;
+  top: 56%;
+  width: 29rem;
+  aspect-ratio: 1;
+  z-index: 5;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background:
+    radial-gradient(circle, rgba(255, 255, 255, 0.54), rgba(255, 69, 47, 0.24) 32%, rgba(33, 221, 255, 0.12) 54%, transparent 70%);
+  filter: blur(7px);
+}
+
+.lobby-stage-aura,
+.lobby-stage-grid,
+.lobby-stage-orbit {
+  inset: 0;
+  z-index: 0;
+}
+
+.lobby-stage-aura {
+  background:
+    radial-gradient(circle at 10% 14%, rgba(255, 48, 45, 0.38), transparent 22rem),
+    radial-gradient(circle at 85% 18%, rgba(250, 75, 204, 0.34), transparent 22rem),
+    radial-gradient(circle at 12% 88%, rgba(255, 222, 37, 0.32), transparent 20rem),
+    radial-gradient(circle at 78% 85%, rgba(88, 192, 255, 0.2), transparent 20rem);
+}
+
+.lobby-stage-grid {
+  background:
+    linear-gradient(115deg, transparent 0 19%, rgba(255, 255, 255, 0.18) 19% 19.35%, transparent 19.35% 100%),
+    linear-gradient(115deg, transparent 0 79%, rgba(255, 255, 255, 0.13) 79% 79.35%, transparent 79.35% 100%),
+    linear-gradient(33deg, transparent 0 44%, rgba(255, 255, 255, 0.12) 44% 44.35%, transparent 44.35% 100%);
+  opacity: 0.72;
+}
+
+.lobby-stage-orbit {
+  left: 53.5%;
+  top: 56%;
+  width: 27rem;
+  aspect-ratio: 1;
+  inset: auto;
+  z-index: 6;
+  transform: translate(-50%, -50%) rotate(-12deg);
+  border: 2px dashed rgba(255, 255, 255, 0.22);
+  border-top-color: rgba(255, 54, 48, 0.8);
+  border-right-color: rgba(44, 225, 255, 0.58);
+  border-radius: 50%;
+  animation: lobbyEnergySpin 18s linear infinite;
+}
+
+.lobby-stage-cross {
+  left: 53.5%;
+  top: 56%;
+  width: 14rem;
+  aspect-ratio: 1;
+  z-index: 7;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background:
+    linear-gradient(90deg, transparent 0 44%, rgba(0, 0, 0, 0.72) 44% 56%, transparent 56% 100%),
+    linear-gradient(0deg, transparent 0 44%, rgba(0, 0, 0, 0.72) 44% 56%, transparent 56% 100%),
+    radial-gradient(circle, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0.04) 52%, transparent 56%);
+  box-shadow:
+    0 0 0 8px rgba(255, 255, 255, 0.12),
+    0 0 46px rgba(255, 255, 255, 0.3);
+  opacity: 0.78;
+}
+
+.lobby-page .lobby-tile {
+  position: absolute;
+  z-index: 4;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  align-items: start;
+  justify-items: start;
+  min-width: 0;
+  min-height: 0;
+  padding: 26px 34px;
+  border: 0;
+  border-radius: 0;
+  clip-path: var(--tile-shape);
+  overflow: hidden;
+  color: var(--tile-edge);
+  background:
+    linear-gradient(126deg, rgba(255, 255, 255, 0.42), transparent 14%),
+    linear-gradient(0deg, rgba(0, 0, 0, 0.38), transparent 46%),
+    var(--tile-bg);
+  box-shadow:
+    inset 0 0 0 2px rgba(255, 255, 255, 0.18),
+    inset 0 0 0 var(--panel-gap) currentColor,
+    inset 0 26px 44px rgba(255, 255, 255, 0.14),
+    inset 0 -52px 76px rgba(0, 0, 0, 0.4),
+    0 28px 54px rgba(0, 0, 0, 0.46);
+  isolation: isolate;
+  transform: translateZ(0);
+  transition:
+    filter 0.16s ease,
+    transform 0.16s ease,
+    box-shadow 0.16s ease;
+}
+
+.lobby-page .lobby-tile::before,
+.lobby-page .lobby-tile::after {
+  content: "";
+  position: absolute;
+  pointer-events: none;
+}
+
+.lobby-page .lobby-tile::before {
+  inset: 0;
+  z-index: 0;
+  background:
+    linear-gradient(112deg, transparent 0 11%, rgba(255, 255, 255, 0.46) 11% 12.25%, transparent 12.25% 100%),
+    linear-gradient(154deg, transparent 0 60%, rgba(255, 255, 255, 0.14) 60% 62%, transparent 62% 100%);
+}
+
+.lobby-page .lobby-tile::after {
+  inset: 10px;
+  z-index: 1;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  clip-path: inherit;
+}
+
+.lobby-page .lobby-tile:not(:disabled) {
+  cursor: pointer;
+}
+
+.lobby-page .lobby-tile:not(:disabled):hover,
+.lobby-page .lobby-tile:not(:disabled):focus-visible {
+  z-index: 12;
+  filter: brightness(1.08) saturate(1.1);
+  transform: translateY(-5px) scale(1.012);
+  outline: none;
+  box-shadow:
+    inset 0 0 0 2px rgba(255, 255, 255, 0.28),
+    inset 0 0 0 var(--panel-gap) currentColor,
+    inset 0 30px 54px rgba(255, 255, 255, 0.16),
+    inset 0 -58px 84px rgba(0, 0, 0, 0.42),
+    0 0 44px var(--tile-glow),
+    0 36px 70px rgba(0, 0, 0, 0.56);
+}
+
+.lobby-page .lobby-tile:disabled {
+  opacity: 1;
+  cursor: default;
+}
+
+.lobby-page .lobby-tile span {
+  position: relative;
+  z-index: 2;
+  transform: none;
+  color: var(--menu-paper);
+  letter-spacing: 0;
+  text-transform: uppercase;
+  text-shadow:
+    0 5px 0 rgba(0, 0, 0, 0.35),
+    0 0 22px rgba(255, 255, 255, 0.24);
+}
+
+.lobby-page .lobby-tile-kicker {
+  padding: 6px 11px;
+  border-left: 5px solid rgba(255, 255, 255, 0.85);
+  background: rgba(0, 0, 0, 0.32);
+  font-family: "Arial Black", Impact, sans-serif;
+  font-size: 0.78rem;
+  line-height: 1;
+}
+
+.lobby-page .lobby-tile-mark {
+  position: absolute;
+  right: 12%;
+  top: 50%;
+  z-index: 1;
+  transform: translateY(-50%) rotate(-7deg);
+  font-size: 5.4rem;
+  line-height: 1;
+  opacity: 0.18;
+  color: #fff;
+  text-shadow: none;
+}
+
+.lobby-page .lobby-tile-label {
+  align-self: end;
+  max-width: 100%;
+  font-size: 3.7rem;
+  line-height: 0.82;
+  overflow-wrap: anywhere;
+}
+
+.lobby-page .lobby-tile-lock {
+  position: absolute;
+  right: 24px;
+  bottom: 20px;
+  z-index: 3;
+  padding: 6px 10px;
+  background: rgba(0, 0, 0, 0.42);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  font-family: "Arial Black", Impact, sans-serif;
+  font-size: 0.72rem;
+  line-height: 1;
+  color: rgba(255, 255, 255, 0.78);
+  text-shadow: none;
+}
+
+.lobby-page .lobby-tile-play {
+  --tile-edge: #ff262f;
+  --tile-glow: rgba(255, 43, 38, 0.7);
+  --tile-bg:
+    radial-gradient(circle at 25% 24%, rgba(255, 238, 203, 0.4), transparent 18rem),
+    radial-gradient(circle at 82% 74%, rgba(255, 31, 22, 0.42), transparent 22rem),
+    linear-gradient(142deg, #ff8d4c 0%, #ff2a27 33%, #b3060e 72%, #350104 100%);
+  --tile-shape: polygon(0 0, calc(100% - 112px) 0, 100% 64px, 96% 100%, 0 100%);
+  left: 0;
+  top: 0;
+  width: 50%;
+  height: 61%;
+  z-index: 5;
+  animation: lobbyPlayPulse 2.8s ease-in-out infinite;
+}
+
+.lobby-page .lobby-tile-play .lobby-tile-label {
+  font-size: 6.4rem;
+}
+
+.lobby-page .lobby-tile-play .lobby-tile-mark {
+  right: 10%;
+  font-size: 9rem;
+  opacity: 0.2;
+}
+
+.lobby-page .lobby-tile-profile {
+  --tile-edge: #0fb4ef;
+  --tile-glow: rgba(23, 210, 255, 0.48);
+  --tile-bg:
+    radial-gradient(circle at 50% 18%, rgba(234, 255, 255, 0.42), transparent 12rem),
+    linear-gradient(155deg, #3af0ff 0%, #0d83d1 57%, #052a55 100%);
+  --tile-shape: polygon(24px 0, calc(100% - 38px) 0, 100% 44px, calc(100% - 12px) 100%, 0 100%, 0 30px);
+  left: 50%;
+  top: 0;
+  width: 17%;
+  height: 61%;
+}
+
+.lobby-page .lobby-tile-profile .lobby-tile-label {
+  font-size: 2.8rem;
+}
+
+.lobby-page .lobby-tile-achievements {
+  --tile-edge: #c456e8;
+  --tile-glow: rgba(203, 75, 255, 0.5);
+  --tile-bg:
+    radial-gradient(circle at 54% 34%, rgba(255, 241, 139, 0.34), transparent 13rem),
+    radial-gradient(circle at 78% 22%, rgba(255, 255, 255, 0.2), transparent 8rem),
+    linear-gradient(145deg, #ff8cf0 0%, #b84cde 44%, #5f2396 72%, #220a3f 100%);
+  --tile-shape: polygon(42px 0, 100% 0, 100% 100%, 58px 100%, 0 calc(100% - 58px), 0 26px);
+  left: 67%;
+  top: 0;
+  width: 33%;
+  height: 61%;
+  justify-items: center;
+}
+
+.lobby-page .lobby-tile-achievements .lobby-tile-label {
+  font-size: 4rem;
+}
+
+.lobby-page .lobby-tile-chat {
+  --tile-edge: #ffe900;
+  --tile-glow: rgba(255, 221, 0, 0.42);
+  --tile-bg:
+    radial-gradient(circle at 25% 32%, rgba(255, 255, 255, 0.38), transparent 12rem),
+    radial-gradient(circle at 82% 80%, rgba(255, 130, 0, 0.28), transparent 18rem),
+    linear-gradient(145deg, #fff66b 0%, #ffd21e 39%, #b78300 73%, #4a3800 100%);
+  --tile-shape: polygon(0 0, 100% 0, calc(100% - 70px) 100%, 0 100%);
+  left: 0;
+  top: 61%;
+  width: 38%;
+  height: 39%;
+}
+
+.lobby-page .lobby-tile-friends {
+  --tile-edge: #23d86f;
+  --tile-glow: rgba(34, 222, 111, 0.48);
+  --tile-bg:
+    radial-gradient(circle at 55% 28%, rgba(213, 255, 225, 0.38), transparent 11rem),
+    radial-gradient(circle at 25% 76%, rgba(101, 255, 158, 0.26), transparent 14rem),
+    linear-gradient(150deg, #64ff9a 0%, #16bf64 52%, #07683b 80%, #032515 100%);
+  --tile-shape: polygon(34px 0, 100% 0, 94% 100%, 0 100%, 0 44px);
+  left: 38%;
+  top: 61%;
+  width: 22%;
+  height: 39%;
+}
+
+.lobby-page .lobby-tile-friends .lobby-tile-label {
+  font-size: 3rem;
+}
+
+.lobby-page .lobby-tile-settings {
+  --tile-edge: #909da6;
+  --tile-glow: rgba(190, 211, 220, 0.3);
+  --tile-bg:
+    linear-gradient(90deg, rgba(255, 255, 255, 0.15), transparent 30%),
+    linear-gradient(145deg, #c2ccd0 0%, #69757d 42%, #313b44 72%, #0f141a 100%);
+  --tile-shape: polygon(44px 0, 100% 0, 100% 100%, 0 100%, 0 48px);
+  left: 60%;
+  top: 61%;
+  width: 40%;
+  height: 27%;
+  justify-items: center;
+}
+
+.lobby-page .lobby-tile-settings .lobby-tile-label {
+  font-size: 3.6rem;
+}
+
+.lobby-page .lobby-tile-logout {
+  --tile-edge: #191919;
+  --tile-glow: rgba(255, 255, 255, 0.18);
+  --tile-bg:
+    linear-gradient(90deg, rgba(255, 255, 255, 0.1), transparent 34%),
+    linear-gradient(150deg, #353535 0%, #111 64%, #030303 100%);
+  --tile-shape: polygon(28px 0, 100% 0, 100% 100%, 0 100%, 0 30px);
+  left: 60%;
+  top: 88%;
+  width: 40%;
+  height: 12%;
+  justify-items: center;
+}
+
+.lobby-page .lobby-tile-logout .lobby-tile-label,
+.lobby-page .lobby-tile-logout span {
+  align-self: center;
+  font-size: 3rem;
+}
+
+.lobby-page .lobby-logo-core {
+  position: absolute;
+  left: 53.5%;
+  top: 56%;
+  z-index: 14;
+  width: 24rem;
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  mix-blend-mode: normal;
+}
+
+.lobby-page .lobby-logo-core::before,
+.lobby-page .lobby-logo-core::after,
+.lobby-page .lobby-logo-flare {
+  content: "";
+  position: absolute;
+  pointer-events: none;
+  border-radius: 50%;
+}
+
+.lobby-page .lobby-logo-core::before {
+  inset: -12%;
+  background:
+    radial-gradient(circle, rgba(255, 255, 255, 0.52), rgba(255, 62, 44, 0.26) 34%, rgba(34, 214, 255, 0.16) 50%, transparent 70%);
+  filter: blur(12px);
+}
+
+.lobby-page .lobby-logo-core::after {
+  inset: 8%;
+  border: 2px solid rgba(255, 255, 255, 0.28);
+  border-left-color: rgba(255, 58, 44, 0.58);
+  border-right-color: rgba(34, 214, 255, 0.5);
+  transform: rotate(16deg);
+}
+
+.lobby-page .lobby-logo-flare {
+  inset: 24%;
+  background:
+    linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.48), transparent),
+    linear-gradient(0deg, transparent, rgba(255, 72, 45, 0.34), transparent);
+  filter: blur(13px);
+  opacity: 0.85;
+}
+
+.lobby-page .lobby-logo-image {
+  position: relative;
+  z-index: 2;
+  width: 92%;
+  max-height: 92%;
+  object-fit: contain;
+  opacity: 0.95;
+  filter:
+    drop-shadow(0 22px 26px rgba(0, 0, 0, 0.58))
+    drop-shadow(0 0 18px rgba(255, 255, 255, 0.48))
+    drop-shadow(0 0 44px rgba(255, 54, 44, 0.42));
+}
+
+.lobby-footer-strip {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 28;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  background:
+    linear-gradient(90deg, #030303, #191919 42%, #030303);
+  border-top: 2px solid rgba(255, 255, 255, 0.18);
+  color: rgba(255, 255, 255, 0.82);
+  font-family: "Arial Black", Impact, sans-serif;
+  font-size: 0.88rem;
+  text-transform: uppercase;
+}
+
+.lobby-footer-strip strong {
+  color: #ffdf32;
+  letter-spacing: 0;
+}
+
+@media (max-width: 920px), (max-height: 680px) {
+  .lobby-topbar {
+    top: 10px;
+    left: 12px;
+    right: 12px;
+  }
+
+  .lobby-title-lockup,
+  .lobby-player-chip {
+    min-height: 38px;
+  }
+
+  .lobby-stage {
+    inset: 58px 0 36px;
+  }
+
+  .lobby-page .lobby-tile {
+    padding: 18px 22px;
+  }
+
+  .lobby-page .lobby-tile-label,
+  .lobby-page .lobby-tile-achievements .lobby-tile-label,
+  .lobby-page .lobby-tile-settings .lobby-tile-label {
+    font-size: 2.5rem;
+  }
+
+  .lobby-page .lobby-tile-play .lobby-tile-label {
+    font-size: 4.4rem;
+  }
+
+  .lobby-page .lobby-tile-mark {
+    font-size: 3.7rem;
+  }
+
+  .lobby-page .lobby-logo-core {
+    width: 17rem;
+  }
+
+  .lobby-stage::after,
+  .lobby-stage-orbit {
+    width: 19rem;
+  }
+
+  .lobby-stage-cross {
+    width: 10rem;
+  }
+}
+
+@media (max-width: 640px), (max-height: 520px) {
+  .lobby-topbar {
+    align-items: flex-start;
+  }
+
+  .lobby-title-lockup {
+    padding: 0 14px 0 10px;
+  }
+
+  .lobby-title-lockup strong,
+  .lobby-player-chip strong {
+    font-size: 0.86rem;
+  }
+
+  .lobby-title-mark,
+  .lobby-player-status {
+    font-size: 0.68rem;
+  }
+
+  .lobby-page .lobby-tile {
+    padding: 12px 14px;
+  }
+
+  .lobby-page .lobby-tile-kicker,
+  .lobby-page .lobby-tile-lock {
+    font-size: 0.62rem;
+  }
+
+  .lobby-page .lobby-tile-label,
+  .lobby-page .lobby-tile-achievements .lobby-tile-label,
+  .lobby-page .lobby-tile-settings .lobby-tile-label,
+  .lobby-page .lobby-tile-logout .lobby-tile-label,
+  .lobby-page .lobby-tile-logout span {
+    font-size: 1.55rem;
+  }
+
+  .lobby-page .lobby-tile-play .lobby-tile-label {
+    font-size: 2.8rem;
+  }
+
+  .lobby-page .lobby-tile-profile .lobby-tile-label,
+  .lobby-page .lobby-tile-friends .lobby-tile-label {
+    font-size: 1.35rem;
+  }
+
+  .lobby-page .lobby-tile-mark {
+    display: none;
+  }
+
+  .lobby-page .lobby-logo-core {
+    width: 12rem;
+  }
+
+  .lobby-stage::after,
+  .lobby-stage-orbit {
+    width: 13rem;
+  }
+
+  .lobby-stage-cross {
+    width: 7rem;
+  }
+
+  .lobby-footer-strip {
+    height: 32px;
+    font-size: 0.72rem;
+  }
+}
+
+.fight-lobby-overlay {
+  background:
+    linear-gradient(115deg, transparent 0 21%, rgba(255, 255, 255, 0.12) 21% 21.35%, transparent 21.35% 100%),
+    linear-gradient(35deg, transparent 0 68%, rgba(255, 255, 255, 0.1) 68% 68.35%, transparent 68.35% 100%),
+    radial-gradient(circle at 18% 26%, rgba(255, 46, 44, 0.34), transparent 22rem),
+    radial-gradient(circle at 82% 22%, rgba(34, 216, 255, 0.28), transparent 22rem),
+    linear-gradient(135deg, #050609 0%, #17181d 52%, #050609 100%);
+}
+
+.fight-lobby-overlay .auth-page {
+  min-height: 100vh;
+  padding: 28px;
+  background: transparent;
+  place-items: center;
+}
+
+.fight-lobby-overlay .lobby-card {
+  position: relative;
+  width: min(96vw, 1040px);
+  max-height: calc(100vh - 56px);
+  gap: 18px;
+  padding: 28px;
+  border-radius: 0;
+  border: 2px solid rgba(255, 255, 255, 0.18);
+  border-left: 10px solid #ff302f;
+  background:
+    linear-gradient(115deg, rgba(255, 255, 255, 0.1), transparent 24%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.08), transparent 38%),
+    rgba(5, 7, 12, 0.9);
+  clip-path: polygon(0 0, calc(100% - 42px) 0, 100% 42px, 100% 100%, 32px 100%, 0 calc(100% - 32px));
+  box-shadow:
+    0 36px 80px rgba(0, 0, 0, 0.52),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.09);
+}
+
+.fight-lobby-overlay .auth-eyebrow {
+  color: #22d7ff;
+  font-family: "Arial Black", Impact, sans-serif;
+  font-size: 0.78rem;
+  letter-spacing: 0;
+}
+
+.fight-lobby-overlay .auth-title {
+  margin-bottom: 0;
+  font-family: Impact, Haettenschweiler, "Arial Black", sans-serif;
+  font-size: 3.4rem;
+  line-height: 0.9;
+  letter-spacing: 0;
+  text-transform: uppercase;
+  text-shadow: 0 5px 0 rgba(0, 0, 0, 0.4);
+}
+
+.fight-lobby-overlay .fight-lobby-back-button {
+  position: absolute;
+  top: 24px;
+  right: 28px;
+  justify-self: auto;
+  border-radius: 0;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-left: 5px solid #ffdf32;
+  background: rgba(0, 0, 0, 0.42);
+  color: #fffaf2;
+  font-family: "Arial Black", Impact, sans-serif;
+  text-transform: uppercase;
+  clip-path: polygon(12px 0, 100% 0, calc(100% - 12px) 100%, 0 100%);
+}
+
+.fight-lobby-overlay .fight-lobby-back-button:hover {
+  background: rgba(255, 223, 50, 0.16);
+}
+
+.fight-lobby-overlay .lobby-user {
+  border-radius: 0;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-left: 6px solid #22d7ff;
+  background:
+    linear-gradient(90deg, rgba(34, 215, 255, 0.16), transparent 45%),
+    rgba(255, 255, 255, 0.045);
+}
+
+.fight-lobby-overlay .lobby-avatar {
+  border-radius: 0;
+  border-color: rgba(255, 255, 255, 0.34);
+  clip-path: polygon(12px 0, 100% 0, 100% 100%, 0 100%, 0 12px);
+}
+
+.fight-lobby-overlay .lobby-avatar-fallback {
+  display: grid;
+  place-items: center;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.2), transparent 45%),
+    linear-gradient(145deg, #17374a 0%, #0e1b28 58%, #05090f 100%);
+  color: #ffdf32;
+  font-family: "Arial Black", Impact, sans-serif;
+  font-size: 1.15rem;
+  text-transform: uppercase;
+  text-shadow: 0 2px 0 rgba(0, 0, 0, 0.55);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.22),
+    inset 0 -18px 28px rgba(0, 0, 0, 0.28),
+    0 12px 22px rgba(0, 0, 0, 0.34);
+}
+
+.fight-lobby-overlay .lobby-mode-tabs {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  padding: 8px;
+  background: rgba(0, 0, 0, 0.36);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.fight-lobby-overlay .lobby-mode-tab {
+  min-height: 54px;
+  border-radius: 0;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.1), transparent 42%),
+    rgba(255, 255, 255, 0.045);
+  color: #fffaf2;
+  font-family: "Arial Black", Impact, sans-serif;
+  text-transform: uppercase;
+  clip-path: polygon(14px 0, 100% 0, calc(100% - 14px) 100%, 0 100%);
+}
+
+.fight-lobby-overlay .lobby-mode-tab:hover {
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.16), transparent 42%),
+    rgba(255, 255, 255, 0.08);
+}
+
+.fight-lobby-overlay .lobby-mode-tab-active {
+  border-color: rgba(255, 223, 50, 0.72);
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.2), transparent 42%),
+    linear-gradient(135deg, #ffdf32, #f0781e);
+  color: #050609;
+}
+
+.fight-lobby-overlay .lobby-mode-panel {
+  min-height: 220px;
+  border-radius: 0;
+  border: 1px solid rgba(255, 255, 255, 0.13);
+  border-left: 7px solid #ff302f;
+  background:
+    linear-gradient(115deg, rgba(255, 255, 255, 0.09), transparent 28%),
+    rgba(255, 255, 255, 0.045);
+}
+
+.fight-lobby-overlay .lobby-mode-desc {
+  color: rgba(255, 250, 242, 0.82);
+}
+
+.fight-lobby-overlay .auth-submit,
+.fight-lobby-overlay .lobby-play,
+.fight-lobby-overlay .lobby-watch-btn {
+  border-radius: 0;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background:
+    linear-gradient(135deg, #ffdf32, #ff8b22 58%, #e6372f);
+  color: #050609;
+  font-family: "Arial Black", Impact, sans-serif;
+  text-transform: uppercase;
+  clip-path: polygon(16px 0, 100% 0, calc(100% - 16px) 100%, 0 100%);
+}
+
+.fight-lobby-overlay .lobby-watch-btn {
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0.04));
+  color: #ffdf32;
+}
+
+.fight-lobby-overlay .lobby-char-btn,
+.fight-lobby-overlay .lobby-stage-btn,
+.fight-lobby-overlay .lobby-session-row {
+  border-radius: 0;
+  background: rgba(0, 0, 0, 0.26);
+}
+
+.fight-lobby-overlay .lobby-char-btn img {
+  border-radius: 0;
+}
+
+.fight-lobby-overlay .lobby-char-active,
+.fight-lobby-overlay .lobby-stage-active {
+  background: rgba(255, 223, 50, 0.16);
+  border-color: rgba(255, 223, 50, 0.72);
+}
+
+@media (max-width: 640px) {
+  .fight-lobby-overlay .auth-page {
+    padding: 12px;
+  }
+
+  .fight-lobby-overlay .lobby-card {
+    width: calc(100vw - 24px);
+    max-height: calc(100vh - 24px);
+    padding: 20px;
+  }
+
+  .fight-lobby-overlay .auth-title {
+    font-size: 2.4rem;
+  }
+
+  .fight-lobby-overlay .fight-lobby-back-button {
+    position: static;
+    justify-self: start;
+  }
+
+  .fight-lobby-overlay .lobby-mode-tabs {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* Premium console-menu polish: visual-only pass, panel geometry remains unchanged. */
+.lobby-page {
+  background:
+    radial-gradient(circle at 50% 47%, rgba(255, 255, 255, 0.2), transparent 9rem),
+    radial-gradient(circle at 47% 52%, rgba(255, 42, 36, 0.18), transparent 24rem),
+    radial-gradient(circle at 68% 32%, rgba(33, 216, 255, 0.12), transparent 26rem),
+    radial-gradient(circle at 22% 78%, rgba(255, 221, 39, 0.08), transparent 24rem),
+    linear-gradient(118deg, transparent 0 15%, rgba(255, 255, 255, 0.08) 15% 15.16%, transparent 15.16% 100%),
+    linear-gradient(64deg, transparent 0 72%, rgba(255, 255, 255, 0.07) 72% 72.16%, transparent 72.16% 100%),
+    linear-gradient(180deg, #06080d 0%, #101116 48%, #050609 100%);
+}
+
+.lobby-page::before {
+  background:
+    radial-gradient(circle, rgba(255, 255, 255, 0.18) 0 1px, transparent 1.8px),
+    linear-gradient(120deg, transparent 0 41%, rgba(255, 255, 255, 0.12) 41% 41.12%, transparent 41.12% 100%),
+    linear-gradient(72deg, transparent 0 67%, rgba(34, 216, 255, 0.07) 67% 67.12%, transparent 67.12% 100%);
+  background-size: 140px 140px, 100% 100%, 100% 100%;
+  opacity: 0.38;
+  transform: none;
+  animation: lobbyAmbientDrift 18s linear infinite;
+}
+
+.lobby-page::after {
+  background:
+    linear-gradient(115deg, transparent 0 12%, rgba(255, 255, 255, 0.16) 12% 12.18%, transparent 12.18% 100%),
+    linear-gradient(115deg, transparent 0 84%, rgba(255, 255, 255, 0.12) 84% 84.16%, transparent 84.16% 100%),
+    radial-gradient(ellipse at 50% 105%, rgba(255, 255, 255, 0.12), transparent 42%);
+  opacity: 0.55;
+}
+
+.lobby-stage::before {
+  background:
+    linear-gradient(90deg, transparent 0 50%, rgba(0, 0, 0, 0.78) 50% 50.55%, transparent 50.55% 100%),
+    linear-gradient(0deg, transparent 0 58%, rgba(0, 0, 0, 0.7) 58% 59.05%, transparent 59.05% 100%);
+  opacity: 0.74;
+}
+
+.lobby-stage::after {
+  background:
+    radial-gradient(circle, rgba(255, 255, 255, 0.56), rgba(255, 73, 48, 0.18) 28%, rgba(33, 216, 255, 0.1) 52%, transparent 72%);
+  filter: blur(12px);
+  opacity: 0.88;
+}
+
+.lobby-stage-aura {
+  background:
+    radial-gradient(circle at 11% 12%, rgba(255, 48, 44, 0.34), transparent 23rem),
+    radial-gradient(circle at 85% 16%, rgba(206, 83, 240, 0.22), transparent 23rem),
+    radial-gradient(circle at 14% 89%, rgba(255, 229, 38, 0.24), transparent 21rem),
+    radial-gradient(circle at 78% 86%, rgba(40, 185, 255, 0.13), transparent 22rem),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.03), transparent 42%);
+}
+
+.lobby-stage-grid {
+  background:
+    linear-gradient(116deg, transparent 0 19%, rgba(255, 255, 255, 0.11) 19% 19.14%, transparent 19.14% 100%),
+    linear-gradient(116deg, transparent 0 78%, rgba(255, 255, 255, 0.08) 78% 78.14%, transparent 78.14% 100%),
+    linear-gradient(33deg, transparent 0 44%, rgba(255, 255, 255, 0.07) 44% 44.14%, transparent 44.14% 100%);
+  opacity: 0.52;
+}
+
+.lobby-page .lobby-tile {
+  background:
+    radial-gradient(circle at 18% 10%, rgba(255, 255, 255, 0.34), transparent 14rem),
+    linear-gradient(120deg, rgba(255, 255, 255, 0.26) 0 7%, transparent 18% 100%),
+    linear-gradient(155deg, transparent 0 48%, rgba(255, 255, 255, 0.12) 48% 50%, transparent 50% 100%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.2), transparent 33%),
+    linear-gradient(0deg, rgba(0, 0, 0, 0.44), transparent 52%),
+    var(--tile-pattern),
+    var(--tile-core);
+  color: var(--tile-edge);
+  box-shadow:
+    0 0 0 5px rgba(0, 0, 0, 0.82),
+    0 0 0 7px rgba(255, 255, 255, 0.08),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.38),
+    inset 0 0 0 var(--panel-gap) rgba(255, 255, 255, 0.08),
+    inset 0 18px 34px rgba(255, 255, 255, 0.2),
+    inset 0 -62px 86px rgba(0, 0, 0, 0.42),
+    inset 22px 0 44px rgba(255, 255, 255, 0.08),
+    inset -28px 0 64px rgba(0, 0, 0, 0.24),
+    0 18px 24px rgba(0, 0, 0, 0.42),
+    0 34px 72px rgba(0, 0, 0, 0.5),
+    0 0 32px var(--tile-glow);
+  backdrop-filter: blur(2px);
+  filter: saturate(1.08) contrast(1.04);
+  animation: lobbyPanelBreath 5.4s ease-in-out infinite;
+}
+
+.lobby-page .lobby-tile::before {
+  inset: -35%;
+  z-index: 1;
+  background:
+    linear-gradient(112deg, transparent 0 39%, rgba(255, 255, 255, 0.28) 42%, rgba(255, 255, 255, 0.06) 46%, transparent 50% 100%),
+    linear-gradient(112deg, transparent 0 58%, rgba(255, 255, 255, 0.16) 60%, transparent 64% 100%);
+  opacity: 0.48;
+  transform: translateX(-18%);
+  animation: lobbyGlassSweep 8s ease-in-out infinite;
+}
+
+.lobby-page .lobby-tile::after {
+  inset: 8px;
+  z-index: 2;
+  border: 0;
+  background:
+    linear-gradient(var(--tile-edge), var(--tile-edge)) left top / 34% 2px no-repeat,
+    linear-gradient(var(--tile-edge), var(--tile-edge)) right bottom / 36% 2px no-repeat,
+    linear-gradient(rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.08)) left top / 2px 42% no-repeat,
+    linear-gradient(rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.08)) right bottom / 2px 44% no-repeat;
+  opacity: 0.75;
+  clip-path: inherit;
+}
+
+.lobby-page .lobby-tile:not(:disabled):hover,
+.lobby-page .lobby-tile:not(:disabled):focus-visible {
+  filter: brightness(1.13) saturate(1.18) contrast(1.06);
+  transform: translateY(-5px) scale(1.012);
+  box-shadow:
+    0 0 0 5px rgba(0, 0, 0, 0.9),
+    0 0 0 8px rgba(255, 255, 255, 0.12),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.52),
+    inset 0 0 0 var(--panel-gap) rgba(255, 255, 255, 0.13),
+    inset 0 22px 42px rgba(255, 255, 255, 0.24),
+    inset 0 -68px 92px rgba(0, 0, 0, 0.44),
+    0 30px 76px rgba(0, 0, 0, 0.6),
+    0 0 58px var(--tile-glow);
+}
+
+.lobby-page .lobby-tile-kicker {
+  background:
+    linear-gradient(90deg, rgba(255, 255, 255, 0.22), rgba(0, 0, 0, 0.34)),
+    rgba(0, 0, 0, 0.28);
+  border-left-color: rgba(255, 255, 255, 0.92);
+  color: rgba(255, 255, 255, 0.92);
+  text-shadow: 0 2px 0 rgba(0, 0, 0, 0.5);
+}
+
+.lobby-page .lobby-tile-label,
+.lobby-page .lobby-tile-logout span {
+  z-index: 4;
+  color: #fffdf7;
+  text-shadow:
+    0 2px 0 rgba(0, 0, 0, 0.62),
+    0 5px 0 rgba(0, 0, 0, 0.32),
+    0 0 18px rgba(255, 255, 255, 0.24),
+    0 0 34px var(--tile-glow);
+}
+
+.lobby-page .lobby-tile-label {
+  padding-bottom: 0.18em;
+  line-height: 0.86;
+}
+
+.lobby-page .lobby-tile-mark {
+  z-index: 0;
+  right: 10%;
+  opacity: 0.08;
+  color: rgba(255, 255, 255, 0.9);
+  text-shadow: none;
+  filter: blur(0.4px);
+}
+
+.lobby-page .lobby-tile-lock {
+  z-index: 5;
+  right: 18px;
+  bottom: 12px;
+  background: rgba(0, 0, 0, 0.5);
+  color: rgba(255, 255, 255, 0.82);
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.35);
+}
+
+.lobby-page .lobby-tile-play {
+  --tile-edge: #ff3338;
+  --tile-glow: rgba(255, 42, 35, 0.72);
+  --tile-pattern:
+    radial-gradient(circle at 26% 42%, rgba(255, 255, 255, 0.1) 0 1px, transparent 2px),
+    linear-gradient(29deg, transparent 0 31%, rgba(255, 255, 255, 0.13) 31% 31.3%, transparent 31.3% 100%),
+    linear-gradient(144deg, transparent 0 62%, rgba(255, 104, 82, 0.18) 62% 62.25%, transparent 62.25% 100%);
+  --tile-core:
+    radial-gradient(circle at 18% 14%, #ffb07a 0%, #ff5549 27%, transparent 46%),
+    radial-gradient(circle at 82% 78%, rgba(255, 24, 22, 0.66), transparent 36%),
+    linear-gradient(142deg, #ff6a51 0%, #e80f18 42%, #93070d 72%, #2a0104 100%);
+  box-shadow:
+    0 0 0 5px rgba(0, 0, 0, 0.9),
+    0 0 0 8px rgba(255, 49, 54, 0.24),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.56),
+    inset 0 0 0 var(--panel-gap) rgba(255, 255, 255, 0.13),
+    inset 0 28px 52px rgba(255, 235, 214, 0.26),
+    inset 0 -86px 118px rgba(55, 0, 0, 0.54),
+    inset 36px 0 70px rgba(255, 255, 255, 0.12),
+    0 26px 46px rgba(0, 0, 0, 0.5),
+    0 0 58px rgba(255, 39, 35, 0.64),
+    0 0 110px rgba(255, 39, 35, 0.28);
+}
+
+.lobby-page .lobby-tile-profile {
+  --tile-edge: #19c8ff;
+  --tile-glow: rgba(25, 208, 255, 0.46);
+  --tile-pattern:
+    radial-gradient(circle at 70% 30%, rgba(255, 255, 255, 0.16) 0 2px, transparent 3px),
+    radial-gradient(circle at 72% 30%, transparent 0 30px, rgba(255, 255, 255, 0.08) 31px 32px, transparent 33px),
+    linear-gradient(118deg, transparent 0 42%, rgba(255, 255, 255, 0.12) 42% 42.25%, transparent 42.25% 100%);
+  --tile-core:
+    radial-gradient(circle at 44% 16%, #85f4ff 0%, rgba(45, 213, 255, 0.84) 28%, transparent 50%),
+    linear-gradient(157deg, #35dfff 0%, #128ace 50%, #073b73 100%);
+}
+
+.lobby-page .lobby-tile-achievements {
+  --tile-edge: #ce62ee;
+  --tile-glow: rgba(204, 82, 255, 0.5);
+  --tile-pattern:
+    linear-gradient(58deg, transparent 0 34%, rgba(255, 255, 255, 0.12) 34% 34.22%, transparent 34.22% 100%),
+    linear-gradient(148deg, transparent 0 69%, rgba(255, 236, 143, 0.12) 69% 69.28%, transparent 69.28% 100%),
+    radial-gradient(circle at 61% 37%, rgba(255, 255, 255, 0.13), transparent 5rem);
+  --tile-core:
+    radial-gradient(circle at 54% 34%, rgba(255, 235, 142, 0.42), transparent 17rem),
+    linear-gradient(146deg, #e975ef 0%, #a43bd4 47%, #5b218f 75%, #200936 100%);
+}
+
+.lobby-page .lobby-tile-chat {
+  --tile-edge: #ffe900;
+  --tile-glow: rgba(255, 229, 0, 0.42);
+  --tile-pattern:
+    radial-gradient(ellipse at 20% 46%, transparent 0 34px, rgba(255, 255, 255, 0.1) 35px 36px, transparent 37px),
+    radial-gradient(ellipse at 20% 46%, transparent 0 72px, rgba(255, 255, 255, 0.08) 73px 74px, transparent 75px),
+    linear-gradient(142deg, transparent 0 61%, rgba(255, 255, 255, 0.13) 61% 61.25%, transparent 61.25% 100%);
+  --tile-core:
+    radial-gradient(circle at 25% 30%, #fff89a 0%, rgba(255, 232, 64, 0.82) 31%, transparent 52%),
+    linear-gradient(145deg, #fff257 0%, #f2bf14 48%, #9f6e00 78%, #403000 100%);
+}
+
+.lobby-page .lobby-tile-friends {
+  --tile-edge: #27df77;
+  --tile-glow: rgba(39, 223, 119, 0.48);
+  --tile-pattern:
+    radial-gradient(circle at 30% 70%, rgba(255, 255, 255, 0.16) 0 2px, transparent 3px),
+    radial-gradient(circle at 70% 34%, rgba(255, 255, 255, 0.14) 0 2px, transparent 3px),
+    linear-gradient(38deg, transparent 0 48%, rgba(255, 255, 255, 0.12) 48% 48.22%, transparent 48.22% 100%),
+    linear-gradient(142deg, transparent 0 65%, rgba(130, 255, 178, 0.12) 65% 65.22%, transparent 65.22% 100%);
+  --tile-core:
+    radial-gradient(circle at 55% 24%, #a8ffc0 0%, rgba(72, 234, 125, 0.72) 29%, transparent 50%),
+    linear-gradient(150deg, #58f391 0%, #11ba62 51%, #07663a 80%, #031f12 100%);
+}
+
+.lobby-page .lobby-tile-settings {
+  --tile-edge: #9eabb3;
+  --tile-glow: rgba(183, 207, 218, 0.32);
+  --tile-pattern:
+    linear-gradient(90deg, transparent 0 18%, rgba(255, 255, 255, 0.12) 18% 18.22%, transparent 18.22% 100%),
+    linear-gradient(145deg, transparent 0 52%, rgba(255, 255, 255, 0.1) 52% 52.24%, transparent 52.24% 100%),
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.035) 0 1px, transparent 1px 18px);
+  --tile-core:
+    radial-gradient(circle at 30% 20%, rgba(255, 255, 255, 0.32), transparent 14rem),
+    linear-gradient(146deg, #b6c1c6 0%, #69767d 43%, #303a43 72%, #0d1218 100%);
+}
+
+.lobby-page .lobby-tile-logout {
+  --tile-edge: #2b2b2b;
+  --tile-glow: rgba(255, 255, 255, 0.16);
+  --tile-pattern:
+    linear-gradient(112deg, transparent 0 42%, rgba(255, 255, 255, 0.08) 42% 42.2%, transparent 42.2% 100%),
+    repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.035) 0 1px, transparent 1px 11px);
+  --tile-core:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.13), transparent 42%),
+    linear-gradient(150deg, #363636 0%, #121212 62%, #030303 100%);
+}
+
+.lobby-page .lobby-tile-chat .lobby-tile-label,
+.lobby-page .lobby-tile-friends .lobby-tile-label {
+  padding-bottom: 0.34em;
+}
+
+.lobby-page .lobby-tile-settings .lobby-tile-label {
+  padding-bottom: 0.12em;
+}
+
+.lobby-page .lobby-tile-achievements .lobby-tile-label {
+  max-width: 88%;
+}
+
+.lobby-page .lobby-tile-settings .lobby-tile-label {
+  max-width: 82%;
+}
+
+.lobby-page .lobby-logo-core::before {
+  inset: -20%;
+  background:
+    radial-gradient(circle, rgba(255, 255, 255, 0.58), rgba(255, 68, 44, 0.28) 27%, rgba(34, 216, 255, 0.16) 48%, transparent 70%);
+  filter: blur(18px);
+  animation: lobbyLogoPulse 4.6s ease-in-out infinite;
+}
+
+.lobby-page .lobby-logo-core::after {
+  border-color: rgba(255, 255, 255, 0.26);
+  border-left-color: rgba(255, 55, 43, 0.7);
+  border-right-color: rgba(34, 216, 255, 0.58);
+  box-shadow:
+    0 0 34px rgba(255, 255, 255, 0.18),
+    inset 0 0 28px rgba(255, 255, 255, 0.08);
+}
+
+.lobby-page .lobby-logo-image {
+  filter:
+    drop-shadow(0 26px 28px rgba(0, 0, 0, 0.64))
+    drop-shadow(0 0 24px rgba(255, 255, 255, 0.5))
+    drop-shadow(0 0 56px rgba(255, 63, 44, 0.34))
+    drop-shadow(0 0 38px rgba(34, 216, 255, 0.2));
+}
+
+@keyframes lobbyGlassSweep {
+  0%,
+  55%,
+  100% {
+    transform: translateX(-22%) translateY(0);
+  }
+
+  72% {
+    transform: translateX(24%) translateY(2%);
+  }
+}
+
+@keyframes lobbyPanelBreath {
+  0%,
+  100% {
+    filter: saturate(1.08) contrast(1.04) brightness(1);
+  }
+
+  50% {
+    filter: saturate(1.12) contrast(1.06) brightness(1.025);
+  }
+}
+
+@keyframes lobbyLogoPulse {
+  0%,
+  100% {
+    opacity: 0.78;
+    transform: scale(0.98);
+  }
+
+  50% {
+    opacity: 1;
+    transform: scale(1.04);
+  }
+}
+
+@keyframes lobbyAmbientDrift {
+  from {
+    background-position: 0 0, 0 0, 0 0;
+  }
+
+  to {
+    background-position: 140px 70px, 0 0, 0 0;
+  }
+}
+
+/* Arcade poster composition: same panel layout, more physical/heroic rendering. */
+.lobby-page {
+  background:
+    radial-gradient(circle at 53.5% 56%, rgba(255, 255, 255, 0.28), transparent 11rem),
+    radial-gradient(circle at 53.5% 56%, rgba(255, 39, 34, 0.22), transparent 25rem),
+    radial-gradient(circle at 62% 38%, rgba(34, 216, 255, 0.16), transparent 30rem),
+    linear-gradient(118deg, transparent 0 17%, rgba(255, 255, 255, 0.13) 17% 17.16%, transparent 17.16% 100%),
+    linear-gradient(118deg, transparent 0 63%, rgba(255, 255, 255, 0.09) 63% 63.16%, transparent 63.16% 100%),
+    linear-gradient(37deg, transparent 0 41%, rgba(255, 255, 255, 0.08) 41% 41.14%, transparent 41.14% 100%),
+    linear-gradient(180deg, #020307 0%, #080a10 48%, #020307 100%);
+}
+
+.lobby-page::before {
+  background:
+    radial-gradient(circle, rgba(255, 255, 255, 0.24) 0 1px, transparent 1.9px),
+    linear-gradient(115deg, transparent 0 18%, rgba(255, 255, 255, 0.16) 18% 18.14%, transparent 18.14% 100%),
+    linear-gradient(115deg, transparent 0 82%, rgba(255, 255, 255, 0.12) 82% 82.14%, transparent 82.14% 100%),
+    radial-gradient(ellipse at 50% 58%, transparent 0 17rem, rgba(0, 0, 0, 0.42) 28rem);
+  background-size: 132px 132px, 100% 100%, 100% 100%, 100% 100%;
+  opacity: 0.42;
+}
+
+.lobby-page::after {
+  background:
+    linear-gradient(113deg, transparent 0 8%, rgba(255, 255, 255, 0.18) 8% 8.18%, transparent 8.18% 100%),
+    linear-gradient(113deg, transparent 0 51%, rgba(0, 0, 0, 0.32) 51% 51.5%, transparent 51.5% 100%),
+    linear-gradient(28deg, transparent 0 73%, rgba(255, 255, 255, 0.12) 73% 73.2%, transparent 73.2% 100%);
+  opacity: 0.7;
+}
+
+.lobby-stage::before {
+  inset: -38px 0;
+  background:
+    linear-gradient(90deg, transparent 0 49.65%, rgba(0, 0, 0, 0.92) 49.65% 50.92%, transparent 50.92% 100%),
+    linear-gradient(0deg, transparent 0 57.45%, rgba(0, 0, 0, 0.92) 57.45% 59.42%, transparent 59.42% 100%),
+    linear-gradient(116deg, transparent 0 44%, rgba(0, 0, 0, 0.72) 44% 45.05%, transparent 45.05% 100%),
+    linear-gradient(31deg, transparent 0 61%, rgba(0, 0, 0, 0.68) 61% 61.9%, transparent 61.9% 100%);
+  opacity: 1;
+}
+
+.lobby-stage::after {
+  width: 36rem;
+  background:
+    radial-gradient(circle, rgba(255, 255, 255, 0.78) 0 9%, rgba(255, 228, 174, 0.32) 18%, rgba(255, 47, 39, 0.18) 38%, rgba(35, 216, 255, 0.1) 58%, transparent 74%);
+  filter: blur(16px);
+  opacity: 0.98;
+}
+
+.lobby-stage-aura {
+  background:
+    radial-gradient(circle at 16% 20%, rgba(255, 42, 35, 0.42), transparent 28rem),
+    radial-gradient(circle at 81% 22%, rgba(223, 70, 255, 0.36), transparent 25rem),
+    radial-gradient(circle at 17% 82%, rgba(255, 221, 27, 0.34), transparent 23rem),
+    radial-gradient(circle at 55% 56%, rgba(255, 255, 255, 0.16), transparent 19rem),
+    radial-gradient(circle at 78% 82%, rgba(29, 194, 255, 0.16), transparent 22rem);
+}
+
+.lobby-stage-grid {
+  background:
+    linear-gradient(116deg, transparent 0 20%, rgba(255, 255, 255, 0.2) 20% 20.18%, transparent 20.18% 100%),
+    linear-gradient(116deg, transparent 0 77%, rgba(255, 255, 255, 0.15) 77% 77.18%, transparent 77.18% 100%),
+    linear-gradient(27deg, transparent 0 36%, rgba(255, 255, 255, 0.12) 36% 36.15%, transparent 36.15% 100%),
+    linear-gradient(27deg, transparent 0 69%, rgba(255, 255, 255, 0.09) 69% 69.15%, transparent 69.15% 100%);
+  opacity: 0.8;
+}
+
+.lobby-stage-orbit {
+  width: 34rem;
+  border-width: 4px;
+  border-style: solid;
+  border-color: rgba(255, 255, 255, 0.18);
+  border-left-color: rgba(255, 49, 45, 0.82);
+  border-right-color: rgba(35, 216, 255, 0.74);
+  border-bottom-color: rgba(255, 222, 40, 0.42);
+  box-shadow:
+    0 0 42px rgba(255, 255, 255, 0.28),
+    inset 0 0 36px rgba(255, 255, 255, 0.12);
+}
+
+.lobby-stage-cross {
+  width: 18rem;
+  background:
+    linear-gradient(90deg, transparent 0 42%, rgba(0, 0, 0, 0.84) 42% 58%, transparent 58% 100%),
+    linear-gradient(0deg, transparent 0 42%, rgba(0, 0, 0, 0.84) 42% 58%, transparent 58% 100%),
+    radial-gradient(circle, rgba(255, 255, 255, 0.34), rgba(255, 255, 255, 0.06) 48%, transparent 58%);
+  box-shadow:
+    0 0 0 11px rgba(0, 0, 0, 0.55),
+    0 0 0 14px rgba(255, 255, 255, 0.1),
+    0 0 72px rgba(255, 255, 255, 0.34);
+}
+
+.lobby-page .lobby-tile {
+  background:
+    linear-gradient(118deg, rgba(255, 255, 255, 0.46) 0 6%, transparent 17% 100%),
+    linear-gradient(118deg, transparent 0 34%, rgba(255, 255, 255, 0.22) 34% 36%, transparent 44% 100%),
+    linear-gradient(118deg, transparent 0 69%, rgba(255, 255, 255, 0.14) 69% 71%, transparent 80% 100%),
+    radial-gradient(circle at 18% 12%, rgba(255, 255, 255, 0.38), transparent 16rem),
+    radial-gradient(circle at 70% 72%, rgba(0, 0, 0, 0.34), transparent 19rem),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.22), transparent 30%),
+    linear-gradient(0deg, rgba(0, 0, 0, 0.54), transparent 52%),
+    var(--tile-pattern),
+    var(--tile-core);
+  box-shadow:
+    0 0 0 8px rgba(0, 0, 0, 0.94),
+    0 0 0 10px rgba(255, 255, 255, 0.09),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.55),
+    inset 0 0 0 var(--panel-gap) rgba(255, 255, 255, 0.12),
+    inset 0 28px 52px rgba(255, 255, 255, 0.24),
+    inset 0 -88px 124px rgba(0, 0, 0, 0.5),
+    inset 40px 0 76px rgba(255, 255, 255, 0.1),
+    inset -44px 0 90px rgba(0, 0, 0, 0.3),
+    0 30px 54px rgba(0, 0, 0, 0.56),
+    0 0 42px var(--tile-glow);
+  animation: none;
+}
+
+.lobby-page .lobby-tile::before {
+  background:
+    linear-gradient(111deg, transparent 0 37%, rgba(255, 255, 255, 0.42) 41%, rgba(255, 255, 255, 0.08) 47%, transparent 51% 100%),
+    linear-gradient(111deg, transparent 0 58%, rgba(255, 255, 255, 0.24) 62%, transparent 67% 100%),
+    linear-gradient(21deg, transparent 0 48%, rgba(255, 255, 255, 0.12) 50%, transparent 53% 100%);
+  opacity: 0.58;
+  animation: lobbyGlassSweep 7.5s ease-in-out infinite;
+}
+
+.lobby-page .lobby-tile::after {
+  inset: 9px;
+  background:
+    linear-gradient(var(--tile-edge), var(--tile-edge)) left top / 42% 3px no-repeat,
+    linear-gradient(var(--tile-edge), var(--tile-edge)) right bottom / 44% 3px no-repeat,
+    linear-gradient(rgba(255, 255, 255, 0.72), rgba(255, 255, 255, 0.1)) left top / 3px 48% no-repeat,
+    linear-gradient(rgba(255, 255, 255, 0.58), rgba(255, 255, 255, 0.08)) right bottom / 3px 50% no-repeat,
+    radial-gradient(circle at 0 0, rgba(255, 255, 255, 0.24), transparent 16%);
+  opacity: 0.9;
+}
+
+.lobby-page .lobby-tile-label,
+.lobby-page .lobby-tile-logout span {
+  color: #fffdf8;
+  text-shadow:
+    0 3px 0 rgba(0, 0, 0, 0.78),
+    0 7px 0 rgba(0, 0, 0, 0.3),
+    0 0 12px rgba(255, 255, 255, 0.34),
+    0 0 32px var(--tile-glow);
+}
+
+.lobby-page .lobby-tile-mark {
+  opacity: 0.045;
+  transform: translateY(-50%) rotate(-10deg) scale(1.18);
+}
+
+.lobby-page .lobby-tile-kicker {
+  border-left-width: 7px;
+  background:
+    linear-gradient(90deg, rgba(255, 255, 255, 0.34), rgba(0, 0, 0, 0.38)),
+    rgba(0, 0, 0, 0.44);
+}
+
+.lobby-page .lobby-tile-play {
+  --tile-glow: rgba(255, 36, 31, 0.88);
+  --tile-pattern:
+    radial-gradient(circle at 21% 38%, rgba(255, 255, 255, 0.14) 0 1px, transparent 2px),
+    linear-gradient(24deg, transparent 0 28%, rgba(255, 255, 255, 0.18) 28% 28.28%, transparent 28.28% 100%),
+    linear-gradient(145deg, transparent 0 59%, rgba(255, 107, 83, 0.24) 59% 59.3%, transparent 59.3% 100%),
+    radial-gradient(ellipse at 14% 86%, rgba(255, 224, 120, 0.16), transparent 12rem);
+  --tile-core:
+    radial-gradient(circle at 15% 12%, #ffc08f 0%, #ff5f4d 24%, transparent 44%),
+    radial-gradient(circle at 74% 70%, rgba(255, 22, 18, 0.82), transparent 40%),
+    linear-gradient(142deg, #ff7755 0%, #f40f19 38%, #9c050d 70%, #260004 100%);
+  filter: saturate(1.22) contrast(1.1);
+  box-shadow:
+    0 0 0 9px rgba(0, 0, 0, 0.96),
+    0 0 0 12px rgba(255, 49, 54, 0.32),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.68),
+    inset 0 0 0 var(--panel-gap) rgba(255, 255, 255, 0.15),
+    inset 0 36px 70px rgba(255, 241, 215, 0.34),
+    inset 0 -104px 146px rgba(53, 0, 0, 0.68),
+    inset 54px 0 94px rgba(255, 255, 255, 0.14),
+    0 32px 64px rgba(0, 0, 0, 0.62),
+    0 0 76px rgba(255, 35, 31, 0.82),
+    0 0 160px rgba(255, 35, 31, 0.34);
+}
+
+.lobby-page .lobby-tile-profile {
+  --tile-pattern:
+    radial-gradient(circle at 68% 30%, rgba(255, 255, 255, 0.18) 0 2px, transparent 3px),
+    radial-gradient(circle at 68% 30%, transparent 0 30px, rgba(255, 255, 255, 0.1) 31px 32px, transparent 33px),
+    radial-gradient(circle at 68% 30%, transparent 0 63px, rgba(255, 255, 255, 0.07) 64px 65px, transparent 66px),
+    linear-gradient(118deg, transparent 0 42%, rgba(255, 255, 255, 0.14) 42% 42.25%, transparent 42.25% 100%);
+  --tile-core:
+    radial-gradient(circle at 40% 13%, #a4f8ff 0%, rgba(42, 221, 255, 0.86) 26%, transparent 50%),
+    linear-gradient(157deg, #3cf2ff 0%, #108bd7 50%, #052b5f 100%);
+}
+
+.lobby-page .lobby-tile-achievements {
+  --tile-pattern:
+    linear-gradient(58deg, transparent 0 33%, rgba(255, 255, 255, 0.16) 33% 33.25%, transparent 33.25% 100%),
+    linear-gradient(148deg, transparent 0 68%, rgba(255, 236, 143, 0.16) 68% 68.28%, transparent 68.28% 100%),
+    radial-gradient(circle at 61% 37%, rgba(255, 255, 255, 0.18), transparent 6rem),
+    radial-gradient(circle at 80% 22%, rgba(255, 211, 119, 0.1), transparent 8rem);
+  --tile-core:
+    radial-gradient(circle at 54% 31%, rgba(255, 236, 143, 0.5), transparent 17rem),
+    linear-gradient(146deg, #ff75ea 0%, #b43dde 46%, #5d2094 75%, #1c062f 100%);
+}
+
+.lobby-page .lobby-tile-chat {
+  --tile-pattern:
+    radial-gradient(ellipse at 19% 47%, transparent 0 33px, rgba(255, 255, 255, 0.13) 34px 35px, transparent 36px),
+    radial-gradient(ellipse at 19% 47%, transparent 0 72px, rgba(255, 255, 255, 0.09) 73px 74px, transparent 75px),
+    radial-gradient(ellipse at 19% 47%, transparent 0 112px, rgba(255, 255, 255, 0.06) 113px 114px, transparent 115px),
+    linear-gradient(142deg, transparent 0 60%, rgba(255, 255, 255, 0.16) 60% 60.25%, transparent 60.25% 100%);
+}
+
+.lobby-page .lobby-tile-friends {
+  --tile-pattern:
+    radial-gradient(circle at 28% 72%, rgba(255, 255, 255, 0.17) 0 2px, transparent 3px),
+    radial-gradient(circle at 70% 33%, rgba(255, 255, 255, 0.16) 0 2px, transparent 3px),
+    linear-gradient(35deg, transparent 0 48%, rgba(255, 255, 255, 0.14) 48% 48.24%, transparent 48.24% 100%),
+    linear-gradient(142deg, transparent 0 65%, rgba(130, 255, 178, 0.16) 65% 65.24%, transparent 65.24% 100%);
+}
+
+.lobby-page .lobby-tile-settings {
+  --tile-pattern:
+    linear-gradient(90deg, transparent 0 18%, rgba(255, 255, 255, 0.14) 18% 18.24%, transparent 18.24% 100%),
+    linear-gradient(145deg, transparent 0 51%, rgba(255, 255, 255, 0.13) 51% 51.24%, transparent 51.24% 100%),
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.045) 0 1px, transparent 1px 16px);
+}
+
+.lobby-page .lobby-logo-core {
+  width: 28rem;
+}
+
+.lobby-page .lobby-logo-core::before {
+  inset: -28%;
+  background:
+    radial-gradient(circle, rgba(255, 255, 255, 0.76), rgba(255, 226, 180, 0.28) 18%, rgba(255, 55, 42, 0.24) 35%, rgba(35, 216, 255, 0.15) 54%, transparent 73%);
+  filter: blur(21px);
+}
+
+.lobby-page .lobby-logo-core::after {
+  inset: 2%;
+  border-width: 4px;
+  box-shadow:
+    0 0 0 8px rgba(0, 0, 0, 0.32),
+    0 0 48px rgba(255, 255, 255, 0.26),
+    inset 0 0 42px rgba(255, 255, 255, 0.12);
+}
+
+.lobby-page .lobby-logo-image {
+  filter:
+    drop-shadow(0 30px 30px rgba(0, 0, 0, 0.72))
+    drop-shadow(0 0 28px rgba(255, 255, 255, 0.62))
+    drop-shadow(0 0 76px rgba(255, 63, 44, 0.44))
+    drop-shadow(0 0 54px rgba(34, 216, 255, 0.26));
+}
+
+.lobby-page .lobby-tile:not(:disabled):hover,
+.lobby-page .lobby-tile:not(:disabled):focus-visible {
+  transition-duration: 180ms;
+  filter: brightness(1.16) saturate(1.24) contrast(1.08);
+  transform: translateY(-6px) scale(1.014);
+}
+
+@media (max-width: 920px), (max-height: 680px) {
+  .lobby-stage::after,
+  .lobby-stage-orbit {
+    width: 23rem;
+  }
+
+  .lobby-stage-cross {
+    width: 12rem;
+  }
+
+  .lobby-page .lobby-logo-core {
+    width: 20rem;
+  }
+}
+
+@media (max-width: 640px), (max-height: 520px) {
+  .lobby-stage::after,
+  .lobby-stage-orbit {
+    width: 15rem;
+  }
+
+  .lobby-stage-cross {
+    width: 8rem;
+  }
+
+  .lobby-page .lobby-logo-core {
+    width: 13rem;
+  }
+}
+
+/* Physical arcade architecture: dark channels, independent suspended pieces. */
+.lobby-stage {
+  background:
+    radial-gradient(circle at 53.5% 56%, rgba(255, 255, 255, 0.12), transparent 16rem),
+    linear-gradient(116deg, transparent 0 18%, rgba(255, 255, 255, 0.07) 18% 18.12%, transparent 18.12% 100%),
+    linear-gradient(28deg, transparent 0 72%, rgba(255, 255, 255, 0.06) 72% 72.12%, transparent 72.12% 100%),
+    #030407;
+}
+
+.lobby-stage::before {
+  z-index: 3;
+  background:
+    radial-gradient(circle at 53.5% 56%, rgba(0, 0, 0, 0.98) 0 10rem, rgba(0, 0, 0, 0.78) 10.4rem 14.2rem, transparent 14.8rem),
+    linear-gradient(90deg, transparent 0 49.5%, rgba(0, 0, 0, 0.98) 49.5% 51.1%, transparent 51.1% 100%),
+    linear-gradient(0deg, transparent 0 57.1%, rgba(0, 0, 0, 0.98) 57.1% 59.75%, transparent 59.75% 100%),
+    linear-gradient(116deg, transparent 0 44%, rgba(0, 0, 0, 0.82) 44% 45.35%, transparent 45.35% 100%),
+    linear-gradient(31deg, transparent 0 61%, rgba(0, 0, 0, 0.78) 61% 62.25%, transparent 62.25% 100%);
+  opacity: 1;
+}
+
+.lobby-stage::after {
+  z-index: 4;
+  width: 39rem;
+  background:
+    radial-gradient(circle, rgba(255, 255, 255, 0.36) 0 5%, rgba(255, 218, 156, 0.14) 18%, rgba(255, 43, 36, 0.12) 39%, rgba(35, 216, 255, 0.08) 59%, transparent 74%);
+  filter: blur(24px);
+}
+
+.lobby-stage-cross {
+  z-index: 13;
+  width: 24rem;
+  background:
+    radial-gradient(circle, rgba(255, 255, 255, 0.12) 0 9%, transparent 9.4%),
+    radial-gradient(circle, transparent 0 25%, rgba(255, 255, 255, 0.18) 25.4% 27%, transparent 27.4%),
+    radial-gradient(circle, transparent 0 42%, rgba(255, 58, 46, 0.26) 42.5% 44%, transparent 44.5%),
+    radial-gradient(circle, transparent 0 57%, rgba(34, 216, 255, 0.2) 57.4% 59%, transparent 59.5%),
+    linear-gradient(90deg, transparent 0 43%, rgba(0, 0, 0, 0.9) 43% 57%, transparent 57% 100%),
+    linear-gradient(0deg, transparent 0 43%, rgba(0, 0, 0, 0.9) 43% 57%, transparent 57% 100%),
+    radial-gradient(circle, #151820 0 48%, #050609 49% 67%, rgba(0, 0, 0, 0) 68%);
+  box-shadow:
+    0 0 0 13px rgba(0, 0, 0, 0.86),
+    0 0 0 17px rgba(255, 255, 255, 0.12),
+    0 30px 70px rgba(0, 0, 0, 0.72),
+    0 0 86px rgba(255, 255, 255, 0.26),
+    inset 0 0 48px rgba(255, 255, 255, 0.12),
+    inset 0 -34px 58px rgba(0, 0, 0, 0.5);
+  opacity: 1;
+}
+
+.lobby-page .lobby-tile {
+  --piece-gap-x: 14px;
+  --piece-gap-y: 14px;
+  --piece-shape: var(--tile-shape);
+  clip-path: none;
+  overflow: visible;
+  background: transparent;
+  box-shadow: none;
+  filter: none;
+  animation: none;
+  padding: calc(26px + var(--piece-gap-y)) calc(34px + var(--piece-gap-x));
+}
+
+.lobby-page .lobby-tile::before {
+  inset: var(--piece-gap-y) var(--piece-gap-x);
+  z-index: 1;
+  clip-path: var(--piece-shape);
+  background:
+    linear-gradient(118deg, rgba(255, 255, 255, 0.52) 0 6%, transparent 17% 100%),
+    linear-gradient(118deg, transparent 0 32%, rgba(255, 255, 255, 0.28) 35%, transparent 43% 100%),
+    linear-gradient(118deg, transparent 0 66%, rgba(255, 255, 255, 0.16) 69%, transparent 78% 100%),
+    radial-gradient(circle at 17% 12%, rgba(255, 255, 255, 0.42), transparent 14rem),
+    radial-gradient(circle at 72% 76%, rgba(0, 0, 0, 0.38), transparent 20rem),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.23), transparent 30%),
+    linear-gradient(0deg, rgba(0, 0, 0, 0.56), transparent 54%),
+    var(--tile-pattern),
+    var(--tile-core);
+  box-shadow:
+    0 0 0 4px rgba(0, 0, 0, 0.95),
+    0 0 0 7px rgba(255, 255, 255, 0.08),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.62),
+    inset 0 0 0 7px rgba(255, 255, 255, 0.08),
+    inset 0 32px 58px rgba(255, 255, 255, 0.22),
+    inset 0 -96px 138px rgba(0, 0, 0, 0.54),
+    inset 44px 0 84px rgba(255, 255, 255, 0.11),
+    inset -48px 0 98px rgba(0, 0, 0, 0.34),
+    0 20px 0 rgba(0, 0, 0, 0.18),
+    0 34px 74px rgba(0, 0, 0, 0.74),
+    0 0 48px var(--tile-glow);
+  transform: translateZ(0);
+  opacity: 1;
+  transition: transform 180ms ease, filter 180ms ease, box-shadow 180ms ease;
+  animation: lobbyPanelFloat 5.6s ease-in-out infinite;
+}
+
+.lobby-page .lobby-tile::after {
+  inset: calc(var(--piece-gap-y) + 9px) calc(var(--piece-gap-x) + 9px);
+  z-index: 2;
+  clip-path: var(--piece-shape);
+  background:
+    linear-gradient(var(--tile-edge), var(--tile-edge)) left top / 42% 3px no-repeat,
+    linear-gradient(var(--tile-edge), var(--tile-edge)) right bottom / 44% 3px no-repeat,
+    linear-gradient(rgba(255, 255, 255, 0.78), rgba(255, 255, 255, 0.1)) left top / 3px 52% no-repeat,
+    linear-gradient(rgba(255, 255, 255, 0.62), rgba(255, 255, 255, 0.08)) right bottom / 3px 54% no-repeat,
+    linear-gradient(111deg, transparent 0 36%, rgba(255, 255, 255, 0.38) 40%, rgba(255, 255, 255, 0.1) 47%, transparent 52% 100%),
+    linear-gradient(111deg, transparent 0 58%, rgba(255, 255, 255, 0.2) 62%, transparent 68% 100%);
+  opacity: 0.92;
+  transform: translateX(-5%);
+  transition: opacity 180ms ease, transform 180ms ease;
+  animation: lobbyGlassSweep 7.8s ease-in-out infinite;
+}
+
+.lobby-page .lobby-tile > span {
+  z-index: 5;
+}
+
+.lobby-page .lobby-tile:not(:disabled):hover::before,
+.lobby-page .lobby-tile:not(:disabled):focus-visible::before {
+  animation: none;
+  transform: translateY(-8px) scale(1.018);
+  filter: brightness(1.16) saturate(1.22) contrast(1.08);
+  box-shadow:
+    0 0 0 4px rgba(0, 0, 0, 0.98),
+    0 0 0 8px rgba(255, 255, 255, 0.13),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.74),
+    inset 0 0 0 7px rgba(255, 255, 255, 0.11),
+    inset 0 38px 70px rgba(255, 255, 255, 0.28),
+    inset 0 -102px 150px rgba(0, 0, 0, 0.56),
+    0 44px 90px rgba(0, 0, 0, 0.82),
+    0 0 78px var(--tile-glow);
+}
+
+.lobby-page .lobby-tile:not(:disabled):hover::after,
+.lobby-page .lobby-tile:not(:disabled):focus-visible::after {
+  opacity: 1;
+  transform: translateX(3%);
+}
+
+.lobby-page .lobby-tile:not(:disabled):hover,
+.lobby-page .lobby-tile:not(:disabled):focus-visible {
+  transform: none;
+  filter: none;
+}
+
+.lobby-page .lobby-tile-play {
+  --piece-gap-x: 18px;
+  --piece-gap-y: 16px;
+  --piece-shape: polygon(1% 2%, 87% 2%, 99% 15%, 96% 91%, 8% 98%, 1% 84%);
+}
+
+.lobby-page .lobby-tile-profile {
+  --piece-shape: polygon(8% 2%, 88% 2%, 98% 13%, 94% 97%, 3% 96%, 1% 11%);
+}
+
+.lobby-page .lobby-tile-achievements {
+  --piece-shape: polygon(8% 2%, 99% 2%, 98% 92%, 12% 98%, 1% 84%, 1% 12%);
+}
+
+.lobby-page .lobby-tile-chat {
+  --piece-shape: polygon(1% 2%, 98% 2%, 88% 96%, 2% 98%, 1% 70%);
+}
+
+.lobby-page .lobby-tile-friends {
+  --piece-shape: polygon(8% 2%, 98% 2%, 92% 97%, 2% 98%, 1% 15%);
+}
+
+.lobby-page .lobby-tile-settings {
+  --piece-gap-x: 14px;
+  --piece-gap-y: 12px;
+  --piece-shape: polygon(7% 3%, 99% 2%, 98% 92%, 4% 97%, 1% 18%);
+}
+
+.lobby-page .lobby-tile-logout {
+  --piece-gap-x: 14px;
+  --piece-gap-y: 9px;
+  --piece-shape: polygon(5% 5%, 99% 4%, 97% 92%, 2% 96%, 1% 22%);
+}
+
+.lobby-page .lobby-tile-play .lobby-tile-label {
+  padding-bottom: 0.22em;
+}
+
+.lobby-page .lobby-tile-achievements .lobby-tile-label {
+  max-width: 78%;
+}
+
+.lobby-page .lobby-tile-settings .lobby-tile-label {
+  justify-self: end;
+  max-width: 72%;
+  text-align: right;
+}
+
+.lobby-page .lobby-tile-friends .lobby-tile-label {
+  max-width: 70%;
+}
+
+.lobby-page .lobby-logo-core {
+  z-index: 15;
+  width: 30rem;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle, rgba(255, 255, 255, 0.18) 0 21%, transparent 21.5%),
+    radial-gradient(circle, transparent 0 35%, rgba(255, 255, 255, 0.12) 35.5% 38%, transparent 38.5%),
+    radial-gradient(circle, transparent 0 53%, rgba(255, 58, 46, 0.18) 53.5% 56%, transparent 56.5%),
+    radial-gradient(circle, transparent 0 66%, rgba(34, 216, 255, 0.16) 66.5% 69%, transparent 69.5%),
+    radial-gradient(circle, #11151d 0 47%, #050609 48% 72%, transparent 73%);
+  box-shadow:
+    0 0 0 13px rgba(0, 0, 0, 0.82),
+    0 0 0 17px rgba(255, 255, 255, 0.1),
+    0 42px 92px rgba(0, 0, 0, 0.76),
+    inset 0 0 58px rgba(255, 255, 255, 0.14);
+}
+
+.lobby-page .lobby-logo-core::before {
+  inset: -24%;
+  background:
+    radial-gradient(circle, rgba(255, 255, 255, 0.72), rgba(255, 229, 176, 0.28) 17%, rgba(255, 55, 42, 0.22) 34%, rgba(35, 216, 255, 0.14) 53%, transparent 72%);
+  filter: blur(24px);
+}
+
+.lobby-page .lobby-logo-core::after {
+  inset: 6%;
+  border-width: 5px;
+  border-style: solid;
+  border-top-color: rgba(255, 255, 255, 0.34);
+  border-left-color: rgba(255, 55, 43, 0.74);
+  border-right-color: rgba(34, 216, 255, 0.64);
+  border-bottom-color: rgba(255, 222, 40, 0.38);
+}
+
+@keyframes lobbyPanelFloat {
+  0%,
+  100% {
+    filter: brightness(1);
+  }
+
+  50% {
+    filter: brightness(1.035);
+  }
+}
+
+@media (max-width: 920px), (max-height: 680px) {
+  .lobby-page .lobby-tile {
+    --piece-gap-x: 10px;
+    --piece-gap-y: 10px;
+    padding: calc(18px + var(--piece-gap-y)) calc(22px + var(--piece-gap-x));
+  }
+
+  .lobby-page .lobby-tile-play {
+    --piece-gap-x: 13px;
+    --piece-gap-y: 12px;
+  }
+
+  .lobby-stage-cross,
+  .lobby-page .lobby-logo-core {
+    width: 21rem;
+  }
+}
+
+@media (max-width: 640px), (max-height: 520px) {
+  .lobby-page .lobby-tile {
+    --piece-gap-x: 7px;
+    --piece-gap-y: 7px;
+    padding: calc(12px + var(--piece-gap-y)) calc(14px + var(--piece-gap-x));
+  }
+
+  .lobby-page .lobby-tile-play {
+    --piece-gap-x: 9px;
+    --piece-gap-y: 8px;
+  }
+
+  .lobby-stage-cross,
+  .lobby-page .lobby-logo-core {
+    width: 14rem;
+  }
+}
+
+/* Square off the pieces and make each panel meet the black structure evenly. */
+.lobby-page .lobby-tile {
+  --piece-gap-x: 5px;
+  --piece-gap-y: 5px;
+  --piece-shape: polygon(0 0, calc(100% - 18px) 0, 100% 18px, 100% 100%, 18px 100%, 0 calc(100% - 18px));
+  padding: calc(26px + var(--piece-gap-y)) calc(34px + var(--piece-gap-x));
+}
+
+.lobby-page .lobby-tile::before {
+  box-shadow:
+    0 0 0 6px rgba(0, 0, 0, 0.96),
+    0 0 0 8px rgba(255, 255, 255, 0.08),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.6),
+    inset 0 0 0 7px rgba(255, 255, 255, 0.08),
+    inset 0 32px 58px rgba(255, 255, 255, 0.22),
+    inset 0 -96px 138px rgba(0, 0, 0, 0.54),
+    inset 44px 0 84px rgba(255, 255, 255, 0.1),
+    inset -48px 0 98px rgba(0, 0, 0, 0.32),
+    0 34px 74px rgba(0, 0, 0, 0.72),
+    0 0 48px var(--tile-glow);
+}
+
+.lobby-page .lobby-tile::after {
+  inset: calc(var(--piece-gap-y) + 8px) calc(var(--piece-gap-x) + 8px);
+  background:
+    linear-gradient(var(--tile-edge), var(--tile-edge)) left top / 46% 3px no-repeat,
+    linear-gradient(var(--tile-edge), var(--tile-edge)) right bottom / 46% 3px no-repeat,
+    linear-gradient(rgba(255, 255, 255, 0.78), rgba(255, 255, 255, 0.1)) left top / 3px 54% no-repeat,
+    linear-gradient(rgba(255, 255, 255, 0.62), rgba(255, 255, 255, 0.08)) right bottom / 3px 54% no-repeat,
+    linear-gradient(111deg, transparent 0 36%, rgba(255, 255, 255, 0.34) 40%, rgba(255, 255, 255, 0.08) 47%, transparent 52% 100%);
+}
+
+.lobby-page .lobby-tile-play,
+.lobby-page .lobby-tile-profile,
+.lobby-page .lobby-tile-achievements,
+.lobby-page .lobby-tile-chat,
+.lobby-page .lobby-tile-friends,
+.lobby-page .lobby-tile-settings,
+.lobby-page .lobby-tile-logout {
+  --piece-shape: polygon(0 0, calc(100% - 18px) 0, 100% 18px, 100% 100%, 18px 100%, 0 calc(100% - 18px));
+}
+
+.lobby-page .lobby-tile-play {
+  --piece-gap-x: 6px;
+  --piece-gap-y: 6px;
+}
+
+.lobby-page .lobby-tile-settings,
+.lobby-page .lobby-tile-logout {
+  --piece-gap-y: 4px;
+}
+
+.lobby-page .lobby-tile-label,
+.lobby-page .lobby-tile-achievements .lobby-tile-label,
+.lobby-page .lobby-tile-settings .lobby-tile-label,
+.lobby-page .lobby-tile-friends .lobby-tile-label,
+.lobby-page .lobby-tile-logout .lobby-tile-label,
+.lobby-page .lobby-tile-logout span {
+  max-width: none;
+  white-space: nowrap;
+  overflow: visible;
+  overflow-wrap: normal;
+  word-break: normal;
+  text-align: left;
+}
+
+.lobby-page .lobby-tile-settings .lobby-tile-label {
+  justify-self: center;
+  text-align: center;
+}
+
+.lobby-page .lobby-tile-achievements .lobby-tile-label {
+  justify-self: center;
+  text-align: center;
+}
+
+.lobby-page .lobby-tile-friends .lobby-tile-label {
+  font-size: 2.7rem;
+}
+
+.lobby-page .lobby-tile-achievements .lobby-tile-label,
+.lobby-page .lobby-tile-settings .lobby-tile-label {
+  font-size: 3.2rem;
+}
+
+.lobby-page .lobby-tile-logout .lobby-tile-label,
+.lobby-page .lobby-tile-logout span {
+  font-size: 2.7rem;
+}
+
+@media (max-width: 920px), (max-height: 680px) {
+  .lobby-page .lobby-tile {
+    --piece-gap-x: 4px;
+    --piece-gap-y: 4px;
+    --piece-shape: polygon(0 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 14px 100%, 0 calc(100% - 14px));
+    padding: calc(18px + var(--piece-gap-y)) calc(22px + var(--piece-gap-x));
+  }
+
+  .lobby-page .lobby-tile-play,
+  .lobby-page .lobby-tile-profile,
+  .lobby-page .lobby-tile-achievements,
+  .lobby-page .lobby-tile-chat,
+  .lobby-page .lobby-tile-friends,
+  .lobby-page .lobby-tile-settings,
+  .lobby-page .lobby-tile-logout {
+    --piece-shape: polygon(0 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 14px 100%, 0 calc(100% - 14px));
+  }
+}
+
+@media (max-width: 640px), (max-height: 520px) {
+  .lobby-page .lobby-tile {
+    --piece-gap-x: 3px;
+    --piece-gap-y: 3px;
+    --piece-shape: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 10px 100%, 0 calc(100% - 10px));
+    padding: calc(12px + var(--piece-gap-y)) calc(14px + var(--piece-gap-x));
+  }
+
+  .lobby-page .lobby-tile-play,
+  .lobby-page .lobby-tile-profile,
+  .lobby-page .lobby-tile-achievements,
+  .lobby-page .lobby-tile-chat,
+  .lobby-page .lobby-tile-friends,
+  .lobby-page .lobby-tile-settings,
+  .lobby-page .lobby-tile-logout {
+    --piece-shape: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 10px 100%, 0 calc(100% - 10px));
+  }
+
+  .lobby-page .lobby-tile-achievements .lobby-tile-label,
+  .lobby-page .lobby-tile-settings .lobby-tile-label,
+  .lobby-page .lobby-tile-logout .lobby-tile-label,
+  .lobby-page .lobby-tile-logout span {
+    font-size: 1.35rem;
+  }
+}
+
+/* Cleanup pass: contain effects, remove badges, restore readable titles. */
+.lobby-page::after {
+  opacity: 0.18;
+}
+
+.lobby-stage-aura {
+  opacity: 0.84;
+}
+
+.lobby-stage-grid {
+  opacity: 0.18;
+}
+
+.lobby-stage::after {
+  width: 28rem;
+  opacity: 0.74;
+  filter: blur(18px);
+}
+
+.lobby-stage-orbit {
+  width: 24rem;
+  border-width: 3px;
+  opacity: 0.78;
+}
+
+.lobby-stage-cross {
+  width: 17rem;
+  opacity: 0.88;
+}
+
+.lobby-page .lobby-logo-core {
+  width: 22rem;
+  box-shadow:
+    0 0 0 10px rgba(0, 0, 0, 0.82),
+    0 0 0 13px rgba(255, 255, 255, 0.1),
+    0 30px 74px rgba(0, 0, 0, 0.72),
+    inset 0 0 42px rgba(255, 255, 255, 0.12);
+}
+
+.lobby-page .lobby-logo-core::before {
+  inset: -18%;
+  filter: blur(18px);
+}
+
+.lobby-page .lobby-logo-core::after {
+  inset: 8%;
+  border-width: 3px;
+}
+
+.lobby-page .lobby-logo-image {
+  width: 84%;
+  max-height: 84%;
+}
+
+.lobby-page .lobby-tile {
+  overflow: hidden;
+}
+
+.lobby-page .lobby-tile::before,
+.lobby-page .lobby-tile::after {
+  animation: none;
+}
+
+.lobby-page .lobby-tile::after {
+  opacity: 0.7;
+  transform: none;
+}
+
+.lobby-page .lobby-tile-kicker,
+.lobby-page .lobby-tile-lock {
+  display: none;
+}
+
+.lobby-page .lobby-tile-label,
+.lobby-page .lobby-tile-logout span {
+  white-space: nowrap;
+  overflow: visible;
+  word-break: normal;
+  overflow-wrap: normal;
+}
+
+.lobby-page .lobby-tile-profile .lobby-tile-label {
+  align-self: start;
+  margin-top: min(13vh, 5.7rem);
+  font-size: 2.35rem;
+  justify-self: center;
+}
+
+.lobby-page .lobby-tile-achievements .lobby-tile-label {
+  font-size: 2.95rem;
+  justify-self: center;
+  text-align: center;
+}
+
+.lobby-page .lobby-tile-settings .lobby-tile-label {
+  font-size: 3rem;
+  justify-self: center;
+  text-align: center;
+}
+
+.lobby-page .lobby-tile-friends .lobby-tile-label {
+  font-size: 2.55rem;
+}
+
+.lobby-page .lobby-tile-mark {
+  opacity: 0.025;
+}
+
+.lobby-page .lobby-tile:not(:disabled):hover::after,
+.lobby-page .lobby-tile:not(:disabled):focus-visible::after {
+  transform: none;
+}
+
+@media (max-width: 920px), (max-height: 680px) {
+  .lobby-stage::after,
+  .lobby-stage-orbit {
+    width: 18rem;
+  }
+
+  .lobby-stage-cross {
+    width: 12rem;
+  }
+
+  .lobby-page .lobby-logo-core {
+    width: 16rem;
+  }
+
+  .lobby-page .lobby-tile-profile .lobby-tile-label {
+    margin-top: min(12vh, 4.2rem);
+    font-size: 1.75rem;
+  }
+
+  .lobby-page .lobby-tile-achievements .lobby-tile-label,
+  .lobby-page .lobby-tile-settings .lobby-tile-label {
+    font-size: 2.15rem;
+  }
+}
+
+@media (max-width: 640px), (max-height: 520px) {
+  .lobby-stage::after,
+  .lobby-stage-orbit {
+    width: 12rem;
+  }
+
+  .lobby-stage-cross {
+    width: 8rem;
+  }
+
+  .lobby-page .lobby-logo-core {
+    width: 11rem;
+  }
+
+  .lobby-page .lobby-tile-profile .lobby-tile-label,
+  .lobby-page .lobby-tile-friends .lobby-tile-label,
+  .lobby-page .lobby-tile-achievements .lobby-tile-label,
+  .lobby-page .lobby-tile-settings .lobby-tile-label {
+    font-size: 1.25rem;
+  }
+}
+
+/* Keep Friends readable now that the oversized background marks are gone. */
+.lobby-page .lobby-tile-friends .lobby-tile-label {
+  position: absolute;
+  left: clamp(1.65rem, 3vw, 3rem);
+  bottom: clamp(1.25rem, 4.2vh, 3.2rem);
+  z-index: 6;
+  max-width: calc(100% - 4rem);
+  font-size: clamp(2.05rem, 3.25vw, 3.15rem);
+  line-height: 0.82;
+  text-align: left;
+}
+
+@media (max-width: 920px), (max-height: 680px) {
+  .lobby-page .lobby-tile-friends .lobby-tile-label {
+    left: 1.35rem;
+    bottom: 1.2rem;
+    font-size: clamp(1.45rem, 3.4vw, 2.1rem);
+  }
+}
+
+@media (max-width: 640px), (max-height: 520px) {
+  .lobby-page .lobby-tile-friends .lobby-tile-label {
+    left: 0.85rem;
+    bottom: 0.8rem;
+    font-size: clamp(1rem, 4vw, 1.45rem);
+  }
+}
+
+/* Align Profile with the other menu titles. */
+.lobby-page .lobby-tile-profile .lobby-tile-label {
+  align-self: auto;
+  justify-self: center;
+  margin-top: 0;
+}
+
+/* Disabled panels stay locked, but they should still feel alive. */
+.lobby-page .lobby-tile:disabled {
+  cursor: default;
+  opacity: 1;
+}
+
+.lobby-page .lobby-tile:hover::before,
+.lobby-page .lobby-tile:focus-visible::before {
+  animation: none;
+  transform: translateY(-8px) scale(1.018);
+  filter: brightness(1.16) saturate(1.22) contrast(1.08);
+  box-shadow:
+    0 0 0 4px rgba(0, 0, 0, 0.98),
+    0 0 0 8px rgba(255, 255, 255, 0.13),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.74),
+    inset 0 0 0 7px rgba(255, 255, 255, 0.11),
+    inset 0 38px 70px rgba(255, 255, 255, 0.28),
+    inset 0 -102px 150px rgba(0, 0, 0, 0.56),
+    0 44px 90px rgba(0, 0, 0, 0.82),
+    0 0 78px var(--tile-glow);
+}
+
+.lobby-page .lobby-tile:hover::after,
+.lobby-page .lobby-tile:focus-visible::after {
+  opacity: 1;
+  transform: none;
+}
+
+.lobby-page .lobby-tile:hover,
+.lobby-page .lobby-tile:focus-visible {
+  z-index: 12;
+  filter: none;
+  transform: none;
+  outline: none;
+}
+
