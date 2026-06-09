@@ -1,44 +1,50 @@
 import logoImage from "../../../assets/logo.png";
 
+// ── Lobby ──────────────────────────────────────────────────────────────────────
+// Decorative hub page — shown after login, before the fight lobby.
+// onLogout is passed from App.jsx which already calls /api/logout + reconnectWS,
+// so this component just fires it directly without duplicating that logic.
+
 export default function Lobby({ user, onPlay, onLogout }) {
   const playerName = user.username || user.email || "player";
+
   const menuItems = [
     {
       className: "lobby-tile-play",
-      label: "Fight",
-      kicker: "Smash",
-      action: onPlay,
-      disabled: false,
+      label:     "Fight",
+      kicker:    "Smash",
+      action:    onPlay,
+      disabled:  false,
     },
     {
       className: "lobby-tile-profile",
-      label: "Profile",
-      kicker: "Fighter",
-      disabled: true,
+      label:     "Profile",
+      kicker:    "Fighter",
+      disabled:  true,
     },
     {
       className: "lobby-tile-achievements",
-      label: "Achievements",
-      kicker: "Rewards",
-      disabled: true,
+      label:     "Achievements",
+      kicker:    "Rewards",
+      disabled:  true,
     },
     {
       className: "lobby-tile-chat",
-      label: "Chat",
-      kicker: "Social",
-      disabled: true,
+      label:     "Chat",
+      kicker:    "Social",
+      disabled:  true,
     },
     {
       className: "lobby-tile-friends",
-      label: "Friends",
-      kicker: "Crew",
-      disabled: true,
+      label:     "Friends",
+      kicker:    "Crew",
+      disabled:  true,
     },
     {
       className: "lobby-tile-settings",
-      label: "Settings",
-      kicker: "System",
-      disabled: true,
+      label:     "Settings",
+      kicker:    "System",
+      disabled:  true,
     },
   ];
 
@@ -57,10 +63,10 @@ export default function Lobby({ user, onPlay, onLogout }) {
         </header>
 
         <section className="lobby-stage">
-          <div className="lobby-stage-aura" aria-hidden="true" />
-          <div className="lobby-stage-grid" aria-hidden="true" />
-          <div className="lobby-stage-orbit" aria-hidden="true" />
-          <div className="lobby-stage-cross" aria-hidden="true" />
+          <div className="lobby-stage-aura"   aria-hidden="true" />
+          <div className="lobby-stage-grid"   aria-hidden="true" />
+          <div className="lobby-stage-orbit"  aria-hidden="true" />
+          <div className="lobby-stage-cross"  aria-hidden="true" />
 
           {menuItems.map((item) => (
             <button
@@ -76,6 +82,7 @@ export default function Lobby({ user, onPlay, onLogout }) {
             </button>
           ))}
 
+          {/* Logout — calls App.handleLogout which does /api/logout + reconnectWS */}
           <button
             type="button"
             className="lobby-tile lobby-tile-logout"

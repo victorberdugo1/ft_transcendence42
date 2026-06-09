@@ -15,27 +15,19 @@ const GAME_RATIO = 800 / 600;
 function calcResolution() {
   const vw = window.innerWidth;
   const vh = window.innerHeight;
-
-  if (vw / vh > GAME_RATIO) {
-    const h = vh;
-    return { w: Math.round(h * GAME_RATIO), h };
-  }
-
+  if (vw / vh > GAME_RATIO) { const h = vh; return { w: Math.round(h * GAME_RATIO), h }; }
   const w = vw;
   return { w, h: Math.round(w / GAME_RATIO) };
 }
 
-// The backend does not always use the same key for the user id.
-// login/register use `id` and `/api/me` uses `user_id`.
 function normalizeUser(rawUser) {
   if (!rawUser) return null;
-
   return {
-    id: rawUser.id ?? rawUser.user_id ?? null,
-    username: rawUser.username ?? "",
-    email: rawUser.email ?? "",
+    id:        rawUser.id        ?? rawUser.user_id   ?? null,
+    username:  rawUser.username  ?? "",
+    email:     rawUser.email     ?? "",
     avatarUrl: rawUser.avatar_url ?? "/avatars/default.png",
-    role: rawUser.role ?? "user",
+    role:      rawUser.role      ?? "user",
   };
 }
 
@@ -55,13 +47,9 @@ function AuthHeader({ title, subtitle }) {
 function LegalFooter({ onPrivacy, onTerms }) {
   return (
     <div className="legal-footer">
-      <button type="button" className="auth-link" onClick={onPrivacy}>
-        Privacy Policy
-      </button>
+      <button type="button" className="auth-link" onClick={onPrivacy}>Privacy Policy</button>
       <span className="legal-separator">|</span>
-      <button type="button" className="auth-link" onClick={onTerms}>
-        Terms of Service
-      </button>
+      <button type="button" className="auth-link" onClick={onTerms}>Terms of Service</button>
     </div>
   );
 }
@@ -71,30 +59,17 @@ function AuthGate({ view, onChangeView, onLogin, onPrivacy, onTerms }) {
     <div className="auth-page">
       <div className="auth-card">
         <AuthHeader title="Sign in to play" />
-
         <div className="auth-tabs">
-          <button
-            type="button"
+          <button type="button"
             className={view === "login" ? "auth-tab auth-tab-active" : "auth-tab"}
-            onClick={() => onChangeView("login")}
-          >
-            Login
-          </button>
-          <button
-            type="button"
+            onClick={() => onChangeView("login")}>Login</button>
+          <button type="button"
             className={view === "register" ? "auth-tab auth-tab-active" : "auth-tab"}
-            onClick={() => onChangeView("register")}
-          >
-            Register
-          </button>
+            onClick={() => onChangeView("register")}>Register</button>
         </div>
-
-        {view === "login" ? (
-          <Login onLogin={onLogin} onSwitchToRegister={() => onChangeView("register")} />
-        ) : (
-          <Register onLogin={onLogin} onSwitchToLogin={() => onChangeView("login")} />
-        )}
-
+        {view === "login"
+          ? <Login    onLogin={onLogin} onSwitchToRegister={() => onChangeView("register")} />
+          : <Register onLogin={onLogin} onSwitchToLogin={() => onChangeView("login")} />}
         <LegalFooter onPrivacy={onPrivacy} onTerms={onTerms} />
       </div>
     </div>
@@ -107,26 +82,31 @@ function LoadingScreen({ onPrivacy, onTerms }) {
       <div className="auth-card">
         <AuthHeader
           title="Checking session"
-          subtitle={
-            <>
-              The app is asking the backend whether the <code>sid</code> cookie is
-              still valid.
-            </>
-          }
+          subtitle={<>The app is asking the backend whether the <code>sid</code> cookie is still valid.</>}
         />
-
         <LegalFooter onPrivacy={onPrivacy} onTerms={onTerms} />
       </div>
     </div>
   );
 }
 
-function GameShell({ user, gameMode, gameOpts, inLobby, onBackToLobby, grace }) {
+// ── GameShell ──────────────────────────────────────────────────────────────────
+// Stays mounted for the entire authenticated session so Emscripten never
+// re-initialises (doing so crashes preMainLoop). inLobby=true hides the
+// canvas behind the lobby overlay without unmounting it.
+
+function GameShell({ user, gameMode, gameOpts, inLobby, onBackToLobby, grace, onRegisterBack }) {
   const canvasRef = useRef(null);
   const scriptRef = useRef(null);
-  const [visible, setVisible] = useState(false);
-  const [status, setStatus] = useState("Connecting...");
-  const [sessionErr] = useState("");
+  const [visible,       setVisible]       = useState(false);
+  const [status,        setStatus]        = useState("Connecting\u2026");
+  const [sessionErr,    setSessionErr]    = useState("");
+  // True while we are in SSS pre-match and the pair partner just left.
+  const [pairDissolved, setPairDissolved] = useState(false);
+  // Tracks whether match_start has fired — used to lock Back during SSS.
+  // Also kept as a ref so event-listener closures read the current value.
+  const [matchStarted,  setMatchStarted]  = useState(false);
+  const matchStartedRef = useRef(false);
 
   function handleBackToLobby() {
     try {
@@ -135,6 +115,9 @@ function GameShell({ user, gameMode, gameOpts, inLobby, onBackToLobby, grace }) 
       }
     } catch (_) {}
 
+    // If the player was eliminated and is watching as a forced spectator,
+    // stamp matchmakingSafeAt now so the lobby cooldown shows even if they
+    // leave before match_finished arrives.
     if (window._eliminatedFromSession) {
       try {
         const existing = parseInt(sessionStorage.getItem("matchmakingSafeAt") ?? "0", 10);
@@ -143,16 +126,20 @@ function GameShell({ user, gameMode, gameOpts, inLobby, onBackToLobby, grace }) 
       } catch (_) {}
     }
 
+    // Training: kill WS, wipe all state, reload so WASM runtime is fully reset.
+    // Order: _matchSession=null first (suppresses beforeunload dialog — player chose
+    // to leave, no need to warn) → _programmaticReload=true → _manualReconnect=true
+    // → close WS → clear storage → reload.
     if (gameMode === "training") {
-      window._manualReconnect = true;
-      window._pendingTraining = null;
-      window._pendingGameMode = "versus";
-      try {
-        window._ws?.close();
-      } catch (_) {}
+      window._matchSession       = null;   // must be before reload() to skip beforeunload dialog
+      window._programmaticReload = true;   // explicit suppress — no dialog for voluntary exit
+      window._manualReconnect    = true;
+      window._pendingTraining    = null;
+      window._pendingGameMode    = "versus";
+      try { window._ws?.close(); } catch (_) {}
       try {
         ["clientId", "charSelectData", "pendingCharSelect", "watchSession", "gameState", "confirmedStageId"]
-          .forEach((key) => sessionStorage.removeItem(key));
+          .forEach(k => sessionStorage.removeItem(k));
         window._myClientId = -1;
         sessionStorage.setItem("postTrainingReload", "1");
       } catch (_) {}
@@ -160,59 +147,64 @@ function GameShell({ user, gameMode, gameOpts, inLobby, onBackToLobby, grace }) 
       return;
     }
 
-    if (gameMode === "spectate") {
-      window._manualReconnect = true;
-      window._pendingGameMode = "versus";
-      try {
-        window._ws?.close();
-      } catch (_) {}
+    // Spectate (voluntary) OR forcibly eliminated spectator: full reload so WASM and WS
+    // are clean. For eliminated players gameMode is still "versus"/"tournament" — detect
+    // the spectator state via _isSpectator or _eliminatedFromSession. A reload is always
+    // correct here because the WASM canvas has stale state from the match that just ended.
+    if (gameMode === "spectate" || window._isSpectator || window._eliminatedFromSession) {
+      window._manualReconnect    = true;
+      window._pendingGameMode    = "versus";
+      window._programmaticReload = true;  // suppress beforeunload dialog
+      window._playerChoseToLeave = true;  // belt-and-suspenders for eliminated spectators
+      try { window._ws?.close(); } catch (_) {}
       try {
         ["clientId", "charSelectData", "pendingCharSelect", "watchSession", "gameState", "confirmedStageId"]
-          .forEach((key) => sessionStorage.removeItem(key));
+          .forEach(k => sessionStorage.removeItem(k));
         window._myClientId = -1;
       } catch (_) {}
       window.location.reload();
       return;
     }
 
+    // Versus / tournament: keep WS open and WASM alive — only reset UI/match state.
     Object.assign(window, {
-      _isSpectator: false,
-      _spectatorMode: null,
-      _matchSession: null,
-      _victoryActive: false,
-      _victoryConsumed: true,
-      _hitstopState: null,
-      _countdownStart: null,
-      _countdownDone: false,
-      _confirmedStageId: undefined,
-      _isHost: undefined,
-      _charSelectData: null,
-      _charSelectConfirmed: false,
+      _isSpectator: false, _spectatorMode: null, _matchSession: null,
+      _victoryActive: false, _victoryConsumed: true, _hitstopState: null,
+      _countdownStart: null, _countdownDone: false,
+      _confirmedStageId: undefined, _isHost: undefined,
+      _charSelectData: null, _charSelectConfirmed: false,
       _gameState: { players: {} },
       _eliminatedFromSession: null,
     });
-
     try {
       ["charSelectData", "pendingCharSelect", "watchSession", "gameState", "confirmedStageId"]
-        .forEach((key) => sessionStorage.removeItem(key));
+        .forEach(k => sessionStorage.removeItem(k));
     } catch (_) {}
 
     setVisible(false);
-    setStatus("Connecting...");
+    setStatus("Connecting\u2026");
     onBackToLobby();
   }
 
+  // Register handleBackToLobby so the browser-back handler in App can call it.
+  // This is the only way to get the full cleanup without prop-drilling everywhere.
+  useEffect(() => {
+    if (typeof onRegisterBack === "function") onRegisterBack(handleBackToLobby);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Mount once: init canvas + load game.js + resize listener
   useEffect(() => {
     const { w, h } = calcResolution();
-    window._canvasWidth = w;
+    window._canvasWidth  = w;
     window._canvasHeight = h;
     window._pendingGameMode = gameMode;
     window._pendingGameOpts = gameOpts ?? {};
-    window.Module = { canvas: canvasRef.current, locateFile: (path) => `/${path}` };
+    window.Module = { canvas: canvasRef.current, locateFile: (p) => `/${p}` };
 
     if (!scriptRef.current) {
       const script = document.createElement("script");
-      script.src = "/game.js";
+      script.src   = "/game.js";
       script.async = false;
       document.body.appendChild(script);
       scriptRef.current = script;
@@ -220,22 +212,39 @@ function GameShell({ user, gameMode, gameOpts, inLobby, onBackToLobby, grace }) 
 
     const onResize = () => {
       const { w, h } = calcResolution();
-      window._canvasWidth = w;
-      window._canvasHeight = h;
+      window._canvasWidth = w; window._canvasHeight = h;
     };
-
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // When transitioning lobby → game, send join/rejoin
   useEffect(() => {
     if (inLobby) return;
 
     window._pendingGameMode = gameMode;
     window._pendingGameOpts = gameOpts ?? {};
     setVisible(false);
-    setStatus("Connecting...");
+    setStatus("Connecting\u2026");
+    setMatchStarted(false);
+    matchStartedRef.current = false;
+    setPairDissolved(false);
 
+    // Always wipe confirmedStageId when entering a new match so WASM doesn't
+    // load the stage from a previous session. This is the primary guard against
+    // the "wrong camera / corrupted stage" bug after automatic match ejection.
+    try {
+      sessionStorage.removeItem('confirmedStageId');
+      sessionStorage.removeItem('gameState');
+    } catch (_) {}
+    window._confirmedStageId = undefined;
+    window._matchEnded       = false;
+
+    // Training needs a fully clean WS connection so the server doesn't detect
+    // a duplicate slot and kick us. reconnectWS closes the current WS, wipes
+    // sessionStorage, and reconnects; connectWS reads _pendingGameMode on the
+    // new 'open' event and sends 'join'.
     if (gameMode === "training") {
       window._pendingGameMode = "training";
       window._pendingGameOpts = gameOpts ?? {};
@@ -244,23 +253,26 @@ function GameShell({ user, gameMode, gameOpts, inLobby, onBackToLobby, grace }) 
       return;
     }
 
+    // Spectate: also needs a clean WS connection to enter the spectator pool fresh.
+    if (gameMode === "spectate") {
+      window._pendingGameMode = "spectate";
+      window._pendingGameOpts = gameOpts ?? {};
+      if (typeof window.reconnectWS === "function") window.reconnectWS();
+      return;
+    }
+
     function sendIntent() {
       const savedId = sessionStorage.getItem("clientId");
-
       if (savedId && gameMode !== "spectate") {
         try {
           sessionStorage.removeItem("gameState");
           sessionStorage.removeItem("confirmedStageId");
         } catch (_) {}
         Object.assign(window, {
-          _matchSession: null,
-          _victoryActive: false,
-          _victoryConsumed: true,
-          _hitstopState: null,
-          _countdownStart: null,
-          _countdownDone: false,
+          _matchSession: null, _victoryActive: false, _victoryConsumed: true,
+          _hitstopState: null, _countdownStart: null, _countdownDone: false,
         });
-        window._ws.send(JSON.stringify({ type: "rejoin", clientId: parseInt(savedId, 10) }));
+        window._ws.send(JSON.stringify({ type: "rejoin", clientId: parseInt(savedId, 10), seekingMatch: gameMode === "versus" }));
       } else if (gameMode === "spectate") {
         window._ws.send(JSON.stringify({ type: "watch", sessionId: gameOpts?.sessionId ?? null }));
       } else if (gameMode === "tournament") {
@@ -282,50 +294,93 @@ function GameShell({ user, gameMode, gameOpts, inLobby, onBackToLobby, grace }) 
         sendIntent();
       }
     }, 50);
-
     return () => clearInterval(timer);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [inLobby, gameMode, gameOpts]);
 
+  // Poll until the game state confirms we are in-game
   useEffect(() => {
     if (inLobby) return;
 
     const poll = setInterval(() => {
       if (window._isSpectator && window._myClientId > 0) {
-        setVisible(true);
-        setStatus("");
-        clearInterval(poll);
-        return;
+        setVisible(true); setStatus(""); clearInterval(poll); return;
       }
-
       const id = window._myClientId;
       if (id > 0 && window._gameState?.players?.[id]) {
-        setVisible(true);
-        setStatus("");
-        clearInterval(poll);
+        setVisible(true); setStatus(""); clearInterval(poll);
       }
     }, 50);
 
-    const onStart = () => setStatus("");
-    const onSpectate = () => {
+    const onStart    = () => { setStatus(""); setMatchStarted(true); matchStartedRef.current = true; setPairDissolved(false); };
+    const onSpectate = () => { setVisible(true); setStatus(""); };
+
+    // Track whether we entered as a voluntary spectator using the spectator_mode
+    // event. We CANNOT read window._isSpectator inside onMatchFinished because
+    // ws-client resets it to false BEFORE dispatching match_finished.
+    let enteredAsVoluntarySpectator = false;
+    const onSpectateMode = (e) => {
       setVisible(true);
       setStatus("");
+      // eliminated flag means the server forced us into spectator — not voluntary
+      enteredAsVoluntarySpectator = !(e.detail?.eliminated);
     };
 
-    window.addEventListener("match_start", onStart);
-    window.addEventListener("spectator_mode", onSpectate);
+    // Voluntary spectator: when the match ends ws-client does NOT reload.
+    // Without this the spectator is stuck on "Connecting…" forever.
+    // We wait 2s so the victory animation plays, then do a full spectate cleanup
+    // (handleBackToLobby spectate path → close WS → reload → land on fightLobby clean).
+    let matchFinishedTimer = null;
+    const onMatchFinished = () => {
+      if (enteredAsVoluntarySpectator) {
+        matchFinishedTimer = setTimeout(() => {
+          window._programmaticReload = true;  // suppress beforeunload dialog on this reload
+          window._playerChoseToLeave = true;
+          handleBackToLobby();
+        }, 2000);
+      }
+    };
+
+    // Fallback for eliminated-spectator: ws-client normally reloads via
+    // match_finished, but if _victoryState.winner is null at that moment
+    // the reload never fires. victory_spectator arrives earlier and is reliable.
+    let victorySpectatorTimer = null;
+    const onVictorySpectator = () => {
+      if (!enteredAsVoluntarySpectator) {
+        victorySpectatorTimer = setTimeout(() => {
+          window._programmaticReload = true;  // suppress beforeunload — automatic clean exit
+          window._playerChoseToLeave = true;
+          handleBackToLobby();
+        }, 5000);
+      }
+    };
+
+    const onPairDissolved = () => {
+      if (!matchStartedRef.current) setPairDissolved(true);
+    };
+
+    window.addEventListener("match_start",       onStart);
+    window.addEventListener("spectator_mode",    onSpectateMode);
+    window.addEventListener("match_finished",    onMatchFinished);
+    window.addEventListener("victory_spectator", onVictorySpectator);
+    window.addEventListener("pair_dissolved",    onPairDissolved);
 
     return () => {
       clearInterval(poll);
-      window.removeEventListener("match_start", onStart);
-      window.removeEventListener("spectator_mode", onSpectate);
+      clearTimeout(matchFinishedTimer);
+      clearTimeout(victorySpectatorTimer);
+      window.removeEventListener("match_start",       onStart);
+      window.removeEventListener("spectator_mode",    onSpectateMode);
+      window.removeEventListener("match_finished",    onMatchFinished);
+      window.removeEventListener("victory_spectator", onVictorySpectator);
+      window.removeEventListener("pair_dissolved",    onPairDissolved);
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [inLobby]);
 
   const modeLabel = {
-    versus: "Playing as",
-    training: "Training vs AI",
-    tournament: "Tournament",
-    spectate: "Spectating",
+    versus: "Playing as", training: "Training vs AI",
+    tournament: "Tournament", spectate: "Spectating",
   };
 
   return (
@@ -342,11 +397,22 @@ function GameShell({ user, gameMode, gameOpts, inLobby, onBackToLobby, grace }) 
           type="button"
           className="logout-button"
           onClick={handleBackToLobby}
-          disabled={!!(grace && grace.clientId !== (window._myClientId ?? -1))}
+          disabled={
+            !!(grace && grace.clientId !== (window._myClientId ?? -1)) ||
+            !!window._victoryActive ||
+            // Lock during SSS pre-match in versus/tournament — clicking Back here
+            // dissolves the pair and leaves the partner stuck with no opponent.
+            // The button re-enables once match_start fires (matchStarted=true).
+            (!matchStarted && (gameMode === "versus" || gameMode === "tournament"))
+          }
           title={
-            grace && grace.clientId !== (window._myClientId ?? -1)
-              ? "Tu rival tiene unos segundos para volver..."
-              : undefined
+            window._victoryActive
+              ? "Victory animation in progress…"
+              : grace && grace.clientId !== (window._myClientId ?? -1)
+                ? "Your rival has a few seconds to reconnect..."
+                : !matchStarted && (gameMode === "versus" || gameMode === "tournament")
+                  ? "Waiting for a match…"
+                  : undefined
           }
         >
           Back to lobby
@@ -354,6 +420,11 @@ function GameShell({ user, gameMode, gameOpts, inLobby, onBackToLobby, grace }) 
       </div>
 
       {status && <div className="game-status-overlay"><p>{status}</p></div>}
+      {pairDissolved && !matchStarted && (
+        <div className="game-status-overlay">
+          <p>⚠️ Your partner left — select stage and character again</p>
+        </div>
+      )}
       {sessionErr && (
         <div className="game-status-overlay game-status-error">
           <p>{sessionErr}</p>
@@ -375,31 +446,31 @@ function GameShell({ user, gameMode, gameOpts, inLobby, onBackToLobby, grace }) 
   );
 }
 
+// ── GraceBanner ────────────────────────────────────────────────────────────────
+
 function GraceBanner({ grace, myClientId, onRejoin }) {
   const [secsLeft, setSecsLeft] = useState(null);
   const [defeated, setDefeated] = useState(false);
 
   useEffect(() => {
-    if (!grace) {
-      setSecsLeft(null);
-      setDefeated(false);
-      return;
-    }
+    if (!grace) { setSecsLeft(null); setDefeated(false); return; }
 
     let intervalId = 0;
 
     function tick() {
-      const ms = grace.expiresAt - Date.now();
+      const ms   = grace.expiresAt - Date.now();
       const secs = Math.max(0, Math.ceil(ms / 1000));
       setSecsLeft(secs);
 
       if (secs === 0 && grace.clientId === myClientId) {
         clearInterval(intervalId);
         setDefeated(true);
+        // Wait for the server's 5s grace timer to fully expire and clean up
+        // the old slot before reloading.
         setTimeout(() => {
           try {
             ["clientId", "charSelectData", "pendingCharSelect", "watchSession", "gameState", "confirmedStageId"]
-              .forEach((key) => sessionStorage.removeItem(key));
+              .forEach(k => sessionStorage.removeItem(k));
             sessionStorage.setItem("matchmakingSafeAt", String(Date.now() + 6500));
           } catch (_) {}
           window.location.reload();
@@ -415,9 +486,9 @@ function GraceBanner({ grace, myClientId, onRejoin }) {
   if (defeated) {
     return (
       <div className="grace-defeat-screen">
-        <div className="grace-defeat-icon">X</div>
+        <div className="grace-defeat-icon">💀</div>
         <div className="grace-defeat-title">Defeat</div>
-        <div className="grace-defeat-copy">Returning to the lobby...</div>
+        <div className="grace-defeat-copy">Returning to the lobby…</div>
       </div>
     );
   }
@@ -431,7 +502,7 @@ function GraceBanner({ grace, myClientId, onRejoin }) {
       <span>
         {isMe
           ? `You have ${secsLeft}s to return to the fight or lose the match.`
-          : `Your rival has ${secsLeft}s to reconnect...`}
+          : `Your rival has ${secsLeft}s to reconnect\u2026`}
       </span>
       {isMe && (
         <button type="button" className="grace-rejoin-button" onClick={onRejoin}>
@@ -442,35 +513,33 @@ function GraceBanner({ grace, myClientId, onRejoin }) {
   );
 }
 
+// ── Root ───────────────────────────────────────────────────────────────────────
+
 export default function App() {
-  const [authStatus, setAuthStatus] = useState("loading");
-  const [authView, setAuthView] = useState("login");
-  const [user, setUser] = useState(null);
-  const [page, setPage] = useState("auth");
+  const [authStatus,    setAuthStatus]    = useState("loading");
+  const [authView,      setAuthView]      = useState("login");
+  const [user,          setUser]          = useState(null);
+  const [page,          setPage]          = useState("auth");
   const [legalBackPage, setLegalBackPage] = useState("auth");
-  const [gameMode, setGameMode] = useState("versus");
-  const [gameOpts, setGameOpts] = useState({});
-  const [grace, setGrace] = useState(null);
-  const pageRef = useRef(page);
-  const authStatusRef = useRef(authStatus);
+  const [gameMode,      setGameMode]      = useState("versus");
+  const [gameOpts,      setGameOpts]      = useState({});
+  const [grace,         setGrace]         = useState(null);
+
+  // Ref used by the browser-back handler so it can call GameShell's cleanup
+  // without a stale closure.
+  const backToLobbyRef   = useRef(null);
+  const pageRef          = useRef(page);
+  const authStatusRef    = useRef(authStatus);
   const legalBackPageRef = useRef(legalBackPage);
 
-  useEffect(() => {
-    pageRef.current = page;
-  }, [page]);
+  useEffect(() => { pageRef.current = page; },          [page]);
+  useEffect(() => { authStatusRef.current = authStatus; }, [authStatus]);
+  useEffect(() => { legalBackPageRef.current = legalBackPage; }, [legalBackPage]);
 
-  useEffect(() => {
-    authStatusRef.current = authStatus;
-  }, [authStatus]);
-
-  useEffect(() => {
-    legalBackPageRef.current = legalBackPage;
-  }, [legalBackPage]);
-
+  // ── Browser back guard ──────────────────────────────────────────────────────
+  // Keep browser history inside the SPA so Chrome does not jump to old ports.
   useEffect(() => {
     const historyState = { enumaHistoryGuard: true };
-
-    // Keep browser back inside the SPA so Chrome does not jump to old localhost ports.
     window.history.replaceState(historyState, "", window.location.href);
     window.history.pushState(historyState, "", window.location.href);
 
@@ -478,8 +547,18 @@ export default function App() {
       const currentPage = pageRef.current;
 
       if (currentPage === "game") {
-        setPage("fightLobby");
+        // CRITICAL: must run GameShell's full cleanup (sends leave, wipes state,
+        // handles training/spectate reloads). Never just setPage() here.
+        if (typeof backToLobbyRef.current === "function") {
+          backToLobbyRef.current();
+        } else {
+          // Fallback if GameShell hasn't registered yet (should not happen).
+          setPage("fightLobby");
+        }
       } else if (currentPage === "fightLobby") {
+        // Must send WS leave in case the player was in the versus queue or
+        // had joined a tournament room. Without this the server keeps the slot.
+        _cleanupMatchState();
         setPage("lobby");
       } else if (currentPage === "privacy" || currentPage === "terms") {
         setPage(legalBackPageRef.current || "lobby");
@@ -491,107 +570,146 @@ export default function App() {
     }
 
     window.addEventListener("popstate", handleBrowserBack);
-
-    return () => {
-      window.removeEventListener("popstate", handleBrowserBack);
-    };
+    return () => window.removeEventListener("popstate", handleBrowserBack);
   }, []);
 
+  // ── Session check on mount ──────────────────────────────────────────────────
   useEffect(() => {
     let cancelled = false;
-
-    async function loadSession() {
+    async function checkSession() {
       try {
-        // `credentials: include` is required.
-        // Without it, the browser does not send the HttpOnly `sid` cookie.
-        const response = await fetch("/api/me", {
-          credentials: "include",
-        });
-
-        if (!response.ok) {
-          if (response.status === 401) {
-            if (!cancelled) {
-              setUser(null);
-              setAuthStatus("guest");
-              setPage("auth");
-            }
-            return;
-          }
-
-          throw new Error(`Session check failed with status ${response.status}`);
+        const res = await fetch("/api/me", { credentials: "include" });
+        if (!res.ok) {
+          if (!cancelled) { setUser(null); setAuthStatus("guest"); setPage("auth"); }
+          return;
         }
-
-        const data = await response.json();
-
-        if (!cancelled) {
-          setUser(normalizeUser(data.user));
-          setAuthStatus("authenticated");
-          setPage("lobby");
-        }
-      } catch (error) {
-        console.error("[auth] /api/me failed:", error);
-
-        if (!cancelled) {
-          setUser(null);
-          setAuthStatus("guest");
-          setPage("auth");
-        }
+        const data = await res.json();
+        if (!cancelled) { setUser(normalizeUser(data.user)); setAuthStatus("authenticated"); setPage("lobby"); }
+      } catch (e) {
+        console.error("[auth] /api/me failed:", e);
+        if (!cancelled) { setUser(null); setAuthStatus("guest"); setPage("auth"); }
       }
     }
-
-    loadSession();
-
-    return () => {
-      cancelled = true;
-    };
+    checkSession();
+    return () => { cancelled = true; };
   }, []);
 
+  // ── Leave-grace WS events ───────────────────────────────────────────────────
   useEffect(() => {
-    function handleGrace(event) {
-      setGrace(event.detail);
-    }
-
-    function clearGrace() {
-      setGrace(null);
-    }
-
-    window.addEventListener("leave_grace", handleGrace);
+    function onGrace(e)  { setGrace(e.detail); }
+    function clearGrace(){ setGrace(null); }
+    window.addEventListener("leave_grace",         onGrace);
     window.addEventListener("leave_grace_expired", clearGrace);
-    window.addEventListener("player_reconnected", clearGrace);
-
+    window.addEventListener("player_reconnected",  clearGrace);
     return () => {
-      window.removeEventListener("leave_grace", handleGrace);
+      window.removeEventListener("leave_grace",         onGrace);
       window.removeEventListener("leave_grace_expired", clearGrace);
-      window.removeEventListener("player_reconnected", clearGrace);
+      window.removeEventListener("player_reconnected",  clearGrace);
     };
   }, []);
 
-  function openPrivacy(fromPage) {
-    setLegalBackPage(fromPage);
-    setPage("privacy");
-  }
+  // ── Kicked-resume handler ───────────────────────────────────────────────────
+  // ws-client dispatches ws_kicked_resume when the user clicks "Continuar aquí"
+  // on the kicked overlay. At that point ws-client has already reset all window
+  // globals and is about to call connectWS(). We reset the React-side state and
+  // navigate to fightLobby so the user lands on a clean mode selector instead of
+  // a stale game canvas or an invisible GameShell in the wrong mode.
+  useEffect(() => {
+    function onKickedResume() {
+      setGrace(null);
+      setGameMode("versus");
+      setGameOpts({});
+      // Navigate: if currently in game go to fightLobby, otherwise lobby.
+      // Using the ref so we read the current page without a stale closure.
+      const cur = pageRef.current;
+      if (cur === "game" || cur === "fightLobby") {
+        setPage("fightLobby");
+      }
+      // If already on lobby/fightLobby no navigation needed — the WS will
+      // reconnect and send a fresh join automatically.
+    }
+    window.addEventListener("ws_kicked_resume", onKickedResume);
+    return () => window.removeEventListener("ws_kicked_resume", onKickedResume);
+  }, []);
 
-  function openTerms(fromPage) {
-    setLegalBackPage(fromPage);
-    setPage("terms");
-  }
+  // ── Empty-stage ejection ────────────────────────────────────────────────────
+  // ws-client dispatches ws_lobby_ejected when the server sends `init` (lobby
+  // placement, no active session) but the client UI is still on page="game".
+  // This happens after a forfeit grace expiry, a stale rejoin, or any path where
+  // the server puts the player back in the lobby pool without a match_finished.
+  // Result without this: the WASM stage renders completely empty — no players,
+  // no countdown, no match — and the player is stuck with no way out except F5.
+  // Fix: navigate to fightLobby and wipe all match state so the UI is clean.
+  useEffect(() => {
+    function onLobbyEjected() {
+      const cur = pageRef.current;
+      if (cur !== "game") return;   // only act when visibly in the game view
+      _cleanupMatchState();
+      setGrace(null);
+      setGameMode("versus");
+      setGameOpts({});
+      setPage("fightLobby");
+      console.log("[App] ws_lobby_ejected: navigating from game → fightLobby (empty stage avoided)");
+    }
+    window.addEventListener("ws_lobby_ejected", onLobbyEjected);
+    return () => window.removeEventListener("ws_lobby_ejected", onLobbyEjected);
+  }, []);
+
+  // ── match_finished safety net (App level) ───────────────────────────────────
+  // GameShell's onMatchFinished listener is only active when inLobby=false
+  // (page="game"). If match_finished arrives while the player is on fightLobby
+  // or lobby (inLobby=true — e.g. they pressed "Back" just before the server
+  // resolved the session), ws-client already handles the reload for the normal
+  // cases. But if shouldReload was false AND the player is in page="game" with
+  // an empty stage (victoryState=null, not spectator), they'd be stuck.
+  // This listener ensures that if match_finished fires while page="game", we
+  // always escape to fightLobby as a backstop regardless of reload logic.
+  useEffect(() => {
+    function onMatchFinishedApp() {
+      const cur = pageRef.current;
+      // ws-client already called window.location.reload() for shouldReload cases.
+      // We only need to act if the page is still "game" after a short tick
+      // (i.e. reload wasn't triggered). Use rAF to yield first.
+      requestAnimationFrame(() => {
+        if (pageRef.current !== "game") return;
+        // If we're still here, reload didn't fire (voluntary spectator path or
+        // edge-case empty session). Force navigate to fightLobby.
+        _cleanupMatchState();
+        setGrace(null);
+        setGameMode("versus");
+        setGameOpts({});
+        setPage("fightLobby");
+        console.log("[App] match_finished backstop: navigating game → fightLobby");
+      });
+    }
+    window.addEventListener("match_finished", onMatchFinishedApp);
+    return () => window.removeEventListener("match_finished", onMatchFinishedApp);
+  }, []);
+
+  // ── Navigation helpers ──────────────────────────────────────────────────────
+  function openPrivacy(from) { setLegalBackPage(from); setPage("privacy"); }
+  function openTerms(from)   { setLegalBackPage(from); setPage("terms");   }
 
   function handleAuthSuccess(rawUser) {
     setUser(normalizeUser(rawUser));
     setAuthStatus("authenticated");
+    if (typeof window.reconnectWS === "function") window.reconnectWS();
     setPage("lobby");
   }
 
   async function handleLogout() {
-    await fetch("/api/logout", {
-      method: "POST",
-      credentials: "include",
-    }).catch(() => {});
-
+    try {
+      await fetch("/api/logout", { method: "POST", credentials: "include" });
+    } catch (_) {}
     setUser(null);
     setAuthStatus("guest");
     setAuthView("login");
+    // Clean matchmaking cooldown so it does not bleed into the next login.
+    try { sessionStorage.removeItem("matchmakingSafeAt"); } catch (_) {}
     setPage("auth");
+    // Reconnect WS so the old authenticated socket is closed and replaced
+    // with an unauthenticated one. Without this the server keeps the slot open.
+    if (typeof window.reconnectWS === "function") window.reconnectWS();
   }
 
   function handleEnterGame(mode, opts = {}) {
@@ -601,10 +719,75 @@ export default function App() {
     setPage("game");
   }
 
+  // Player clicks "Rejoin fight" from the GraceBanner
   function handleRejoinFight() {
     setGrace(null);
     setPage("game");
   }
+
+  // "Go back" from FightLobby → Lobby (the decorative hub page).
+  // When GameShell IS mounted (gameActive=true) we must call handleBackToLobby
+  // so it can clean up state before we navigate. When it is NOT mounted yet
+  // (user navigated directly to fightLobby without ever entering game) a simple
+  // setPage is enough.
+  function handleBackFromFightLobby() {
+    // Blocked while an opponent grace is active — server still owns the session.
+    if (grace) return;
+
+    if (typeof backToLobbyRef.current === "function") {
+      // GameShell is mounted — run the full cleanup. It calls onBackToLobby()
+      // which sets page="fightLobby"; we override that to go all the way to "lobby".
+      // We swap onBackToLobby temporarily for this one call.
+      const originalOnBack = backToLobbyRef.current;
+      // Patch: call handleBackToLobby but land on "lobby" not "fightLobby".
+      // Since handleBackToLobby calls onBackToLobby() which is () => setPage("fightLobby"),
+      // we need a different approach: do the cleanup inline and then go to "lobby".
+      _cleanupMatchState();
+      setPage("lobby");
+    } else {
+      setPage("lobby");
+    }
+  }
+
+  // Shared cleanup used by handleBackFromFightLobby and handleBrowserBack when
+  // navigating away from fightLobby or game. Covers the versus/tournament path.
+  // Training and spectate go through GameShell's handleBackToLobby which always
+  // triggers window.location.reload() — but _pendingTraining is cleared here too
+  // as belt-and-suspenders in case of a timing edge case.
+  function _cleanupMatchState() {
+    try {
+      if (window._ws?.readyState === 1) {
+        window._ws.send(JSON.stringify({ type: "leave" }));
+      }
+    } catch (_) {}
+
+    if (window._eliminatedFromSession) {
+      try {
+        const existing = parseInt(sessionStorage.getItem("matchmakingSafeAt") ?? "0", 10);
+        const proposed = Date.now() + 9000;
+        if (proposed > existing) sessionStorage.setItem("matchmakingSafeAt", String(proposed));
+      } catch (_) {}
+    }
+
+    Object.assign(window, {
+      _isSpectator: false, _spectatorMode: null, _matchSession: null,
+      _victoryActive: false, _victoryConsumed: true, _hitstopState: null,
+      _countdownStart: null, _countdownDone: false,
+      _confirmedStageId: undefined, _isHost: undefined,
+      _charSelectData: null, _charSelectConfirmed: false,
+      _gameState: { players: {} },
+      _eliminatedFromSession: null,
+      // Clear pending intents so the next GameShell effect doesn't fire stale joins
+      _pendingTournament: false,
+      _pendingTraining: null,
+    });
+    try {
+      ["charSelectData", "pendingCharSelect", "watchSession", "gameState", "confirmedStageId"]
+        .forEach(k => sessionStorage.removeItem(k));
+    } catch (_) {}
+  }
+
+  // ── Render ──────────────────────────────────────────────────────────────────
 
   if (authStatus === "loading") {
     return (
@@ -615,13 +798,8 @@ export default function App() {
     );
   }
 
-  if (page === "privacy") {
-    return <Privacy onBack={() => setPage(legalBackPage)} />;
-  }
-
-  if (page === "terms") {
-    return <Terms onBack={() => setPage(legalBackPage)} />;
-  }
+  if (page === "privacy") return <Privacy onBack={() => setPage(legalBackPage)} />;
+  if (page === "terms")   return <Terms   onBack={() => setPage(legalBackPage)} />;
 
   if (authStatus !== "authenticated" || !user) {
     return (
@@ -635,33 +813,56 @@ export default function App() {
     );
   }
 
-  const gameActive = page === "fightLobby" || page === "game";
+  // GameShell MUST stay mounted across lobby / fightLobby / game pages so the
+  // Emscripten WASM module is never torn down (re-initialising it crashes mainLoop).
+  // It is hidden (visibility:hidden) whenever page !== "game".
+  const gameActive = page === "lobby" || page === "fightLobby" || page === "game";
   const myClientId = window._myClientId ?? -1;
 
   return (
     <>
+      {/* GameShell is always mounted once the user is authenticated */}
       {gameActive && (
         <GameShell
           user={user}
           gameMode={gameMode}
           gameOpts={gameOpts}
-          inLobby={page === "fightLobby"}
+          inLobby={page !== "game"}
           onBackToLobby={() => setPage("fightLobby")}
           grace={grace}
+          onRegisterBack={(fn) => { backToLobbyRef.current = fn; }}
         />
       )}
 
-      {page === "lobby" && (
-        <Lobby user={user} onPlay={() => setPage("fightLobby")} onLogout={handleLogout} />
+      {/* GraceBanner must be visible in BOTH game and fightLobby pages because
+          the leave_grace event fires while the player is in the game view, and the
+          countdown keeps ticking when they return to fightLobby. */}
+      {(page === "game" || page === "fightLobby") && (
+        <GraceBanner
+          grace={grace}
+          myClientId={myClientId}
+          onRejoin={handleRejoinFight}
+        />
       )}
 
+      {/* Decorative hub: the pretty "main menu" page */}
+      {page === "lobby" && (
+        <div style={{ position: "fixed", inset: 0, zIndex: 10 }}>
+          <Lobby
+            user={user}
+            onPlay={() => setPage("fightLobby")}
+            onLogout={handleLogout}
+          />
+        </div>
+      )}
+
+      {/* FightLobby: mode selector (versus / training / tournament / spectate) */}
       {page === "fightLobby" && (
-        <div className="fight-lobby-overlay">
-          <GraceBanner grace={grace} myClientId={myClientId} onRejoin={handleRejoinFight} />
+        <div className="fight-lobby-overlay" style={{ position: "fixed", inset: 0, zIndex: 10 }}>
           <FightLobby
             user={user}
             onEnterGame={handleEnterGame}
-            onBack={() => setPage("lobby")}
+            onBack={handleBackFromFightLobby}
             onLogout={handleLogout}
             onPrivacy={() => openPrivacy("fightLobby")}
             onTerms={() => openTerms("fightLobby")}
