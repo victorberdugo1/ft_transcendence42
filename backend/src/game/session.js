@@ -71,8 +71,16 @@ function removeFromLobbyQueue(cid) {
     if (idx !== -1) _lobbyJoinOrder.splice(idx, 1);
 }
 function getLobbyQueue() {
-    // Return only players that are still alive (not yet matched) and authenticated.
-    return _lobbyJoinOrder.filter(cid => players[cid]?.dbUserId != null && !playerSession.has(cid));
+    // Return only players that are still alive (not yet matched), authenticated,
+    // AND actively seeking a 1v1 match (_seekingMatch !== false).
+    // Tournament waiting-room players set _seekingMatch=false and must never
+    // be paired into a 1v1 duel via tryAutoMatch, even if they somehow ended up
+    // in _lobbyJoinOrder due to a race condition or reconnect path.
+    return _lobbyJoinOrder.filter(cid =>
+        players[cid]?.dbUserId != null &&
+        !playerSession.has(cid) &&
+        players[cid]?._seekingMatch !== false
+    );
 }
 
 // ─── Spectator helpers ────────────────────────────────────────────────────────
@@ -399,7 +407,7 @@ function startDuel(clientId1, clientId2) {
             break;
         }
     }
-    broadcastToSession(session, { type: 'match_start', mode: '1v1', sessionId: session.id, countdown: true, stageId: session.stageId ?? -1 });
+    broadcastToSession(session, { type: 'match_start', mode: '1v1', sessionId: session.id, countdown: true, stageId: session.stageId ?? -1, players: [clientId1, clientId2] });
     console.log(`[GAME] 1v1 started: session ${session.id} — ${clientId1} vs ${clientId2}`);
     return session;
 }
@@ -619,9 +627,17 @@ function handleElimination(loser) {
     if (remaining.length === 1) {
         session.pendingWinner = { winnerId: remaining[0], loserId: eliminatedId };
     } else if (remaining.length === 0) {
+        // Draw / simultaneous elimination: no winner.
+        // MUST call cleanupSession so playerSession, playerCharSelected, and
+        // eliminated spectators are all properly cleared — without it every
+        // participant stays stuck in their session slot and can never return
+        // to the lobby (zombie session bug).
         session.finished = true;
         broadcastToSession(session, { type: 'match_end', winner: null, loser: eliminatedId, matchId: null, mode: session.mode });
-        setTimeout(() => gameSessions.delete(session.id), 6000);
+        setTimeout(() => {
+            broadcastToSession(session, { type: 'match_finished', sessionId: session.id });
+            cleanupSession(session, null);
+        }, 6000);
     }
 }
 
@@ -647,6 +663,7 @@ function cleanupSession(session, winnerClientId) {
         playerCharSelected.delete(cid);
         const p = players[cid];
         if (p) {
+            delete p._pendingStageId;   // returning to lobby: must reselect stage fresh
             p.stocks        = 3;
             p.voltage       = 0;
             p.voltageMaxed  = false;
@@ -920,6 +937,78 @@ function tick() {
         for (const cid of cpuIdList) {
             const cpu = players[cid];
             if (cpu) tickCpu(cpu, humanTarget);
+        }
+    }
+
+    // ── Solo-player guard: 1v1/tournament session with only one connected human ──
+    // If startDuel/startTournament fired but opponents disconnected before the
+    // first tick, one player ends up alone in a live session with no way to win
+    // or exit.
+    // Detection: mode='1v1' or mode='tournament', not finished, no pendingWinner,
+    // started >3s ago, and fewer than 2 human players have an open WS.
+    // Resolution for 1v1: winner by forfeit via resolveMatchWinner.
+    // Resolution for tournament with 1 connected: eject to fightLobby (no pair
+    // to win against — send ws_lobby_ejected so client resets char+stage).
+    for (const session of gameSessions.values()) {
+        if (session.finished) continue;
+        if (session.mode !== '1v1' && session.mode !== 'tournament') continue;
+        if (session.pendingWinner) continue;
+        if (session._soloGuardFired) continue;
+        // Only check after 3s so the countdown + initial connect delay pass.
+        if (Date.now() - session.startedAt.getTime() < 3000) continue;
+
+        const humanIds = [...session.playerIds].filter(cid => !players[cid]?.isCpu);
+        const connected = humanIds.filter(cid => {
+            const p = players[cid];
+            return p?.ws?.readyState === WebSocket.OPEN;
+        });
+
+        if (session.mode === '1v1') {
+            if (connected.length === 1 && humanIds.length === 2) {
+                session._soloGuardFired = true;
+                const winnerId = connected[0];
+                const loserId  = humanIds.find(id => id !== winnerId);
+                console.log(`[SOLO-GUARD] 1v1 session ${session.id}: only ${winnerId} connected — resolving forfeit (loser ${loserId})`);
+                if (loserId !== undefined) {
+                    delete players[loserId];
+                    playerSession.delete(loserId);
+                    playerCharSelected.delete(loserId);
+                }
+                session.eliminated.add(loserId);
+                resolveMatchWinner(session, winnerId, loserId);
+            } else if (connected.length === 0 && humanIds.length >= 1) {
+                session._soloGuardFired = true;
+                session.finished = true;
+                console.log(`[SOLO-GUARD] 1v1 session ${session.id}: no connected players — abandoning`);
+                broadcastToSession(session, { type: 'match_finished', sessionId: session.id });
+                cleanupSession(session, null);
+            }
+        } else if (session.mode === 'tournament') {
+            // Tournament solo-guard: if only 1 (or 0) humans are connected and the
+            // session never had a real fight (no eliminations yet), eject the lone
+            // survivor back to fightLobby so they can reselect stage/character.
+            // We check eliminated.size === 0 to distinguish "everyone bailed before
+            // the match started" from a normal last-survivor situation (which is
+            // handled by handleElimination → resolveMatchWinner).
+            if (connected.length <= 1 && session.eliminated.size === 0) {
+                session._soloGuardFired = true;
+                session.finished = true;
+                console.log(`[SOLO-GUARD] tournament session ${session.id}: only ${connected.length} connected before any fight — ejecting to lobby`);
+                // Send match_finished so clients clean up their game state, then
+                // follow with lobby_ejected so they reset char+stage selection.
+                broadcastToSession(session, { type: 'match_finished', sessionId: session.id });
+                // Give clients a tick to process match_finished before lobby_ejected.
+                const _ejSession = session;
+                setTimeout(() => {
+                    for (const cid of _ejSession.playerIds) {
+                        const p = players[cid];
+                        if (p?.ws?.readyState === WebSocket.OPEN) {
+                            p.ws.send(JSON.stringify({ type: 'lobby_ejected', reason: 'solo_guard' }));
+                        }
+                    }
+                }, 200);
+                cleanupSession(session, null);
+            }
         }
     }
 

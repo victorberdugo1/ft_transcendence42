@@ -93,6 +93,69 @@ setInterval(() => {
     Object.assign(frameEvents, EMPTY_FRAME);
 }, 1000 / 60);
 
+// ── F5 / reload guard ─────────────────────────────────────────────────────────
+// Intercepts ALL reloads/navigations-away (F5, Ctrl+R, browser reload button,
+// closing the tab) and shows the native "Leave site?" dialog.
+//
+// Two cases:
+//   IN MATCH  — stamps f5Reload so the server's grace period fires and the
+//               opponent wins immediately. clientId is preserved for rejoin.
+//   OUT OF MATCH — wipes ALL sessionStorage so the player returns completely
+//               fresh (no clientId, no char, no stage, no session).
+//
+// NOTE: browsers do NOT show custom text in beforeunload; returnValue triggers
+// the dialog but the browser replaces the text with its own wording.
+
+window.addEventListener('beforeunload', (e) => {
+    // Skip entirely for programmatic reloads (match_finished, training back,
+    // spectate back, grace expired, voluntary leave) — they already cleared state
+    // and need no dialog.
+    if (window._programmaticReload) return;
+
+    // Also skip when the player explicitly chose to leave via the "Back to lobby"
+    // button. GameShell sets this flag before calling window.location.reload() so
+    // the beforeunload handler does not intercept the intentional clean-exit path.
+    if (window._playerChoseToLeave) return;
+
+    // inActiveMatch: a fight the player can still forfeit by leaving.
+    // Excluded:
+    //   • _victoryActive=true        — match already decided; no forfeit risk
+    //   • _isSpectator=true          — spectators never forfeit
+    //   • _eliminatedFromSession set — eliminated → forced spectator, no forfeit
+    const inActiveMatch = window._matchSession != null &&
+                          !window._isSpectator &&
+                          !window._eliminatedFromSession &&
+                          !window._victoryActive;
+
+    if (inActiveMatch) {
+        // Stamp flag so the open() handler sends 'rejoin' → server grace → forfeit.
+        try { sessionStorage.setItem('f5Reload', '1'); } catch (_) {}
+    } else {
+        // Not in an active fight (lobby, victory screen, spectator, eliminated):
+        // wipe everything so the player returns with a clean slate.
+        try {
+            [
+                'clientId', 'charSelectData', 'pendingCharSelect',
+                'watchSession', 'gameState', 'confirmedStageId',
+                'matchmakingSafeAt', 'postTrainingReload', 'inTournamentRoom',
+                'f5Reload',
+            ].forEach(k => sessionStorage.removeItem(k));
+        } catch (_) {}
+
+        // For spectators (voluntary or forced/eliminated) and players on the
+        // victory/defeat screen, do NOT show the browser dialog — the state is
+        // already wiped above and a clean reload is exactly what we want.
+        if (window._isSpectator || window._eliminatedFromSession || window._victoryActive) return;
+    }
+
+    // Show the native "Leave site?" dialog only when genuinely mid-fight.
+    e.preventDefault();
+    e.returnValue = inActiveMatch
+        ? 'Si recargas durante una pelea, perderás la partida automáticamente. ¿Seguro que quieres salir?'
+        : '¿Quieres volver a cargar el sitio web? Es posible que los cambios no se guarden.';
+    return e.returnValue;
+});
+
 function _sssClear() {
     try {
         sessionStorage.removeItem('charSelectData');
@@ -112,6 +175,20 @@ function connectWS() {
 
     ws.addEventListener('open', () => {
         setStatus('⬤ Connected');
+
+        // If this open came from an F5/reload mid-match, the clientId is already
+        // in sessionStorage. The code below will detect it and send 'rejoin',
+        // which triggers the server's grace period → forfeit if they don't return.
+        // Just clear the flag now so it doesn't persist across future sessions.
+        try { sessionStorage.removeItem('f5Reload'); } catch (_) {}
+
+        // Capture whether the client believed it was in a match BEFORE clearing
+        // state. The init handler uses this to decide whether receiving `init`
+        // (lobby placement, no session) means the player ended up in an empty
+        // stage that needs to be escaped. If _matchSession was null/undefined
+        // at open time this is a normal lobby join \u2014 no ejection needed.
+        window._hadMatchSessionOnOpen = !!(window._matchSession);
+
         const savedId = sessionStorage.getItem('clientId');
 
         Object.assign(window, {
@@ -141,10 +218,15 @@ function connectWS() {
             if (_pcs) {
                 try {
                     const { charId, charIdx, stageId } = JSON.parse(_pcs);
-                    setTimeout(() => {
+                    // Wait for the server's `init` (clientId assigned) before sending
+                    // char_select.  A fixed 300ms timeout fires before init arrives on
+                    // slow connections and produces the [CHAR_SELECT] client=null log.
+                    // Using a one-shot 'init' listener guarantees correct ordering.
+                    const _onInit = () => {
                         if (!window._isSpectator && window._ws?.readyState === WebSocket.OPEN)
                             sendCharSelect(charId, charIdx ?? 0, stageId ?? 0);
-                    }, 300);
+                    };
+                    window.addEventListener('ws_init_received', _onInit, { once: true });
                 } catch {}
             }
         }
@@ -189,8 +271,11 @@ function connectWS() {
             window._pendingTournament = true;
             ws.send(JSON.stringify({ type: 'join', seekingMatch: false }));
         } else {
-            // versus — join the player pool and wait for auto-match.
-            ws.send(JSON.stringify({ type: 'join' }));
+            // versus — join the player pool but NOT the matchmaking queue yet.
+            // The queue is only entered when the player explicitly presses "Find Match"
+            // (GameShell inLobby=false transition). Sending seekingMatch:true here
+            // would queue the player at login time, before they chose a character.
+            ws.send(JSON.stringify({ type: 'join', seekingMatch: false }));
         }
     });
 
@@ -243,9 +328,38 @@ function connectWS() {
             `;
             document.getElementById('_kicked_resume_btn')?.addEventListener('click', () => {
                 overlay.remove();
-                // Clear kicked flag and reconnect from THIS tab, taking over the slot
-                window._kicked = false;
-                window._manualReconnect = false;
+                // Reset ALL pending game intent so the new WS open handler sends
+                // a plain `join` (versus queue) rather than re-entering whatever
+                // mode was active when the kick happened (tournament, training, etc).
+                // This is the equivalent of the user navigating back to fightLobby
+                // and choosing a mode fresh — safest possible clean slate.
+                window._kicked            = false;
+                window._manualReconnect   = false;
+                window._pendingGameMode   = 'versus';
+                window._pendingGameOpts   = {};
+                window._pendingTraining   = null;
+                window._pendingTournament = false;
+                // Also wipe any match globals that may still be set from
+                // the session that was active when the kick arrived.
+                Object.assign(window, {
+                    _isSpectator:           false,
+                    _spectatorMode:         null,
+                    _matchSession:          null,
+                    _victoryActive:         false,
+                    _victoryConsumed:       true,
+                    _hitstopState:          null,
+                    _countdownStart:        null,
+                    _countdownDone:         false,
+                    _confirmedStageId:      undefined,
+                    _isHost:               false,
+                    _charSelectData:        null,
+                    _charSelectConfirmed:   false,
+                    _eliminatedFromSession: null,
+                    _pendingScreenReset:    false,
+                });
+                // Signal App.jsx to navigate back to fightLobby so the user
+                // lands on a clean mode selector instead of a stale game canvas.
+                window.dispatchEvent(new CustomEvent('ws_kicked_resume'));
                 connectWS();
             });
 
@@ -289,6 +403,31 @@ function connectWS() {
                 _countdownDone:   false,
             });
 
+            // Signal any pending-char-select listener that clientId is now live.
+            // This replaces the old setTimeout(300) race in the open handler.
+            window.dispatchEvent(new CustomEvent('ws_init_received'));
+
+            // ── Empty-stage ejection guard ─────────────────────────────────
+            // The server sends `init` to place the player in the lobby pool
+            // (no active session). In the normal flow this is fine — the player
+            // is on fightLobby/lobby and just waiting. But if the client UI is
+            // on page="game" AND believed it was in an active match session
+            // (_matchSession was set), receiving `init` means the server has
+            // discarded that session (forfeit expiry, stale rejoin, etc.) and
+            // the WASM stage would render completely empty.
+            //
+            // Condition: _matchSession was non-null BEFORE the open handler
+            // cleared it. We capture it early in the open handler via a flag.
+            // Skip for training/tournament — they legitimately receive init
+            // before a session exists.
+            const _isTrainingOrTournament = !!(window._pendingTraining ||
+                window._pendingGameMode === 'training' ||
+                window._pendingTournament);
+            if (!_isTrainingOrTournament && window._hadMatchSessionOnOpen) {
+                window.dispatchEvent(new CustomEvent('ws_lobby_ejected'));
+            }
+            window._hadMatchSessionOnOpen = false;
+
             // ── Post-join mode actions ─────────────────────────────────────
             // Training: POST /api/training now that we have a clientId
             if (window._pendingTraining) {
@@ -312,6 +451,14 @@ function connectWS() {
             if (window._pendingTournament) {
                 window._pendingTournament = false;
                 ws.send(JSON.stringify({ type: 'tournament_join' }));
+            }
+            // Tournament room reload-recovery: if the player was in the tournament
+            // waiting room and the page reloaded (forfeit, F5, network), _pendingTournament
+            // is gone but sessionStorage still has the flag. Re-join automatically so
+            // the player reappears in the room without having to press the button again.
+            else if (sessionStorage.getItem('inTournamentRoom') === '1') {
+                ws.send(JSON.stringify({ type: 'tournament_join' }));
+                // flag stays set until the player explicitly leaves or the tournament starts
             }
 
         } else if (msg.type === 'char_select_ack') {
@@ -415,6 +562,27 @@ function connectWS() {
                 console.warn('[WS] match_start ignored: not in player list', msg.players, 'myId=', window._myClientId);
                 return;
             }
+
+            // ── Solo-stage guard ───────────────────────────────────────────
+            // A 1v1 or tournament match_start must always carry at least 2 player IDs.
+            // If it arrives with fewer (opponent was never registered or already
+            // gone), entering the stage would leave the player stuck alone with
+            // no way to win or exit. Eject immediately to fightLobby instead.
+            if ((msg.mode === '1v1' || msg.mode === 'tournament') &&
+                Array.isArray(msg.players) && msg.players.length < 2) {
+                console.warn('[WS] match_start', msg.mode, 'with <2 players — ejecting to lobby', msg.players);
+                try {
+                    ['clientId', 'charSelectData', 'pendingCharSelect',
+                     'watchSession', 'gameState', 'confirmedStageId'].forEach(k => sessionStorage.removeItem(k));
+                } catch (_) {}
+                Object.assign(window, {
+                    _matchSession: null, _myClientId: -1,
+                    _charSelectData: null, _charSelectConfirmed: false,
+                    _confirmedStageId: undefined, _isHost: false,
+                });
+                window.dispatchEvent(new CustomEvent('ws_lobby_ejected'));
+                return;
+            }
             window._victoryState = null;
             window._victoryConsumed = false;
             window._hitstopState = null;
@@ -502,9 +670,15 @@ function connectWS() {
             //   • Winner (active player, _isSpectator=false) — always.
             //   • Loser (eliminated → spectator, _eliminatedFromSession set) — also reloads.
             //   • Voluntary spectator (_isSpectator=true, _eliminatedFromSession=null) — does NOT reload.
+            //
+            // Special case: empty-session ejection — _victoryState is null because
+            // no match was played. We still need to reload so the player escapes the
+            // blank stage. Detect this as: not spectator + no victoryState.
             const wasEliminated = !!window._eliminatedFromSession;
-            const shouldReload  = window._victoryState?.winner != null &&
-                                  (!window._isSpectator || wasEliminated);
+            const wasEjectedFromEmpty = !window._isSpectator && window._victoryState == null;
+            const shouldReload  = wasEjectedFromEmpty ||
+                                  (window._victoryState?.winner != null &&
+                                   (!window._isSpectator || wasEliminated));
             if (shouldReload) {
                 try {
                     // Give the server time to finish cleanupSession before allowing
@@ -512,9 +686,12 @@ function connectWS() {
                     // session lingers 8s total, so BOTH winner and loser must wait past the
                     // 6s cleanup mark.  Winner: 7000ms (past the 6s cleanup + 1s margin).
                     // Loser: 9000ms (past the 8s linger window + 1s margin).
-                    const safeDelay = wasEliminated ? 9000 : 7000;
+                    // Empty-session ejection: 2000ms — no session cleanup needed, just
+                    // enough to avoid hammering reconnect.
+                    const safeDelay = wasEjectedFromEmpty ? 2000 : (wasEliminated ? 9000 : 7000);
                     sessionStorage.setItem('matchmakingSafeAt', String(Date.now() + safeDelay));
                 } catch (_) {}
+                window._programmaticReload = true;
                 window.location.reload();
             } else {
                 // Voluntary spectator that stays alive across matches: signal the
@@ -524,14 +701,30 @@ function connectWS() {
             }
 
         } else if (msg.type === 'match_end') {
-            window._lastMatchResult = {
-                winner: msg.winner, loser: msg.loser,
-                isWinner: msg.winner === window._myClientId, matchId: msg.matchId,
-            };
-            window._eliminatedFromSession = null;
-            window._matchSession          = null;
-            window.dispatchEvent(new CustomEvent('match_end', { detail: window._lastMatchResult }));
+        window._lastMatchResult = {
+            winner: msg.winner, loser: msg.loser,
+            isWinner: msg.winner === window._myClientId, matchId: msg.matchId,
+        };
+        window._eliminatedFromSession = null;
+        window._matchSession          = null;
+        window.dispatchEvent(new CustomEvent('match_end', { detail: window._lastMatchResult }));
 
+        // --- Delay para que se vea la animación de victoria ---
+        const VICTORY_ANIMATION_MS = 4500; // ajusta según necesites
+
+        // Evita múltiples recargas si llegan varios match_end
+        if (window._matchEndReloadTimeout) clearTimeout(window._matchEndReloadTimeout);
+
+        window._matchEndReloadTimeout = setTimeout(() => {
+            // (Opcional) Guardar marca para evitar re-matchmaking muy rápido
+            try {
+                const safeDelay = 5000;
+                sessionStorage.setItem('matchmakingSafeAt', String(Date.now() + safeDelay));
+            } catch (_) {}
+
+            window._programmaticReload = true;
+            window.location.reload();
+        }, VICTORY_ANIMATION_MS);
         } else if (msg.type === 'state_spectator') {
             window._gameState = msg;
 
@@ -549,6 +742,33 @@ function connectWS() {
             if (msg.type === 'tournament_end') window._tournamentResult = msg;
             if (msg.type === 'player_reconnected') window._leaveGrace = null;
             window.dispatchEvent(new CustomEvent(msg.type, { detail: msg }));
+
+        } else if (msg.type === 'lobby_ejected') {
+            // Server-side solo-guard ejected this player back to fightLobby
+            // (e.g. tournament started but all other participants disconnected
+            // before the first tick). Clear char+stage state so they start fresh.
+            console.warn('[WS] lobby_ejected from server — reason:', msg.reason);
+            try {
+                ['clientId', 'charSelectData', 'pendingCharSelect',
+                 'watchSession', 'gameState', 'confirmedStageId'].forEach(k => sessionStorage.removeItem(k));
+            } catch (_) {}
+            Object.assign(window, {
+                _matchSession: null, _myClientId: -1,
+                _charSelectData: null, _charSelectConfirmed: false,
+                _confirmedStageId: undefined, _isHost: false,
+            });
+            window.dispatchEvent(new CustomEvent('ws_lobby_ejected'));
+
+        } else if (msg.type === 'pair_dissolved') {
+            // Partner left the lobby while we were in the SSS waiting for a match.
+            // Clear pending stage/char so the player starts fresh.
+            window._confirmedStageId  = undefined;
+            window._charSelectData    = null;
+            window._charSelectConfirmed = false;
+            try {
+                ['charSelectData', 'pendingCharSelect', 'confirmedStageId'].forEach(k => sessionStorage.removeItem(k));
+            } catch (_) {}
+            window.dispatchEvent(new CustomEvent('pair_dissolved'));
 
         } else if (msg.type === 'tournament_room_update') {
             window.dispatchEvent(new CustomEvent('tournament_room_update', { detail: msg }));
