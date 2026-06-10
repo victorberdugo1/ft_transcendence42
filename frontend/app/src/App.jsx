@@ -389,34 +389,36 @@ function GameShell({ user, gameMode, gameOpts, inLobby, onBackToLobby, grace, on
       style={inLobby ? { visibility: "hidden", pointerEvents: "none" } : undefined}
     >
       <div className="game-toolbar">
+        {gameMode !== "tournament" && (
+          <button
+            type="button"
+            className="logout-button"
+            onClick={handleBackToLobby}
+            disabled={
+              !!(grace && grace.clientId !== (window._myClientId ?? -1)) ||
+              !!window._victoryActive ||
+              // Lock during SSS pre-match in versus — clicking Back here
+              // dissolves the pair and leaves the partner stuck with no opponent.
+              // The button re-enables once match_start fires (matchStarted=true).
+              (!matchStarted && gameMode === "versus")
+            }
+            title={
+              window._victoryActive
+                ? "Victory animation in progress…"
+                : grace && grace.clientId !== (window._myClientId ?? -1)
+                  ? "Your rival has a few seconds to reconnect..."
+                  : !matchStarted && gameMode === "versus"
+                    ? "Waiting for a match…"
+                    : undefined
+            }
+          >
+            Back to lobby
+          </button>
+        )}
         <div className="game-user">
           <span className="game-user-label">{modeLabel[gameMode] ?? "Playing as"}</span>
           <strong>{user.username || user.email || "user"}</strong>
         </div>
-        <button
-          type="button"
-          className="logout-button"
-          onClick={handleBackToLobby}
-          disabled={
-            !!(grace && grace.clientId !== (window._myClientId ?? -1)) ||
-            !!window._victoryActive ||
-            // Lock during SSS pre-match in versus/tournament — clicking Back here
-            // dissolves the pair and leaves the partner stuck with no opponent.
-            // The button re-enables once match_start fires (matchStarted=true).
-            (!matchStarted && (gameMode === "versus" || gameMode === "tournament"))
-          }
-          title={
-            window._victoryActive
-              ? "Victory animation in progress…"
-              : grace && grace.clientId !== (window._myClientId ?? -1)
-                ? "Your rival has a few seconds to reconnect..."
-                : !matchStarted && (gameMode === "versus" || gameMode === "tournament")
-                  ? "Waiting for a match…"
-                  : undefined
-          }
-        >
-          Back to lobby
-        </button>
       </div>
 
       {status && <div className="game-status-overlay"><p>{status}</p></div>}

@@ -202,11 +202,21 @@ function ModeTournament({ onEnterGame, matchCooldown = 0, graceActive = false })
         try { sessionStorage.removeItem('inTournamentRoom'); } catch (_) {}
         return;
       }
+      // welcome:true means the server pushed this as part of sendWelcomeToPlayer —
+      // the player is confirmed to be in the room, even if _myClientId is still -1.
+      if (data.welcome && !data.started) {
+        joinedThisSession = true;
+        setInRoom(true);
+        try { sessionStorage.setItem('inTournamentRoom', '1'); } catch (_) {}
+        return;
+      }
       // If this player appears in the room list, mark them as in the room.
-      // Covers two paths:
-      //   1. Auto-rejoin (reload recovery): ws-client init sent tournament_join
+      // Covers three paths:
+      //   1. Server welcome: sendWelcomeToPlayer pushes room state — amInList
+      //      or onAutoJoined (ws_tournament_joined_this_session) confirms we're in.
+      //   2. Auto-rejoin (reload recovery): ws-client init sent tournament_join
       //      automatically — amInList confirms we're in.
-      //   2. Manual join: user pressed the button (joinedThisSession=true already).
+      //   3. Manual join: user pressed the button (joinedThisSession=true already).
       //      Even if _myClientId is still -1 when the first update arrives (init
       //      and tournament_room_update race), we trust the flag and stay inRoom.
       const myId = window._myClientId ?? -1;
@@ -224,7 +234,11 @@ function ModeTournament({ onEnterGame, matchCooldown = 0, graceActive = false })
         const amPlayer = data.players?.some(p => p.clientId === myId);
         // Only auto-enter if we explicitly joined the room this session.
         // Reconnect after grace sends started:true immediately — block that.
-        if (amPlayer && joinedThisSession) {
+        // Also guard the race where _myClientId is still -1 when this fires:
+        // if joinedThisSession is true and myId is -1, we ARE a participant
+        // (the server added us), so enter. amPlayer will be true once init resolves.
+        const shouldEnter = joinedThisSession && (amPlayer || myId === -1);
+        if (shouldEnter) {
           onEnterGame("tournament", { tournamentId: data.tournamentId });
         }
       }
@@ -235,7 +249,9 @@ function ModeTournament({ onEnterGame, matchCooldown = 0, graceActive = false })
       // Clear the flag — tournament is underway.
       try { sessionStorage.removeItem('inTournamentRoom'); } catch (_) {}
       const myId = window._myClientId ?? -1;
-      if (data.playerIds?.includes(myId) && joinedThisSession) {
+      // Guard race: if myId is still -1 but we joined this session, we're a participant.
+      const shouldEnter = joinedThisSession && (data.playerIds?.includes(myId) || myId === -1);
+      if (shouldEnter) {
         onEnterGame("tournament", { tournamentId: data.tournamentId });
       }
     }
@@ -254,6 +270,15 @@ function ModeTournament({ onEnterGame, matchCooldown = 0, graceActive = false })
     window.addEventListener("tournament_started",     onStarted);
     window.addEventListener("tournament_room_error",  onError);
 
+    // Auto-rejoin path (inTournamentRoom in sessionStorage) fires tournament_join
+    // from ws-client init handler — mark joinedThisSession so the room update
+    // that follows is treated as a genuine join, not a stale reconnect replay.
+    function onAutoJoined() {
+      joinedThisSession = true;
+      setInRoom(true);
+    }
+    window.addEventListener("ws_tournament_joined_this_session", onAutoJoined);
+
     // Expose setter so handleJoin can flag joinedThisSession = true
     // without breaking the closure (we can't call setInRoom from here).
     ModeTournament._setJoined = (v) => { joinedThisSession = v; };
@@ -262,6 +287,7 @@ function ModeTournament({ onEnterGame, matchCooldown = 0, graceActive = false })
       window.removeEventListener("tournament_room_update", onRoomUpdate);
       window.removeEventListener("tournament_started",     onStarted);
       window.removeEventListener("tournament_room_error",  onError);
+      window.removeEventListener("ws_tournament_joined_this_session", onAutoJoined);
       ModeTournament._setJoined = null;
     };
   }, [onEnterGame]);
@@ -467,13 +493,6 @@ function ModeSpectator({ onEnterGame }) {
         )
       )}
 
-      <button
-        className="lobby-watch-btn lobby-watch-lobby"
-        type="button"
-        onClick={() => onEnterGame("spectate", { sessionId: null })}
-      >
-        Enter lobby as spectator
-      </button>
     </div>
   );
 }
@@ -635,21 +654,22 @@ export default function FightLobby({
 
   return (
     <div className="auth-page">
-      <div className="auth-card lobby-card">
+      <div className="auth-card lobby-card" style={{ position: "relative" }}>
 
-        <p className="auth-eyebrow">ft_transcendence</p>
-        <h1 className="auth-title">Fight Lobby</h1>
-
-        {/* Back button — disabled during grace period */}
+        {/* Back button — top-right corner, disabled during grace period */}
         <button
           type="button"
           className="fight-lobby-back-button"
           onClick={handleBack}
           disabled={graceActive}
           title={graceActive ? "Waiting for the server to release your previous match…" : undefined}
+          style={{ position: "absolute", top: "1rem", right: "1rem" }}
         >
           ← Go back
         </button>
+
+        <p className="auth-eyebrow">ft_transcendence</p>
+        <h1 className="auth-title">Fight Lobby</h1>
 
         <UserCard
           user={user}
