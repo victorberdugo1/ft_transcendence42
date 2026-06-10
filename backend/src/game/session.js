@@ -21,8 +21,6 @@ try { ({ updateStatsAfterMatch }     = require('./stats'));        } catch { }
 
 const { createCpuPlayer, tickCpu } = require('./ai');
 
-// ─── State ────────────────────────────────────────────────────────────────────
-
 const players             = {};
 const spectators          = {};
 const lastState           = {};
@@ -32,58 +30,36 @@ const playerCharSelected  = new Map();
 const hitstopBySession    = {};
 const spectatorsBySession = new Map();
 
-let nextClientId  = 1;
-let nextSessionId = 1;
-let frameId       = 0;
+let nextClientId     = 1;
+let nextSessionId    = 1;
+let frameId          = 0;
 let confirmedStageId = -1;
 
-// ─── Tournament waiting room ──────────────────────────────────────────────────
-// Shared state for the pre-launch lobby. Persists between connections so
-// players who join later can see who is already in the room.
 const tournamentRoom = {
-    players:    [],   // [{ clientId, dbUserId, username }]
-    started:    false,
+    players:      [],
+    started:      false,
     tournamentId: null,
-    maxPlayers: 8,
+    maxPlayers:   8,
 };
 
-// ─── Lobby join order ─────────────────────────────────────────────────────────
-// Tracks the order in which authenticated players entered the lobby (pressed
-// "Find match" / "Join").  This determines host assignment and pair formation
-// independently of clientId, which reflects connection order and can differ
-// when a player reconnects after a match.
-//
-// Lifecycle:
-//   • addToLobbyQueue(clientId)    — called when a player enters the lobby pool
-//   • removeFromLobbyQueue(cid)    — called on disconnect / session start
-//   • getLobbyQueue()              — returns a copy of the ordered array
-//
-// IMPORTANT: pairs are formed in queue order (slot 0+1, 2+3 …).  The FIRST
-// player in each pair is the host (chooses stage).  This is independent of
-// clientId ordering.
-const _lobbyJoinOrder = [];   // ordered array of clientIds
+const _lobbyJoinOrder = [];
 
 function addToLobbyQueue(cid) {
     if (!_lobbyJoinOrder.includes(cid)) _lobbyJoinOrder.push(cid);
 }
+
 function removeFromLobbyQueue(cid) {
     const idx = _lobbyJoinOrder.indexOf(cid);
     if (idx !== -1) _lobbyJoinOrder.splice(idx, 1);
 }
+
 function getLobbyQueue() {
-    // Return only players that are still alive (not yet matched), authenticated,
-    // AND actively seeking a 1v1 match (_seekingMatch !== false).
-    // Tournament waiting-room players set _seekingMatch=false and must never
-    // be paired into a 1v1 duel via tryAutoMatch, even if they somehow ended up
-    // in _lobbyJoinOrder due to a race condition or reconnect path.
     return _lobbyJoinOrder.filter(cid =>
         players[cid]?.dbUserId != null &&
         !playerSession.has(cid) &&
         players[cid]?._seekingMatch !== false
     );
 }
-
-// ─── Spectator helpers ────────────────────────────────────────────────────────
 
 function setSpectatorSession(spec, newSessionId) {
     const old = spec.watchingSession;
@@ -98,8 +74,6 @@ function setSpectatorSession(spec, newSessionId) {
         spectatorsBySession.get(newSessionId).add(spec.id);
     }
 }
-
-// ─── Broadcast ────────────────────────────────────────────────────────────────
 
 function broadcastToSession(session, msg) {
     const raw = JSON.stringify(msg);
@@ -118,8 +92,6 @@ function broadcastToAll(msg) {
     for (const p    of Object.values(players))    if (p.ws?.readyState    === WebSocket.OPEN) p.ws.send(raw);
     for (const spec of Object.values(spectators)) if (spec.ws?.readyState === WebSocket.OPEN) spec.ws.send(raw);
 }
-
-// ─── Player snapshot ──────────────────────────────────────────────────────────
 
 function buildPlayerSnapshot(p) {
     return {
@@ -143,15 +115,13 @@ function buildPlayerSnapshot(p) {
 }
 
 function broadcastState() {
-    // Build a per-session snapshot so each player only receives state for their own session.
-    const sessionSnapshots = new Map(); // sessionId -> JSON string
+    const sessionSnapshots = new Map();
 
     for (const p of Object.values(players)) {
         if (!p.ws || p.ws.readyState !== WebSocket.OPEN) continue;
 
         const sid = playerSession.get(p.id);
         if (!sid) {
-            // Lobby player (no session yet) — send only themselves.
             const solo = {};
             solo[p.id] = buildPlayerSnapshot(p);
             p.ws.send(JSON.stringify({ type: 'state', frameId: ++frameId, players: solo }));
@@ -159,7 +129,7 @@ function broadcastState() {
         }
 
         if (!sessionSnapshots.has(sid)) {
-            const session = gameSessions.get(sid);
+            const session  = gameSessions.get(sid);
             const snapshot = {};
             if (session) {
                 for (const cid of session.playerIds) {
@@ -195,8 +165,6 @@ function sendStateToSpectator(spec) {
     }
     spec.ws.send(JSON.stringify({ type: 'state', frameId: ++frameId, players: snapshot }));
 }
-
-// ─── Spectator stream (15 Hz) ─────────────────────────────────────────────────
 
 let spectatorFrameId = 0;
 
@@ -249,35 +217,26 @@ function tickSpectators() {
 
 setInterval(tickSpectators, 1000 / 15);
 
-// ─── Session listings ─────────────────────────────────────────────────────────
-
 function listActiveSessions() {
     return [...gameSessions.entries()]
         .filter(([, sess]) => !sess.finished)
         .map(([id, sess]) => ({
-        sessionId:    id,
-        mode:         sess.mode,
-        tournamentId: sess.tournamentId ?? null,
-        round:        sess.round ?? null,
-        playerIds:    [...sess.playerIds],
-        startedAt:    sess.startedAt,
-        spectators:   spectatorsBySession.get(id)?.size ?? 0,
-    }));
+            sessionId:    id,
+            mode:         sess.mode,
+            tournamentId: sess.tournamentId ?? null,
+            round:        sess.round ?? null,
+            playerIds:    [...sess.playerIds],
+            startedAt:    sess.startedAt,
+            spectators:   spectatorsBySession.get(id)?.size ?? 0,
+        }));
 }
 
-// ─── Character selection ──────────────────────────────────────────────────────
-
-// session (optional): if provided, only players within that session are included
-// in the ack payload. Without it, all lobby players are included (legacy path).
 function buildCharSelectAck(selectorCharId, selectorClientId, stageId, session = null) {
-    // Scoped player list: session peers, or lobby players (no session), or all as fallback.
     let playerIds;
     if (session) {
         playerIds = [...session.playerIds];
     } else {
-        // Lobby: only players not yet assigned to any session.
         const lobbyIds = Object.keys(players).map(Number).filter(id => !playerSession.has(id));
-        // Always include the selector even if they just got a session assigned.
         if (!lobbyIds.includes(selectorClientId)) lobbyIds.push(selectorClientId);
         playerIds = lobbyIds;
     }
@@ -311,15 +270,11 @@ function buildCharSelectAck(selectorCharId, selectorClientId, stageId, session =
 
 function sendAllCharSelectsTo(ws) {
     for (const [cid, charId] of playerCharSelected.entries()) {
-        // Skip players that are already inside an active session (training, 1v1, etc.)
-        // — their char selection must not bleed into the lobby char-select screen.
         if (playerSession.has(cid)) continue;
         const ack = buildCharSelectAck(charId, cid, 0);
         if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(ack));
     }
 }
-
-// ─── Player factory ───────────────────────────────────────────────────────────
 
 function createPlayer(id, saved, ws) {
     const onGround = saved ? (saved.onGround ?? true) : true;
@@ -354,8 +309,6 @@ function createPlayer(id, saved, ws) {
     };
 }
 
-// ─── Session factory ──────────────────────────────────────────────────────────
-
 function createSession(mode, playerIds, extra = {}) {
     const id      = String(nextSessionId++);
     const session = {
@@ -370,15 +323,13 @@ function createSession(mode, playerIds, extra = {}) {
     for (const cid of playerIds) {
         session.playerFlags[cid] = { tookDamage: false, completedCombo: false };
         playerSession.set(cid, id);
-        removeFromLobbyQueue(cid);   // leaving lobby — no longer waiting for a pair
+        removeFromLobbyQueue(cid);
         const p = players[cid];
         if (p) p.stocks = 3;
     }
     gameSessions.set(id, session);
     return session;
 }
-
-// ─── Match modes ──────────────────────────────────────────────────────────────
 
 function startBrawl(clientIds) {
     const session = createSession('brawl', clientIds);
@@ -397,8 +348,6 @@ function startBrawl(clientIds) {
 
 function startDuel(clientId1, clientId2) {
     const session = createSession('1v1', [clientId1, clientId2]);
-    // The host (lowest clientId) may have selected a stage before the session existed.
-    // Transfer _pendingStageId from either player to the session so spectators get the right stage.
     for (const cid of [clientId1, clientId2]) {
         const p = players[cid];
         if (p?._pendingStageId !== undefined) {
@@ -412,21 +361,15 @@ function startDuel(clientId1, clientId2) {
     return session;
 }
 
-// ─── Tournament Survivor mode ─────────────────────────────────────────────────
-// All participants fight in a single session. Eliminated players become
-// spectators. The last player standing wins the tournament.
-
 async function startTournament(clientIds, creatorDbId) {
     if (clientIds.length < 2) throw new Error('Need at least 2 players for a tournament');
 
-    // Create the tournament record.
     const { rows } = await db.query(
         `INSERT INTO tournaments (name, status, created_by) VALUES ($1, 'ongoing', $2) RETURNING id`,
         [`Tournament #${nextSessionId}`, creatorDbId]
     );
     const tournamentId = rows[0].id;
 
-    // Register all participants.
     const dbUserIds = clientIds.map(cid => players[cid]?.dbUserId).filter(Boolean);
     if (dbUserIds.length) {
         const placeholders = dbUserIds.map((_, i) => `($1, $${i + 2})`).join(', ');
@@ -436,17 +379,14 @@ async function startTournament(clientIds, creatorDbId) {
         );
     }
 
-    // Pick a stage from any participant that already selected one, or choose randomly.
     let stageId = Math.floor(Math.random() * STAGE_LAYOUTS.length);
     for (const cid of clientIds) {
         const p = players[cid];
         if (p?._pendingStageId !== undefined) { stageId = p._pendingStageId; delete p._pendingStageId; break; }
     }
 
-    // Launch one survivor session with all participants.
     const session = createSession('tournament', clientIds, { tournamentId, round: 1, stageId });
 
-    // Move lobby spectators into the new session.
     for (const spec of Object.values(spectators)) {
         if (spec.watchingSession !== null) continue;
         setSpectatorSession(spec, session.id);
@@ -467,7 +407,6 @@ async function startTournament(clientIds, creatorDbId) {
 }
 
 function startTraining(humanClientId, cpuCharIds = ['eld'], stageId = 0) {
-    // cpuCharIds: array of 1-4 character ids e.g. ['eld', 'hil']
     const cpus = cpuCharIds.map(charId => {
         const cpu = createCpuPlayer(charId, CHARACTER_DEFS, GROUND_Y);
         players[cpu.id] = cpu;
@@ -476,12 +415,10 @@ function startTraining(humanClientId, cpuCharIds = ['eld'], stageId = 0) {
     });
     const allIds = [humanClientId, ...cpus.map(c => c.id)];
     const cpuIds = cpus.map(c => c.id);
-    // Use mode 'training' so handleElimination doesn't apply 1v1 win logic.
-    // Victory is resolved manually: human eliminated = loss, all CPUs eliminated = win.
     const session = createSession('training', allIds, {
         isCpuSession: true,
         cpuIds,
-        cpuId: cpuIds[0],   // legacy single-cpu field kept for compatibility
+        cpuId: cpuIds[0],
         stageId,
         humanId: humanClientId,
         cpusEliminated: new Set(),
@@ -495,12 +432,7 @@ function startTraining(humanClientId, cpuCharIds = ['eld'], stageId = 0) {
     return session;
 }
 
-// ─── Auto-match ───────────────────────────────────────────────────────────────
-
 function tryAutoMatch() {
-    // Build a set of all clientIds that are already inside an active (non-finished) session.
-    // This guards against playerSession being momentarily out of sync (e.g. right after
-    // cleanupSession deletes the mapping but before the player object is fully reset).
     const busyIds = new Set();
     for (const sess of gameSessions.values()) {
         if (!sess.finished) {
@@ -508,25 +440,17 @@ function tryAutoMatch() {
         }
     }
 
-    // Only authenticated human players who have selected a character and are not already in a session.
-    // Players with dbUserId === null are browsers connected without a login and must be ignored.
-    // Use getLobbyQueue() (join-time order) so host assignment is stable regardless of clientId.
     const eligible = getLobbyQueue().filter(cid =>
         !players[cid]?.isCpu &&
         !busyIds.has(cid) &&
         playerCharSelected.has(cid)
     );
 
-    // Pair them into closed 1v1 duels two at a time (queue order: slot 0+1, 2+3 …).
-    // The host (even slot) must have confirmed a stage (_pendingStageId set) before
-    // their pair can be matched.  If the host hasn't chosen yet the pair waits.
     for (let i = 0; i + 1 < eligible.length; i += 2) {
         const hostId  = eligible[i];
         const guestId = eligible[i + 1];
         const host    = players[hostId];
         if (!host || host._pendingStageId === undefined) {
-            // Host hasn't selected stage yet — skip this pair but keep scanning
-            // in case a later pair (different host) is ready.
             console.log(`[AUTO-MATCH] waiting for host ${hostId} to select stage`);
             continue;
         }
@@ -534,8 +458,6 @@ function tryAutoMatch() {
         console.log(`[AUTO-MATCH] 1v1 session ${sess.id} — ${hostId} vs ${guestId}`);
     }
 }
-
-// ─── Elimination & match resolution ──────────────────────────────────────────
 
 function handleElimination(loser) {
     const sessionId = playerSession.get(loser.id);
@@ -554,38 +476,23 @@ function handleElimination(loser) {
 
     const { id: eliminatedId, dbUserId: eliminatedDbId, ws: eliminatedWs } = loser;
 
-    // In 1v1 and tournament modes, check if this elimination decides the match
-    // (only 1 player remains = winner found).  In that case do NOT convert the
-    // loser into a spectator: resolveMatchWinner will broadcast victory/match_end/
-    // match_finished to everyone still in the session (including the loser), and
-    // cleanupSession will restore both players to the lobby pool.
-    // For brawl (multiple players) we still convert mid-game eliminations to
-    // spectators so they can watch the rest of the match.
     const remaining = session
         ? [...session.playerIds].filter(id => !session.eliminated.has(id))
         : [];
 
-    // ── Training mode: special elimination logic ─────────────────────────────
     if (session?.mode === 'training') {
         const isHuman = eliminatedId === session.humanId;
         if (!isHuman) {
-            // A CPU was eliminated — track it but keep fighting.
-            // Use broadcastToSession (not broadcastToAll) so players waiting in
-            // the lobby for a 1v1 never receive CPU-elimination events from an
-            // unrelated training session.
             if (session.cpusEliminated) session.cpusEliminated.add(eliminatedId);
             delete players[eliminatedId];
             playerSession.delete(eliminatedId);
             broadcastState();
             broadcastToSession(session, { type: 'player_eliminated', clientId: eliminatedId });
-            // Check if ALL cpus are now eliminated → human wins
             const allCpusDead = session.cpuIds.every(cid => session.cpusEliminated.has(cid));
             if (allCpusDead) {
                 session.pendingWinner = { winnerId: session.humanId, loserId: eliminatedId };
             }
         } else {
-            // Human eliminated → loss. Pick any surviving CPU as nominal winner.
-            // Same scoping: keep this event inside the training session only.
             const survivingCpu = session.cpuIds.find(cid => !session.cpusEliminated.has(cid)) ?? session.cpuId;
             broadcastState();
             broadcastToSession(session, { type: 'player_eliminated', clientId: eliminatedId });
@@ -598,7 +505,6 @@ function handleElimination(loser) {
         (session?.mode === '1v1' || session?.mode === 'tournament');
 
     if (!isDecidingElimination) {
-        // Brawl mid-game elimination (or no session): move player to spectator pool.
         delete players[eliminatedId];
         playerSession.delete(eliminatedId);
 
@@ -615,9 +521,6 @@ function handleElimination(loser) {
             }));
         }
     }
-    // For a deciding 1v1/tournament elimination the player object stays intact
-    // in `players` so resolveMatchWinner/cleanupSession can handle cleanup and
-    // the client receives the normal victory → match_finished → lobby flow.
 
     broadcastState();
     broadcastToAll({ type: 'player_eliminated', clientId: eliminatedId });
@@ -627,11 +530,6 @@ function handleElimination(loser) {
     if (remaining.length === 1) {
         session.pendingWinner = { winnerId: remaining[0], loserId: eliminatedId };
     } else if (remaining.length === 0) {
-        // Draw / simultaneous elimination: no winner.
-        // MUST call cleanupSession so playerSession, playerCharSelected, and
-        // eliminated spectators are all properly cleared — without it every
-        // participant stays stuck in their session slot and can never return
-        // to the lobby (zombie session bug).
         session.finished = true;
         broadcastToSession(session, { type: 'match_end', winner: null, loser: eliminatedId, matchId: null, mode: session.mode });
         setTimeout(() => {
@@ -642,28 +540,20 @@ function handleElimination(loser) {
 }
 
 function cleanupSession(session, winnerClientId) {
-    // Mark the exact time the session was cleaned up. The entry stays in gameSessions
-    // for CLEANUP_LINGER_MS so that a rejoin arriving within that window can detect
-    // "battle is over" and send match_finished instead of re-entering a zombie session.
     const CLEANUP_LINGER_MS = 8000;
     session.finished  = true;
     session.cleanedAt = Date.now();
     setTimeout(() => gameSessions.delete(session.id), CLEANUP_LINGER_MS);
     delete hitstopBySession[session.id];
 
-    // Reset stage only if no other active sessions remain
     if ([...gameSessions.values()].every(s => s.finished)) confirmedStageId = -1;
 
-    // Clean up every participant of this session, whether they are still in
-    // `players` (winner / 1v1 loser) or already in `spectators` (survivor-mode
-    // eliminations). Not doing this left stale playerCharSelected entries and
-    // kept eliminated spectators floating without a proper lobby reset.
     for (const cid of session.playerIds) {
         playerSession.delete(cid);
         playerCharSelected.delete(cid);
         const p = players[cid];
         if (p) {
-            delete p._pendingStageId;   // returning to lobby: must reselect stage fresh
+            delete p._pendingStageId;
             p.stocks        = 3;
             p.voltage       = 0;
             p.voltageMaxed  = false;
@@ -676,9 +566,6 @@ function cleanupSession(session, winnerClientId) {
             p.animation     = 'idle';
             p.animTimer     = 0;
         }
-        // Eliminated spectators that belong to this session: wipe their ghost
-        // state so they re-enter as fresh lobby players on the next join/rejoin,
-        // rather than staying stuck as zombie spectators.
         const spec = spectators[cid];
         if (spec?.eliminated) {
             if (spec.dbRowId) {
@@ -691,8 +578,6 @@ function cleanupSession(session, winnerClientId) {
         }
     }
 
-    // Non-eliminated voluntary spectators watching this session: redirect them
-    // to another active session, or back to the lobby spectator view.
     const nextSession = [...gameSessions.values()].find(s => !s.finished)?.id ?? null;
     for (const spec of Object.values(spectators)) {
         if (spec.watchingSession !== session.id) continue;
@@ -708,9 +593,9 @@ function cleanupSession(session, winnerClientId) {
 async function resolveMatchWinner(session, winnerClientId, loserClientId) {
     session.finished = true;
 
-    const winner     = players[winnerClientId];
-    const winnerDbId = winner?.dbUserId ?? null;
-    const loserDbId  = session.loserDbId ?? null;
+    const winner      = players[winnerClientId];
+    const winnerDbId  = winner?.dbUserId ?? null;
+    const loserDbId   = session.loserDbId ?? null;
     const loserStocks = session.loserStocks ?? 0;
 
     broadcastToSession(session, { type: 'victory', winner: winnerClientId, loser: loserClientId, reloadRequired: true });
@@ -813,8 +698,6 @@ async function getLastWatchedSession(dbUserId) {
     }
 }
 
-// ─── Respawn ──────────────────────────────────────────────────────────────────
-
 function tickRespawn() {
     for (const p of Object.values(players)) {
         if (!p.respawning) continue;
@@ -830,8 +713,6 @@ function tickRespawn() {
         });
     }
 }
-
-// ─── Hit context ──────────────────────────────────────────────────────────────
 
 const hitCtx = {
     get players()          { return players; },
@@ -849,8 +730,6 @@ const hitCtx = {
         if (sess?.playerFlags?.[attackerClientId]) sess.playerFlags[attackerClientId].completedCombo = true;
     },
 };
-
-// ─── Game tick (60 Hz) ────────────────────────────────────────────────────────
 
 const _frozenIds        = new Set();
 const _hitstopFrozenIds = new Set();
@@ -872,11 +751,9 @@ function tick() {
 
     tickRespawn();
 
-    // ── Per-session physics: players from different sessions must never interact ──
     for (const session of gameSessions.values()) {
         if (session.finished) continue;
 
-        // Build the set of players alive in this session this tick.
         const sessPlayers = [...session.playerIds]
             .map(cid => players[cid])
             .filter(p => p && !p.respawning && !_frozenIds.has(p.id));
@@ -884,7 +761,6 @@ function tick() {
         const hs = hitstopBySession[session.id];
         const hitstopActive = hs && hs.framesLeft > 0;
 
-        // Build the session-scoped player map once (attack targets must stay within session).
         const sessionPlayersMap = {};
         for (const sp of sessPlayers) sessionPlayersMap[sp.id] = sp;
 
@@ -901,11 +777,9 @@ function tick() {
             tickAttack(p, attack, dashAttack, crouch, sessionPlayersMap, hitCtx);
         }
 
-        // Hitstop freeze for this session
         if (hitstopActive) {
             hitstopBySession[session.id].framesLeft--;
             if (hitstopBySession[session.id].framesLeft <= 0) delete hitstopBySession[session.id];
-            // Skip physics/collision for frozen session this frame
             continue;
         }
 
@@ -918,18 +792,15 @@ function tick() {
         tickPlatforms(sessPlayers, handleElimination, platforms);
     }
 
-    // Animations run for all non-frozen players regardless of session
     const aliveForAnim = Object.values(players).filter(p => !_frozenIds.has(p.id));
     tickAnimations(aliveForAnim);
 
-    // Clean up any remaining zero-frame hitstop entries
     for (const [sessId, hs] of Object.entries(hitstopBySession)) {
         if (!hs || hs.framesLeft <= 0) delete hitstopBySession[sessId];
     }
 
     for (const session of gameSessions.values()) {
         if (!session.isCpuSession || session.finished) continue;
-        // Support both single cpuId (legacy) and multi-cpu cpuIds array (training)
         const cpuIdList = session.cpuIds ?? [session.cpuId];
         const humanTarget = [...session.playerIds]
             .filter(id => !cpuIdList.includes(id) && players[id] && !players[id].respawning)
@@ -940,21 +811,11 @@ function tick() {
         }
     }
 
-    // ── Solo-player guard: 1v1/tournament session with only one connected human ──
-    // If startDuel/startTournament fired but opponents disconnected before the
-    // first tick, one player ends up alone in a live session with no way to win
-    // or exit.
-    // Detection: mode='1v1' or mode='tournament', not finished, no pendingWinner,
-    // started >3s ago, and fewer than 2 human players have an open WS.
-    // Resolution for 1v1: winner by forfeit via resolveMatchWinner.
-    // Resolution for tournament with 1 connected: eject to fightLobby (no pair
-    // to win against — send ws_lobby_ejected so client resets char+stage).
     for (const session of gameSessions.values()) {
         if (session.finished) continue;
         if (session.mode !== '1v1' && session.mode !== 'tournament') continue;
         if (session.pendingWinner) continue;
         if (session._soloGuardFired) continue;
-        // Only check after 3s so the countdown + initial connect delay pass.
         if (Date.now() - session.startedAt.getTime() < 3000) continue;
 
         const humanIds = [...session.playerIds].filter(cid => !players[cid]?.isCpu);
@@ -984,20 +845,13 @@ function tick() {
                 cleanupSession(session, null);
             }
         } else if (session.mode === 'tournament') {
-            // Tournament solo-guard: if only 1 (or 0) humans are connected and the
-            // session never had a real fight (no eliminations yet), eject the lone
-            // survivor back to fightLobby so they can reselect stage/character.
-            // We check eliminated.size === 0 to distinguish "everyone bailed before
-            // the match started" from a normal last-survivor situation (which is
-            // handled by handleElimination → resolveMatchWinner).
-            if (connected.length <= 1 && session.eliminated.size === 0) {
+            const hasPendingGrace = session.pendingEliminations &&
+                Object.keys(session.pendingEliminations).length > 0;
+            if (connected.length <= 1 && session.eliminated.size === 0 && !hasPendingGrace) {
                 session._soloGuardFired = true;
                 session.finished = true;
                 console.log(`[SOLO-GUARD] tournament session ${session.id}: only ${connected.length} connected before any fight — ejecting to lobby`);
-                // Send match_finished so clients clean up their game state, then
-                // follow with lobby_ejected so they reset char+stage selection.
                 broadcastToSession(session, { type: 'match_finished', sessionId: session.id });
-                // Give clients a tick to process match_finished before lobby_ejected.
                 const _ejSession = session;
                 setTimeout(() => {
                     for (const cid of _ejSession.playerIds) {
@@ -1032,22 +886,16 @@ function tick() {
 
 setInterval(tick, 1000 / TICK_RATE);
 
-// ─── Exports ──────────────────────────────────────────────────────────────────
-
-// ─── Force-disconnect a user by dbUserId (called on logout) ──────────────────
-
 function disconnectPlayer(dbUserId) {
     if (!dbUserId) return;
     console.log(`[AUTH] disconnectPlayer called for dbUserId=${dbUserId}, players=${Object.keys(players).length}, spectators=${Object.keys(spectators).length}`);
-    // Find in players
     for (const [cid, p] of Object.entries(players)) {
         if (p.dbUserId === dbUserId) {
             console.log(`[AUTH] closing WS for player clientId=${cid} readyState=${p.ws?.readyState}`);
-            if (p.ws?.readyState === 1 /* OPEN */) p.ws.close(1000, 'logout');
+            if (p.ws?.readyState === 1) p.ws.close(1000, 'logout');
             return;
         }
     }
-    // Find in spectators
     for (const [cid, spec] of Object.entries(spectators)) {
         if (spec.dbUserId === dbUserId) {
             console.log(`[AUTH] closing WS for spectator clientId=${cid} readyState=${spec.ws?.readyState}`);
