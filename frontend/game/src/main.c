@@ -1341,7 +1341,7 @@ static void DrawPortraitWidget(int cx, int cy, int size,
     /* ── 1. Portrait — mismo tamaño exacto que pbase.png ── */
     if (charIdx >= 0 && charIdx < 4 && g_portraits[charIdx].id > 0) {
         Texture2D tex = g_portraits[charIdx];
-        Rectangle src = { 0, 0, (float)tex.width, (float)tex.height };
+        Rectangle src = { 0, 0, isMe ? (float)tex.width : -(float)tex.width, (float)tex.height };
         Rectangle dst = { cx - radius, cy - radius, (float)size, (float)size };
         DrawTexturePro(tex, src, dst, (Vector2){0,0}, 0.0f, WHITE);
     }
