@@ -1,6 +1,6 @@
 {
   "name": "jump",
-  "fps": 30,
+  "fps": 60,
   "start_frame": 0,
   "end_frame": 120,
   "loop": false,

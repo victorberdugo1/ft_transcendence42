@@ -1,8 +1,8 @@
 {
   "name": "jump",
-  "fps": 45,
+  "fps": 60,
   "start_frame": 0,
-  "end_frame": 30,
+  "end_frame": 120,
   "loop": false,
   "events": [
     {"time": 2.0, "type": "texture", "bone": "Head", "variant": "blink"},

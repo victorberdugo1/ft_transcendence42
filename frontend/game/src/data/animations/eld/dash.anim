@@ -1,10 +1,11 @@
 {
-  "name": "Run",
-  "fps": 120,
+  "name": "punch_fast",
+  "fps": 30,
   "start_frame": 0,
-  "end_frame": 52,
+  "end_frame": 21,
   "loop": true,
   "events": [
-    {"time": 0.00, "type": "texture", "bone": "Head", "variant": "idle"}
+    {"time": 2.0, "type": "texture", "bone": "Head", "variant": "blink"},
+    {"time": 2.2, "type": "texture", "bone": "Head", "variant": "idle"}
   ]
 }

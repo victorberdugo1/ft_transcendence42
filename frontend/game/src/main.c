@@ -1902,23 +1902,15 @@ static void DrawGame(void) {
 
     if (is_spectator) {
         DrawText("SPECTATOR", SCREEN_W - 90, 8, 12, (Color){80,200,255,255});
-    } else if (my_id > 0) {
-        char txt[80];
-        const Player *me = NULL;
-        for (int s = 0; s < MAX_PLAYERS; s++)
-            if (players[s].active && players[s].id == my_id) { me = &players[s]; break; }
-        if (me && me->username[0])
-            snprintf(txt, sizeof(txt), "%s", me->username);
-        else
-            snprintf(txt, sizeof(txt), "Player %d", my_id);
-        DrawText(txt, SCREEN_W - (int)(MeasureText(txt, 12) + 4), 8, 12, YELLOW);
-    } else if (no_id_frames > 60) {
-        DrawText("Connecting...", SCREEN_W - 100, 8, 12, (Color){220,140,40,255});
-        if (ws_player_count() > 0)
-            DrawText("Waiting for server...", SCREEN_W / 2 - 80, SCREEN_H / 2, 16,
-                     (Color){200,200,200,180});
-    } else {
-        DrawText("Connecting...", SCREEN_W - 100, 8, 12, (Color){220,140,40,255});
+    } else if (my_id <= 0) {
+        if (no_id_frames > 60) {
+            DrawText("Connecting...", SCREEN_W - 100, 8, 12, (Color){220,140,40,255});
+            if (ws_player_count() > 0)
+                DrawText("Waiting for server...", SCREEN_W / 2 - 80, SCREEN_H / 2, 16,
+                         (Color){200,200,200,180});
+        } else {
+            DrawText("Connecting...", SCREEN_W - 100, 8, 12, (Color){220,140,40,255});
+        }
     }
 
     /* Durante victory_pending: titulo flotante */
