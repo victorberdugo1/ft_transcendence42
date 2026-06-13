@@ -457,11 +457,6 @@ typedef struct {
     ClothPanel panels[MAX_CLOTH_PANELS];
     int        panelCount;
     bool       loaded;
-    // transform del mundo — se setea cada frame antes de UpdatePhysics
-    Vector3    worldPosition;
-    Vector3    worldPivot;
-    Matrix     worldRot;
-    bool       hasWorldTransform;
 } ClothSystem;
 
 typedef struct AnimatedCharacter {
@@ -695,9 +690,8 @@ static inline void Cloth_Free(ClothSystem* sys);
 static inline bool Cloth_LoadFromConfig(ClothSystem* sys, const char* configPath);
 static inline void Cloth_InitializePhysics(ClothSystem* sys, const AnimationFrame* frame);
 static inline void Cloth_UpdatePhysics(ClothSystem* sys, const AnimationFrame* frame, float dt);
-static inline void Cloth_Draw(ClothSystem* sys, Camera camera, Vector3 characterCenter, bool behindOnly);
+static inline void Cloth_Draw(ClothSystem* sys, Camera camera, Vector3 characterCenter, bool behindOnly, Vector3 worldPos, Matrix worldRot, Vector3 worldPivot);
 static inline Vector3 RotatePointAroundPivot(Vector3 point, Vector3 pivot, Vector3 worldPos, Matrix rotY);
-static inline void Cloth__ApplyWorldTransform(ClothSystem* sys, Vector3* anchor, BoneOrientation* ori);
 
 static inline void SlashTrail_InitSystem(SlashTrailSystem* sys);
 static inline void SlashTrail_FreeSystem(SlashTrailSystem* sys);
@@ -3673,19 +3667,6 @@ static inline bool Cloth_LoadFromConfig(ClothSystem* sys, const char* configPath
     return sys->loaded;
 }
 
-// Aplica el world transform del ClothSystem a una posición de ancla y su orientación.
-// Se llama tanto en Init como en Update para que ambos trabajen en coordenadas mundo.
-static inline void Cloth__ApplyWorldTransform(ClothSystem* sys, Vector3* anchor, BoneOrientation* ori) {
-    if (!sys || !sys->hasWorldTransform) return;
-    *anchor = RotatePointAroundPivot(*anchor, sys->worldPivot, sys->worldPosition, sys->worldRot);
-    if (ori && ori->valid) {
-        ori->forward  = SafeNormalize(Vector3Transform(ori->forward, sys->worldRot));
-        ori->right    = SafeNormalize(Vector3Transform(ori->right,   sys->worldRot));
-        ori->up       = SafeNormalize(Vector3Transform(ori->up,      sys->worldRot));
-        ori->position = *anchor;
-    }
-}
-
 static inline void Cloth_InitializePhysics(ClothSystem* sys, const AnimationFrame* frame) {
     if (!sys || !frame) return;
     for (int i = 0; i < sys->panelCount; i++) {
@@ -3694,8 +3675,6 @@ static inline void Cloth_InitializePhysics(ClothSystem* sys, const AnimationFram
 
         Vector3 anchor = Ornaments_GetAnchorPosition(frame, cp->anchorBoneName);
         BoneOrientation ori = Ornaments_GetAnchorOrientation(frame, cp->anchorBoneName);
-        Cloth__ApplyWorldTransform(sys, &anchor, &ori);
-
         // Eje right del panel: combinación de right/forward del ancla rotada por
         // rotationDeg dentro del plano horizontal del ancla. Como right y forward
         // ya reflejan el yaw actual del hueso (cadera, etc.), el panel queda
@@ -3760,8 +3739,6 @@ static inline void Cloth_UpdatePhysics(ClothSystem* sys, const AnimationFrame* f
 
         Vector3 anchor = Ornaments_GetAnchorPosition(frame, cp->anchorBoneName);
         BoneOrientation ori = Ornaments_GetAnchorOrientation(frame, cp->anchorBoneName);
-
-        Cloth__ApplyWorldTransform(sys, &anchor, &ori);
 
         // Eje right del panel: mismo cálculo que en Cloth_InitializePhysics —
         // combina right/forward del ancla (que ya incluyen el yaw actual del
@@ -3874,15 +3851,11 @@ static inline void Cloth_UpdatePhysics(ClothSystem* sys, const AnimationFrame* f
     }
 }
 
-static inline void Cloth_Draw(ClothSystem* sys, Camera camera, Vector3 characterCenter, bool behindOnly) {
-    if (!sys || !sys->loaded || !sys->hasWorldTransform) return;
+static inline void Cloth_Draw(ClothSystem* sys, Camera camera, Vector3 characterCenter, bool behindOnly, Vector3 worldPos, Matrix worldRot, Vector3 worldPivot) {
+    if (!sys || !sys->loaded) return;
 
-    // behindOnly=true  → primera pasada: solo paneles más lejos que el centro del personaje
-    //                    se llama ANTES de BonesRenderer_RenderFrame
-    // behindOnly=false → segunda pasada: solo paneles más cerca que el centro
-    //                    se llama DESPUÉS de BonesRenderer_RenderFrame
-    // Resultado: los billboards de bones (brazos, torso) quedan en medio → tapan el cloth
-    // cuando están más cerca de la cámara, igual que tapan cualquier otra geometría.
+    // Transforma un vértice local al espacio mundo (igual que RotatePointAroundPivot).
+    #define CLOTH_XFORM(v) Vector3Add(Vector3Add(worldPos, worldPivot), Vector3Transform(Vector3Subtract(v, worldPivot), worldRot))
 
     float centerDist = Vector3Distance(camera.position, characterCenter);
 
@@ -3893,10 +3866,15 @@ static inline void Cloth_Draw(ClothSystem* sys, Camera camera, Vector3 character
         ClothPanel* cp = &sys->panels[i];
         if (!cp->valid || !cp->visible || !cp->initialized) continue;
 
+        Vector3 tl = CLOTH_XFORM(cp->topLeft);
+        Vector3 tr = CLOTH_XFORM(cp->topRight);
+        Vector3 bl = CLOTH_XFORM(cp->botLeft);
+        Vector3 br = CLOTH_XFORM(cp->botRight);
+
         Vector3 panelCenter = (Vector3){
-            (cp->topLeft.x + cp->topRight.x + cp->botLeft.x + cp->botRight.x) * 0.25f,
-            (cp->topLeft.y + cp->topRight.y + cp->botLeft.y + cp->botRight.y) * 0.25f,
-            (cp->topLeft.z + cp->topRight.z + cp->botLeft.z + cp->botRight.z) * 0.25f
+            (tl.x + tr.x + bl.x + br.x) * 0.25f,
+            (tl.y + tr.y + bl.y + br.y) * 0.25f,
+            (tl.z + tr.z + bl.z + br.z) * 0.25f
         };
         float panelDist = Vector3Distance(camera.position, panelCenter);
 
@@ -3906,26 +3884,27 @@ static inline void Cloth_Draw(ClothSystem* sys, Camera camera, Vector3 character
         rlBegin(RL_TRIANGLES);
             rlColor4ub(cp->color.r, cp->color.g, cp->color.b, cp->color.a);
             // Front face
-            rlVertex3f(cp->topLeft.x,  cp->topLeft.y,  cp->topLeft.z);
-            rlVertex3f(cp->topRight.x, cp->topRight.y, cp->topRight.z);
-            rlVertex3f(cp->botLeft.x,  cp->botLeft.y,  cp->botLeft.z);
+            rlVertex3f(tl.x, tl.y, tl.z);
+            rlVertex3f(tr.x, tr.y, tr.z);
+            rlVertex3f(bl.x, bl.y, bl.z);
 
-            rlVertex3f(cp->topRight.x, cp->topRight.y, cp->topRight.z);
-            rlVertex3f(cp->botRight.x, cp->botRight.y, cp->botRight.z);
-            rlVertex3f(cp->botLeft.x,  cp->botLeft.y,  cp->botLeft.z);
+            rlVertex3f(tr.x, tr.y, tr.z);
+            rlVertex3f(br.x, br.y, br.z);
+            rlVertex3f(bl.x, bl.y, bl.z);
             // Back face
-            rlVertex3f(cp->botLeft.x,  cp->botLeft.y,  cp->botLeft.z);
-            rlVertex3f(cp->topRight.x, cp->topRight.y, cp->topRight.z);
-            rlVertex3f(cp->topLeft.x,  cp->topLeft.y,  cp->topLeft.z);
+            rlVertex3f(bl.x, bl.y, bl.z);
+            rlVertex3f(tr.x, tr.y, tr.z);
+            rlVertex3f(tl.x, tl.y, tl.z);
 
-            rlVertex3f(cp->botLeft.x,  cp->botLeft.y,  cp->botLeft.z);
-            rlVertex3f(cp->botRight.x, cp->botRight.y, cp->botRight.z);
-            rlVertex3f(cp->topRight.x, cp->topRight.y, cp->topRight.z);
+            rlVertex3f(bl.x, bl.y, bl.z);
+            rlVertex3f(br.x, br.y, br.z);
+            rlVertex3f(tr.x, tr.y, tr.z);
         rlEnd();
     }
 
     rlEnableDepthMask();
     rlEnableBackfaceCulling();
+    #undef CLOTH_XFORM
 }
 
 static inline Vector3 SlashTrail__GetBonePos(const AnimationFrame* frame, const char* personId, const char* boneName) {
@@ -4759,25 +4738,9 @@ static inline void UpdateAnimatedCharacter(AnimatedCharacter* character, float d
     }
 
     if (character->clothPanels && character->clothPanels->loaded && frameToUse && frameToUse->valid) {
-        // Propagar el world transform al cloth para que el ancla se evalúe
-        // en coordenadas mundo, no en coordenadas locales de la animación.
-        if (character->hasWorldTransform) {
-            character->clothPanels->worldPosition     = character->worldPosition;
-            character->clothPanels->worldPivot        = character->worldPivot;
-            character->clothPanels->worldRot          = MatrixRotateY(character->worldRotation);
-            character->clothPanels->hasWorldTransform = true;
-        } else {
-            character->clothPanels->hasWorldTransform = false;
-        }
-        // Inicializar solo cuando el world transform ya está disponible,
-        // para que Init coloque los vértices directamente en coordenadas mundo.
-        bool anyUninitialized = false;
-        for (int _ci = 0; _ci < character->clothPanels->panelCount; _ci++)
-            if (!character->clothPanels->panels[_ci].initialized) { anyUninitialized = true; break; }
-        if (anyUninitialized && character->clothPanels->hasWorldTransform)
+        if (!character->clothPanels->panels[0].initialized)
             Cloth_InitializePhysics(character->clothPanels, frameToUse);
-        if (character->clothPanels->panels[0].initialized)
-            Cloth_UpdatePhysics(character->clothPanels, frameToUse, deltaTime);
+        Cloth_UpdatePhysics(character->clothPanels, frameToUse, deltaTime);
     }
 
     if (!usingTransition && character->animController && character->animController->currentClipIndex >= 0) {
@@ -5011,7 +4974,7 @@ static inline void DrawAnimatedCharacterTransformed(AnimatedCharacter* character
 
     if (character->clothPanels && character->clothPanels->loaded) {
         BeginMode3D(camera);
-        Cloth_Draw(character->clothPanels, camera, transformedCenter, true);
+        Cloth_Draw(character->clothPanels, camera, transformedCenter, true,  character->worldPosition, MatrixRotateY(character->worldRotation), character->worldPivot);
         EndMode3D();
     }
 
@@ -5023,7 +4986,7 @@ static inline void DrawAnimatedCharacterTransformed(AnimatedCharacter* character
 
     if (character->clothPanels && character->clothPanels->loaded) {
         BeginMode3D(camera);
-        Cloth_Draw(character->clothPanels, camera, transformedCenter, false);
+        Cloth_Draw(character->clothPanels, camera, transformedCenter, false, character->worldPosition, MatrixRotateY(character->worldRotation), character->worldPivot);
         RedrawWristsOnTop(character->renderer, bonesCopy ? bonesCopy : character->renderBones, bc);
         EndMode3D();
     }
@@ -5150,6 +5113,8 @@ static inline void DrawAnimatedCharacter(AnimatedCharacter* character, Camera ca
     if (!character || !character->animation.isLoaded) return;
     character->renderer->camera = camera;
 
+
+
     const AnimationFrame* rf  = NULL;
     const char*           pid = "";
     if (character->currentFrame >= 0 && character->currentFrame < character->animation.frameCount) {
@@ -5179,7 +5144,7 @@ static inline void DrawAnimatedCharacter(AnimatedCharacter* character, Camera ca
 
     if (character->clothPanels && character->clothPanels->loaded) {
         BeginMode3D(camera);
-        Cloth_Draw(character->clothPanels, camera, character->autoCenter, true);
+        Cloth_Draw(character->clothPanels, camera, character->autoCenter, true,  (Vector3){0,0,0}, MatrixIdentity(), (Vector3){0,0,0});
         EndMode3D();
     }
 
@@ -5191,7 +5156,7 @@ static inline void DrawAnimatedCharacter(AnimatedCharacter* character, Camera ca
 
     if (character->clothPanels && character->clothPanels->loaded) {
         BeginMode3D(camera);
-        Cloth_Draw(character->clothPanels, camera, character->autoCenter, false);
+        Cloth_Draw(character->clothPanels, camera, character->autoCenter, false, (Vector3){0,0,0}, MatrixIdentity(), (Vector3){0,0,0});
         RedrawWristsOnTop(character->renderer, character->renderBones, character->renderBonesCount);
         EndMode3D();
     }
