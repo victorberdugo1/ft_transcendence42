@@ -1722,6 +1722,30 @@ static void DrawGame(void) {
 
         /* ── Outline shader — solo enemigos, solo durante outlineTimer ── */
         bool doOutline = (g_shdrOutline.id > 0 && p->outlineTimer > 0.0f && p->id != my_id);
+        if (p->id != my_id && p->character && p->character->clothPanels &&
+                p->character->clothPanels->loaded) {
+            Color clothCol = PLAYER_COLORS[PlayerColorIndex(p)];
+            ClothSystem *cs = p->character->clothPanels;
+            for (int _ci = 0; _ci < cs->panelCount; _ci++)
+                cs->panels[_ci].color = clothCol;
+        }
+        /* Si hay outline, ocultamos la tela durante el draw con shader para que
+           el shader no la sobreescriba, y la redibujamos después sin shader. */
+        ClothSystem *clothToRedraw = NULL;
+        Vector3      clothWorldPos = {0};
+        Matrix       clothWorldRot = MatrixIdentity();
+        Vector3      clothWorldPiv = {0};
+        Vector3      clothCenter   = {0};
+        if (doOutline && p->character && p->character->clothPanels &&
+                p->character->clothPanels->loaded) {
+            clothToRedraw = p->character->clothPanels;
+            clothWorldPos = p->character->worldPosition;
+            clothWorldRot = MatrixRotateY(p->character->worldRotation);
+            clothWorldPiv = p->character->worldPivot;
+            clothCenter   = Vector3Add(p->character->worldPosition, p->character->autoCenter);
+            for (int _ci = 0; _ci < clothToRedraw->panelCount; _ci++)
+                clothToRedraw->panels[_ci].visible = false;
+        }
         if (doOutline) {
             int   ci  = PlayerColorIndex(p);
             Color oc  = PLAYER_COLORS[ci];
@@ -1741,6 +1765,16 @@ static void DrawGame(void) {
         }
         DrawAnimatedCharacterTransformed(p->character, scene_cam, worldPos, drawRot);
         if (doOutline) EndShaderMode();
+
+        /* Redibujar la tela fuera del shader con su color de jugador */
+        if (clothToRedraw) {
+            for (int _ci = 0; _ci < clothToRedraw->panelCount; _ci++)
+                clothToRedraw->panels[_ci].visible = true;
+            BeginMode3D(scene_cam);
+            Cloth_Draw(clothToRedraw, scene_cam, clothCenter, true,  clothWorldPos, clothWorldRot, clothWorldPiv);
+            Cloth_Draw(clothToRedraw, scene_cam, clothCenter, false, clothWorldPos, clothWorldRot, clothWorldPiv);
+            EndMode3D();
+        }
 
         /* ── Indicador "YOU ▼" para el jugador local — durante youTimer ── */
         if (p->id == my_id && p->youTimer > 0.0f) {

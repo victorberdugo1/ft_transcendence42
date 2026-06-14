@@ -13,6 +13,8 @@ const {
     createPlayer, startDuel, startTournament, tryAutoMatch,
     handleElimination, resolveMatchWinner, getLastWatchedSession,
     addToLobbyQueue, removeFromLobbyQueue, getLobbyQueue,
+    remapSessionPlayerId, resetTournamentRoom, resolveTournamentGraceExpiry,
+    tournamentBrackets,
     MAX_PLAYERS, GHOST_TTL,
     ATTACK_RANGE, ATTACK_RANGE_Y, DASH_ATTACK_RANGE_X,
     CHAR_IDS, CHARACTER_DEFS,
@@ -91,6 +93,35 @@ function broadcastHostStatus() {
         }
         pl.ws.send(JSON.stringify({ type: 'host_status', isHost }));
     }
+}
+
+function broadcastTournamentRoom(extra = {}) {
+    const roomMsg = JSON.stringify({
+        type: 'tournament_room_update',
+        players:      tournamentRoom.players,
+        started:      tournamentRoom.started,
+        tournamentId: tournamentRoom.tournamentId,
+        maxPlayers:   tournamentRoom.maxPlayers,
+        ...extra,
+    });
+    for (const entry of tournamentRoom.players) {
+        const livePl = liveWsForEntry(entry);
+        if (livePl) livePl.send(roomMsg);
+    }
+}
+
+// Removes a player from tournamentRoom.players by dbUserId, REGARDLESS of
+// tournamentRoom.started — fixes the stale-entry bug where disconnects during
+// an active tournament left ghost entries in the waiting room forever.
+// Returns true if an entry was removed.
+function removeFromTournamentRoom(dbUserId, { broadcast = true } = {}) {
+    if (!dbUserId) return false;
+    const idx = tournamentRoom.players.findIndex(p => p.dbUserId === dbUserId);
+    if (idx === -1) return false;
+    tournamentRoom.players.splice(idx, 1);
+    if (broadcast) broadcastTournamentRoom();
+    console.log(`[TOURNAMENT-ROOM] removed dbUserId=${dbUserId} (started=${tournamentRoom.started}) — ${tournamentRoom.players.length}/${tournamentRoom.maxPlayers}`);
+    return true;
 }
 
 function notifyNewLobbyHost() {
@@ -769,6 +800,9 @@ async function onConnection(ws, req) {
                     playerCharSelected.delete(clientId);
                 }
                 console.log(`[SERVER] Spectator ${clientId} left voluntarily${spec.eliminated ? ' (was eliminated)' : ''}`);
+                if (ws.readyState === WebSocket.OPEN) {
+                    ws.send(JSON.stringify({ type: 'leave_ack', paired: false, graced: false }));
+                }
                 return;
             }
             if (!players[clientId]) return;
@@ -778,8 +812,19 @@ async function onConnection(ws, req) {
                 : null;
 
             if (!leavingSession || leavingSession.finished) {
+                // AUTHORITATIVE CHECK (Issue 2): the player is NOT paired —
+                // playerSession has no entry (or it points at a finished
+                // session). Instant lobby-leave is safe.
                 notifyPairPartner(clientId);
                 removeFromLobbyQueue(clientId);
+
+                // If this player had a tournament room entry and the
+                // tournament hasn't started, drop it now too — covers the
+                // "navigated away without pressing Leave room" path.
+                if (dbUserId && !tournamentRoom.started) {
+                    removeFromTournamentRoom(dbUserId);
+                }
+
                 const lp = players[clientId];
                 delete players[clientId];
                 playerSession.delete(clientId);
@@ -793,6 +838,9 @@ async function onConnection(ws, req) {
                 notifyNewLobbyHost();
                 broadcastState();
                 console.log(`[SERVER] Player ${clientId} left voluntarily (lobby)`);
+                if (ws.readyState === WebSocket.OPEN) {
+                    ws.send(JSON.stringify({ type: 'leave_ack', paired: false, graced: false }));
+                }
                 return;
             }
 
@@ -812,9 +860,34 @@ async function onConnection(ws, req) {
                 }
                 broadcastState();
                 console.log(`[SERVER] Player ${clientId} left training session — ended immediately`);
+                if (ws.readyState === WebSocket.OPEN) {
+                    ws.send(JSON.stringify({ type: 'leave_ack', paired: false, graced: false }));
+                }
                 return;
             }
 
+            // SSS / COUNTDOWN PHASE GUARD: a pair has formed (leavingSession
+            // exists, not finished, not training) but the fight hasn't gone
+            // live yet (session.fightStarted === false). Leaving here would
+            // break the opponent's match setup — reject outright. The client
+            // should already have the leave button disabled during this
+            // window; this is the server-side enforcement of the same rule.
+            if (leavingSession.fightStarted === false) {
+                console.log(`[SERVER] Player ${clientId} leave rejected — session ${leavingSession.id} still in SSS/countdown phase`);
+                if (ws.readyState === WebSocket.OPEN) {
+                    ws.send(JSON.stringify({
+                        type: 'leave_ack', paired: true, graced: false, rejected: true,
+                        reason: 'pre_match_locked', sessionId: leavingSession.id,
+                    }));
+                }
+                return;
+            }
+
+            // AUTHORITATIVE CHECK (Issue 2): the player IS paired/in an active
+            // session. We do NOT let them abandon instantly — a grace period
+            // starts, giving their opponent a chance to react. We tell the
+            // CLIENT explicitly via leave_ack so the frontend can show the
+            // correct UI state instead of assuming instant departure.
             if (!leavingSession.pendingEliminations) leavingSession.pendingEliminations = {};
             if (leavingSession.pendingEliminations[clientId]) {
                 clearTimeout(leavingSession.pendingEliminations[clientId]);
@@ -832,10 +905,21 @@ async function onConnection(ws, req) {
             broadcastToSession(leavingSession, { type: 'leave_grace', clientId, expiresAt, sessionId: leavingSession.id });
             console.log(`[SERVER] Player ${clientId} left mid-match — grace period started (${GRACE_MS}ms)`);
 
-            leavingSession.pendingEliminations[clientId] = setTimeout(() => {
-                resolveGraceExpiry(leavingSession, clientId, null);
-                console.log(`[SERVER] Player ${clientId} grace expired — forfeit`);
-            }, GRACE_MS);
+            if (ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({ type: 'leave_ack', paired: true, graced: true, expiresAt, sessionId: leavingSession.id }));
+            }
+
+            if (leavingSession.mode === 'tournament') {
+                leavingSession.pendingEliminations[clientId] = setTimeout(() => {
+                    resolveTournamentGraceExpiry(leavingSession, clientId, dbUserId);
+                    console.log(`[SERVER] Player ${clientId} tournament grace expired — forfeit`);
+                }, GRACE_MS);
+            } else {
+                leavingSession.pendingEliminations[clientId] = setTimeout(() => {
+                    resolveGraceExpiry(leavingSession, clientId, null);
+                    console.log(`[SERVER] Player ${clientId} grace expired — forfeit`);
+                }, GRACE_MS);
+            }
 
             return;
         }
@@ -856,9 +940,7 @@ async function onConnection(ws, req) {
                     : null;
                 if (!activeTournSess) {
                     console.log(`[TOURNAMENT-ROOM] stale started=true detected on join — resetting room`);
-                    tournamentRoom.players    = [];
-                    tournamentRoom.started    = false;
-                    tournamentRoom.tournamentId = null;
+                    resetTournamentRoom(false);
                     // fall through to normal join below
                 } else {
                     if (players[clientId]?.ws?.readyState === WebSocket.OPEN)
@@ -871,8 +953,17 @@ async function onConnection(ws, req) {
                     players[clientId].ws.send(JSON.stringify({ type: 'tournament_room_error', reason: 'room_full' }));
                 return;
             }
-            const alreadyIn = tournamentRoom.players.some(p => p.dbUserId === dbUserId);
-            if (!alreadyIn) {
+            const existingEntry = tournamentRoom.players.find(p => p.dbUserId === dbUserId);
+            if (existingEntry) {
+                // Player re-joined under a NEW clientId (reconnect). Keep the
+                // room entry's clientId pointing at the LIVE connection, and
+                // also remap any active session reference (Issue 1, cluster B).
+                if (existingEntry.clientId !== clientId) {
+                    console.log(`[TOURNAMENT-ROOM] dbUserId ${dbUserId} rejoined with new clientId ${existingEntry.clientId} -> ${clientId}`);
+                    remapSessionPlayerId(existingEntry.clientId, clientId);
+                    existingEntry.clientId = clientId;
+                }
+            } else {
                 let username = players[clientId]?.username ?? null;
                 if (!username && dbUserId) {
                     try {
@@ -883,26 +974,15 @@ async function onConnection(ws, req) {
                 }
                 tournamentRoom.players.push({ clientId, dbUserId, username });
             }
-            const roomMsg = JSON.stringify({
-                type: 'tournament_room_update',
-                players:      tournamentRoom.players,
-                started:      tournamentRoom.started,
-                tournamentId: tournamentRoom.tournamentId,
-                maxPlayers:   tournamentRoom.maxPlayers,
-            });
-            for (const entry of tournamentRoom.players) {
-                const livePl = liveWsForEntry(entry);
-                if (livePl) livePl.send(roomMsg);
-            }
+            broadcastTournamentRoom();
             console.log(`[TOURNAMENT-ROOM] ${dbUserId} joined — ${tournamentRoom.players.length}/${tournamentRoom.maxPlayers}`);
             return;
         }
 
         if (msg.type === 'tournament_leave') {
             if (!dbUserId) return;
-            const idx = tournamentRoom.players.findIndex(p => p.dbUserId === dbUserId);
-            if (idx === -1) return;
-            tournamentRoom.players.splice(idx, 1);
+            const removed = removeFromTournamentRoom(dbUserId, { broadcast: false });
+            if (!removed) return;
 
             // Restore the player to normal lobby-seeking state.
             // They joined with seekingMatch:false — undo that so autoMatch works if they switch modes.
@@ -923,17 +1003,7 @@ async function onConnection(ws, req) {
                 }));
             }
 
-            const roomMsgLeave = JSON.stringify({
-                type: 'tournament_room_update',
-                players:      tournamentRoom.players,
-                started:      tournamentRoom.started,
-                tournamentId: tournamentRoom.tournamentId,
-                maxPlayers:   tournamentRoom.maxPlayers,
-            });
-            for (const entry of tournamentRoom.players) {
-                const ws = liveWsForEntry(entry);
-                if (ws) ws.send(roomMsgLeave);
-            }
+            broadcastTournamentRoom();
             console.log(`[TOURNAMENT-ROOM] ${dbUserId} left — ${tournamentRoom.players.length}/${tournamentRoom.maxPlayers}`);
             return;
         }
@@ -963,7 +1033,12 @@ async function onConnection(ws, req) {
                         liveCid = Number(pid); break;
                     }
                 }
-                if (liveCid !== null) participantIds.push(liveCid);
+                if (liveCid !== null) {
+                    participantIds.push(liveCid);
+                    // Keep the room entry's clientId in sync with the live slot
+                    // we're about to start the tournament with.
+                    entry.clientId = liveCid;
+                }
             }
             if (participantIds.length < 2) {
                 if (players[clientId]?.ws?.readyState === WebSocket.OPEN)
@@ -984,24 +1059,13 @@ async function onConnection(ws, req) {
                     if (livePl) livePl.send(startedMsg);
                 }
                 console.log(`[TOURNAMENT-ROOM] Launched tournament ${tournamentId} with ${participantIds.length} players`);
-                function _scheduleRoomReset(attempt) {
-                    setTimeout(() => {
-                        const sess = [...gameSession.gameSessions.values()]
-                            .find(s => s.tournamentId === tournamentId);
-                        if (sess && !sess.finished) {
-                            _scheduleRoomReset(attempt + 1);
-                        } else {
-                            tournamentRoom.players    = [];
-                            tournamentRoom.started    = false;
-                            tournamentRoom.tournamentId = null;
-                            console.log(`[TOURNAMENT-ROOM] Room reset after tournament ${tournamentId} (attempt ${attempt})`);
-                        }
-                    }, attempt === 0 ? 30000 : 5000);
-                }
-                _scheduleRoomReset(0);
+                // NOTE: room reset is now performed deterministically by
+                // finalizeTournament() / the solo-guard tournament branch in
+                // session.js (resetTournamentRoom). No polling timer needed.
             } catch (err) {
                 console.error('[TOURNAMENT-ROOM] launch error:', err.message);
                 tournamentRoom.started = false;
+                tournamentRoom.tournamentId = null;
                 const errMsg = JSON.stringify({ type: 'tournament_room_error', reason: 'launch_failed' });
                 for (const entry of tournamentRoom.players) {
                     const livePl = liveWsForEntry(entry);
@@ -1194,6 +1258,38 @@ async function onConnection(ws, req) {
         playerSession.delete(clientId);
 
         if (disconnectedSession && !disconnectedSession.finished) {
+            // SSS / COUNTDOWN PHASE DISCONNECT: the fight hasn't gone live
+            // yet (session.fightStarted === false). Treat this as a pairing
+            // dissolution, not a forfeit/grace — the remaining player(s) are
+            // returned to the lobby/queue to find a new match, mirroring the
+            // pre-pairing pair_dissolved flow.
+            if (disconnectedSession.fightStarted === false && disconnectedSession.mode !== 'training') {
+                disconnectedSession.finished = true;
+                playerCharSelected.delete(clientId);
+                delete lastState[clientId];
+
+                const others = [...disconnectedSession.playerIds].filter(id => id !== clientId);
+                for (const oid of others) {
+                    const op = players[oid];
+                    if (!op) continue;
+                    playerSession.delete(oid);
+                    delete op._pendingStageId;
+                    op._seekingMatch = true;
+                    if (op.ws?.readyState === WebSocket.OPEN) {
+                        op.ws.send(JSON.stringify({ type: 'pair_dissolved' }));
+                        op.ws.send(JSON.stringify({ type: 'stage_reset' }));
+                        op.ws.send(JSON.stringify({ type: 'match_finished', sessionId: disconnectedSession.id }));
+                    }
+                    addToLobbyQueue(oid);
+                }
+
+                gameSession.cleanupSession(disconnectedSession, null);
+                broadcastState();
+                tryAutoMatch();
+                console.log(`[SERVER] Player ${clientId} disconnected during SSS/countdown — session ${disconnectedSession.id} dissolved, remaining player(s) returned to queue`);
+                return;
+            }
+
             if (disconnectedSession.mode === 'training') {
                 playerCharSelected.delete(clientId);
                 delete lastState[clientId];

@@ -108,13 +108,80 @@ function GameShell({ user, gameMode, gameOpts, inLobby, onBackToLobby, grace, on
   const [matchStarted,  setMatchStarted]  = useState(false);
   const matchStartedRef = useRef(false);
 
+  // LEAVE-PERMISSION STATE MACHINE:
+  //   idle/lobby (paired=false, leaveLocked=false) -> "Back to lobby" enabled, instant leave
+  //   SSS/countdown (paired=true, leaveLocked=true) -> "Back to lobby" DISABLED, server rejects leave
+  //   fight live (paired=true, leaveLocked=false)   -> "Back to lobby" enabled, leave = forfeit/grace
+  //   post-match (paired=false)                     -> normal post-match behavior
+  //
+  // `paired` mirrors playerSession.has(clientId) server-side; set true at
+  // match_start (pairing moment), cleared at match_finished/leave_ack(paired:false).
+  // `leaveLocked` mirrors session.fightStarted===false server-side; set true
+  // at match_start, cleared by a client-side timer matching COUNTDOWN_MS
+  // (3000ms, must match session.js COUNTDOWN_MS) OR by an authoritative
+  // 'stage_confirmed'-driven fight-start signal if available.
+  const [paired, setPaired] = useState(false);
+  const pairedRef = useRef(false);
+
+  const [leaveLocked, setLeaveLocked] = useState(false);
+  const leaveLockTimerRef = useRef(null);
+  const leaveLockedRef = useRef(false);
+  useEffect(() => { leaveLockedRef.current = leaveLocked; }, [leaveLocked]);
+
+  const COUNTDOWN_MS = 3000; // must match session.js COUNTDOWN_MS
+
+  // True while we're waiting for the server's leave_ack before navigating
+  // away — prevents double-clicks / premature re-entry into matchmaking.
+  const [leaveAckPending, setLeaveAckPending] = useState(false);
+  const leaveAckPendingRef = useRef(false);
+  useEffect(() => { leaveAckPendingRef.current = leaveAckPending; }, [leaveAckPending]);
+
   function handleBackToLobby() {
+    // PRE-MATCH SSS/COUNTDOWN LOCK: a pair has formed but the fight hasn't
+    // gone live yet. The button should already be disabled in this state,
+    // but guard programmatic callers (browser-back handler, error screen
+    // button) too — the server would reject this anyway (leave_ack
+    // {rejected:true, reason:'pre_match_locked'}), so no-op here.
+    if (pairedRef.current && leaveLockedRef.current &&
+        gameMode !== "training" && gameMode !== "spectate" &&
+        !window._isSpectator && !window._eliminatedFromSession) {
+      console.warn('[UI] Back to lobby ignored — match setup in progress (SSS/countdown)');
+      return;
+    }
+
+    // AUTHORITATIVE GUARD (Issue 2): if the backend currently has us paired
+    // into an active session, do not navigate away optimistically. Send
+    // 'leave' and WAIT for the server's leave_ack — the ack handler (in the
+    // effect below) performs the actual navigation/cleanup once the server
+    // confirms whether we're free (paired:false) or now in a forfeit grace
+    // (paired:true, graced:true). This guarantees the UI never shows "back in
+    // lobby" while the backend still holds our slot in playerSession.
+    const isPairedNow = pairedRef.current &&
+      gameMode !== "training" && gameMode !== "spectate" &&
+      !window._isSpectator && !window._eliminatedFromSession;
+
     try {
       if (window._ws?.readyState === 1) {
         window._ws.send(JSON.stringify({ type: "leave" }));
       }
     } catch (_) {}
 
+    if (isPairedNow) {
+      // Defer everything else until leave_ack arrives.
+      setLeaveAckPending(true);
+      window._leaveCleanupPending = {
+        gameMode, eliminatedFromSession: !!window._eliminatedFromSession,
+      };
+      return;
+    }
+
+    _performBackToLobbyCleanup();
+  }
+
+  // Extracted so the leave_ack handler can invoke the same cleanup once the
+  // server confirms our 'leave' request (for the paired case), without
+  // duplicating all the per-gameMode branching above.
+  function _performBackToLobbyCleanup() {
     // If the player was eliminated and is watching as a forced spectator,
     // stamp matchmakingSafeAt now so the lobby cooldown shows even if they
     // leave before match_finished arrives.
@@ -181,6 +248,9 @@ function GameShell({ user, gameMode, gameOpts, inLobby, onBackToLobby, grace, on
         .forEach(k => sessionStorage.removeItem(k));
     } catch (_) {}
 
+    setPaired(false);
+    pairedRef.current = false;
+    setLeaveAckPending(false);
     setVisible(false);
     setStatus("Connecting\u2026");
     onBackToLobby();
@@ -312,7 +382,30 @@ function GameShell({ user, gameMode, gameOpts, inLobby, onBackToLobby, grace, on
       }
     }, 50);
 
-    const onStart    = () => { setStatus(""); setMatchStarted(true); matchStartedRef.current = true; setPairDissolved(false); };
+    const onStart    = () => {
+      setStatus(""); setMatchStarted(true); matchStartedRef.current = true; setPairDissolved(false);
+      // AUTHORITATIVE (Issue 2/3): the backend just paired us into a session
+      // (match_start is broadcast at the moment createSession/playerSession.set
+      // happens server-side, BEFORE char/stage select). From this point until
+      // the fight goes live, "Back to lobby" must be disabled — leaving now
+      // would break the opponent's match setup, and the server rejects it too
+      // (session.fightStarted === false -> leave_ack {rejected:true}).
+      setPaired(true);
+      pairedRef.current = true;
+      setLeaveLocked(true);
+      leaveLockedRef.current = true;
+
+      // Unlock once the fight goes live. Mirrors session.js armFightStartTimer
+      // (COUNTDOWN_MS after match_start). If a 'fight_live'/authoritative
+      // server signal exists it would clear this earlier via onFightLive
+      // below; this timer is the guaranteed fallback so the button never
+      // stays stuck disabled due to a missed/duplicate event.
+      if (leaveLockTimerRef.current) clearTimeout(leaveLockTimerRef.current);
+      leaveLockTimerRef.current = setTimeout(() => {
+        setLeaveLocked(false);
+        leaveLockedRef.current = false;
+      }, COUNTDOWN_MS + 200); // small buffer over server-side COUNTDOWN_MS
+    };
     const onSpectate = () => { setVisible(true); setStatus(""); };
 
     // Track whether we entered as a voluntary spectator using the spectator_mode
@@ -332,6 +425,13 @@ function GameShell({ user, gameMode, gameOpts, inLobby, onBackToLobby, grace, on
     // (handleBackToLobby spectate path → close WS → reload → land on fightLobby clean).
     let matchFinishedTimer = null;
     const onMatchFinished = () => {
+      // Match is over — we're no longer "paired" in the abandon-prevention
+      // sense, regardless of mode.
+      setPaired(false);
+      pairedRef.current = false;
+      setLeaveLocked(false);
+      leaveLockedRef.current = false;
+      if (leaveLockTimerRef.current) { clearTimeout(leaveLockTimerRef.current); leaveLockTimerRef.current = null; }
       if (enteredAsVoluntarySpectator) {
         matchFinishedTimer = setTimeout(() => {
           window._programmaticReload = true;  // suppress beforeunload dialog on this reload
@@ -359,21 +459,62 @@ function GameShell({ user, gameMode, gameOpts, inLobby, onBackToLobby, grace, on
       if (!matchStartedRef.current) setPairDissolved(true);
     };
 
+    // Server's authoritative response to our 'leave' request.
+    // - paired:false -> we were never paired (lobby/SSS); safe to navigate now
+    //   if we were waiting on this (leaveAckPending), or no-op otherwise.
+    // - paired:true, graced:true -> a 5s forfeit grace just started for us.
+    //   We still navigate back to the lobby UI (the player explicitly asked
+    //   to leave and the backend will forfeit them after the grace), but we
+    //   mark ourselves unpaired immediately since we are leaving regardless.
+    const onLeaveAck = (e) => {
+      const detail = e.detail || {};
+      if (detail.rejected) {
+        // Server rejected the leave (still in SSS/countdown — race with the
+        // client-side leaveLocked timer). Stay put, re-lock the UI.
+        setLeaveAckPending(false);
+        setLeaveLocked(true);
+        leaveLockedRef.current = true;
+        console.warn('[UI] leave rejected by server:', detail.reason);
+        return;
+      }
+      setPaired(false);
+      pairedRef.current = false;
+      if (leaveAckPendingRef.current) {
+        _performBackToLobbyCleanup();
+      }
+    };
+
+    // If OUR OWN grace expires (we forfeited without ever completing leave_ack
+    // round trip — e.g. tab was closed and reopened), make sure 'paired'
+    // reflects reality on next mount via the ref; nothing to do visually here
+    // since this component will likely remount, but keep state consistent.
+    const onGraceExpiredSelf = (e) => {
+      if (e.detail?.clientId === (window._myClientId ?? -1)) {
+        setPaired(false);
+        pairedRef.current = false;
+      }
+    };
+
     window.addEventListener("match_start",       onStart);
     window.addEventListener("spectator_mode",    onSpectateMode);
     window.addEventListener("match_finished",    onMatchFinished);
     window.addEventListener("victory_spectator", onVictorySpectator);
     window.addEventListener("pair_dissolved",    onPairDissolved);
+    window.addEventListener("leave_ack",         onLeaveAck);
+    window.addEventListener("leave_grace_expired", onGraceExpiredSelf);
 
     return () => {
       clearInterval(poll);
       clearTimeout(matchFinishedTimer);
       clearTimeout(victorySpectatorTimer);
+      if (leaveLockTimerRef.current) { clearTimeout(leaveLockTimerRef.current); leaveLockTimerRef.current = null; }
       window.removeEventListener("match_start",       onStart);
       window.removeEventListener("spectator_mode",    onSpectateMode);
       window.removeEventListener("match_finished",    onMatchFinished);
       window.removeEventListener("victory_spectator", onVictorySpectator);
       window.removeEventListener("pair_dissolved",    onPairDissolved);
+      window.removeEventListener("leave_ack",         onLeaveAck);
+      window.removeEventListener("leave_grace_expired", onGraceExpiredSelf);
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [inLobby]);
@@ -397,22 +538,30 @@ function GameShell({ user, gameMode, gameOpts, inLobby, onBackToLobby, grace, on
             disabled={
               !!(grace && grace.clientId !== (window._myClientId ?? -1)) ||
               !!window._victoryActive ||
-              // Lock during SSS pre-match in versus — clicking Back here
-              // dissolves the pair and leaves the partner stuck with no opponent.
-              // The button re-enables once match_start fires (matchStarted=true).
-              (!matchStarted && gameMode === "versus")
+              leaveAckPending ||
+              // PHASE GUARD: once paired (match_start received) and until the
+              // fight goes live (countdown elapses, session.fightStarted
+              // becomes true server-side), "Back to lobby" must be disabled —
+              // leaving here breaks the opponent's match setup. Before
+              // pairing (paired===false) and once the fight is live
+              // (leaveLocked===false) the button is enabled.
+              (paired && leaveLocked)
             }
             title={
               window._victoryActive
                 ? "Victory animation in progress…"
                 : grace && grace.clientId !== (window._myClientId ?? -1)
                   ? "Your rival has a few seconds to reconnect..."
-                  : !matchStarted && gameMode === "versus"
-                    ? "Waiting for a match…"
-                    : undefined
+                  : leaveAckPending
+                    ? "Leaving…"
+                    : (paired && leaveLocked)
+                      ? "Match is starting — please wait…"
+                      : !matchStarted && gameMode === "versus"
+                        ? "Waiting for a match…"
+                        : undefined
             }
           >
-            Back to lobby
+            {leaveAckPending ? "Leaving…" : "Back to lobby"}
           </button>
         )}
         <div className="game-user">
