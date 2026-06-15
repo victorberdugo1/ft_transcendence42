@@ -13,6 +13,8 @@ const {
     createPlayer, startDuel, startTournament, tryAutoMatch,
     handleElimination, resolveMatchWinner, getLastWatchedSession,
     addToLobbyQueue, removeFromLobbyQueue, getLobbyQueue,
+    remapSessionPlayerId, resetTournamentRoom, resolveTournamentGraceExpiry,
+    tournamentBrackets,
     MAX_PLAYERS, GHOST_TTL,
     ATTACK_RANGE, ATTACK_RANGE_Y, DASH_ATTACK_RANGE_X,
     CHAR_IDS, CHARACTER_DEFS,
@@ -769,6 +771,9 @@ async function onConnection(ws, req) {
                     playerCharSelected.delete(clientId);
                 }
                 console.log(`[SERVER] Spectator ${clientId} left voluntarily${spec.eliminated ? ' (was eliminated)' : ''}`);
+                if (ws.readyState === WebSocket.OPEN) {
+                    ws.send(JSON.stringify({ type: 'leave_ack', paired: false, graced: false }));
+                }
                 return;
             }
             if (!players[clientId]) return;
@@ -780,6 +785,14 @@ async function onConnection(ws, req) {
             if (!leavingSession || leavingSession.finished) {
                 notifyPairPartner(clientId);
                 removeFromLobbyQueue(clientId);
+
+                // If this player had a tournament room entry and the
+                // tournament hasn't started, drop it now too — covers the
+                // "navigated away without pressing Leave room" path.
+                if (dbUserId && !tournamentRoom.started) {
+                    removeFromTournamentRoom(dbUserId);
+                }
+
                 const lp = players[clientId];
                 delete players[clientId];
                 playerSession.delete(clientId);
@@ -793,6 +806,9 @@ async function onConnection(ws, req) {
                 notifyNewLobbyHost();
                 broadcastState();
                 console.log(`[SERVER] Player ${clientId} left voluntarily (lobby)`);
+                if (ws.readyState === WebSocket.OPEN) {
+                    ws.send(JSON.stringify({ type: 'leave_ack', paired: false, graced: false }));
+                }
                 return;
             }
 
@@ -812,6 +828,26 @@ async function onConnection(ws, req) {
                 }
                 broadcastState();
                 console.log(`[SERVER] Player ${clientId} left training session — ended immediately`);
+                if (ws.readyState === WebSocket.OPEN) {
+                    ws.send(JSON.stringify({ type: 'leave_ack', paired: false, graced: false }));
+                }
+                return;
+            }
+
+            // SSS / COUNTDOWN PHASE GUARD: a pair has formed (leavingSession
+            // exists, not finished, not training) but the fight hasn't gone
+            // live yet (session.fightStarted === false). Leaving here would
+            // break the opponent's match setup — reject outright. The client
+            // should already have the leave button disabled during this
+            // window; this is the server-side enforcement of the same rule.
+            if (leavingSession.fightStarted === false) {
+                console.log(`[SERVER] Player ${clientId} leave rejected — session ${leavingSession.id} still in SSS/countdown phase`);
+                if (ws.readyState === WebSocket.OPEN) {
+                    ws.send(JSON.stringify({
+                        type: 'leave_ack', paired: true, graced: false, rejected: true,
+                        reason: 'pre_match_locked', sessionId: leavingSession.id,
+                    }));
+                }
                 return;
             }
 
@@ -963,7 +999,12 @@ async function onConnection(ws, req) {
                         liveCid = Number(pid); break;
                     }
                 }
-                if (liveCid !== null) participantIds.push(liveCid);
+                if (liveCid !== null) {
+                    participantIds.push(liveCid);
+                    // Keep the room entry's clientId in sync with the live slot
+                    // we're about to start the tournament with.
+                    entry.clientId = liveCid;
+                }
             }
             if (participantIds.length < 2) {
                 if (players[clientId]?.ws?.readyState === WebSocket.OPEN)
@@ -1002,6 +1043,7 @@ async function onConnection(ws, req) {
             } catch (err) {
                 console.error('[TOURNAMENT-ROOM] launch error:', err.message);
                 tournamentRoom.started = false;
+                tournamentRoom.tournamentId = null;
                 const errMsg = JSON.stringify({ type: 'tournament_room_error', reason: 'launch_failed' });
                 for (const entry of tournamentRoom.players) {
                     const livePl = liveWsForEntry(entry);

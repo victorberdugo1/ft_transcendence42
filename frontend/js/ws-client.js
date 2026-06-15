@@ -567,6 +567,12 @@ function connectWS() {
             window._leaveGrace = null;
             window.dispatchEvent(new CustomEvent('leave_grace_expired', { detail: msg }));
 
+        } else if (msg.type === 'leave_ack') {
+            // Server's authoritative answer to our 'leave' request — tells us
+            // whether we were paired/in-session (graced) or free (instant).
+            window._leaveAck = { paired: !!msg.paired, graced: !!msg.graced, expiresAt: msg.expiresAt ?? null, sessionId: msg.sessionId ?? null };
+            window.dispatchEvent(new CustomEvent('leave_ack', { detail: window._leaveAck }));
+
         } else if (['player_eliminated', 'tournament_waiting', 'tournament_end', 'players_joined', 'player_disconnected', 'player_reconnected'].includes(msg.type)) {
             if (msg.type === 'tournament_end') window._tournamentResult = msg;
             if (msg.type === 'player_reconnected') window._leaveGrace = null;

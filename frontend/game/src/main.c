@@ -39,6 +39,32 @@ static SkyboxState g_sky = { {0}, {0}, {0}, {0}, 0, false, -1 };
 
 static Texture2D g_platTex[4]   = {0};
 static int       g_platTexStage = -1;
+
+/* ── HUD portrait textures ──────────────────────────────────────────────── */
+static Texture2D g_pbase         = {0};   /* pbase.png  — marco circular    */
+static Texture2D g_portraits[4]  = {0};   /* p00..p03.png                   */
+static bool      g_hudTexLoaded  = false;
+
+/* ── Outline shader ─────────────────────────────────────────────────────── */
+static Shader g_shdrOutline       = {0};
+static int    g_outlineSizeLoc    = -1;
+static int    g_outlineColorLoc   = -1;
+static int    g_textureSizeLoc    = -1;
+
+/* Color por slot de jugador.
+   El jugador local siempre usa el índice 0 (azul).
+   Los enemigos usan índices 1-7 según su slotIndex, garantizando
+   que nunca haya dos jugadores con el mismo color.               */
+static const Color PLAYER_COLORS[8] = {
+    { 80, 180, 255, 255},  /* 0 azul       — jugador local */
+    {255,  60,  60, 255},  /* 1 rojo                       */
+    { 60, 220,  80, 255},  /* 2 verde                      */
+    {255, 210,   0, 255},  /* 3 amarillo                   */
+    {180,  60, 255, 255},  /* 4 morado                     */
+    {255, 140,   0, 255},  /* 5 naranja                    */
+    {  0, 220, 200, 255},  /* 6 cyan                       */
+    {255, 255, 255, 255},  /* 7 blanco (fallback)          */
+};
 static Model     g_platGroundModel;   /* modelo del suelo principal */
 static Model     g_platFloatModel;    /* modelo de plataformas flotantes */
 static bool      g_platModelReady = false;
@@ -260,6 +286,11 @@ typedef struct {
     bool  visualWYInit;      /* si visualWY ya fue inicializada */
     float victoryFallVY;     /* velocidad vertical de caida en victoria (unidades/s, negativo = bajar) */
     float victoryLandingTargetY; /* Y destino del aterrizaje (suelo o plataforma) */
+
+    /* identificación visual post-respawn */
+    float outlineTimer;      /* segundos restantes de outline coloreado     */
+    float youTimer;          /* segundos restantes del indicador "YOU" (solo jugador local) */
+    bool  prevRespawning;    /* para detectar el flanco respawning→activo   */
 } Player;
 
 static Player players[MAX_PLAYERS];
@@ -267,6 +298,16 @@ static int    my_id        = -1;
 static bool   is_spectator = false;
 static bool   game_ready   = false;
 static bool   debug_mode   = false;
+
+/* Devuelve el índice en PLAYER_COLORS para un jugador:
+   - El jugador local (id == my_id) siempre obtiene 0 (azul).
+   - Los demás obtienen un índice 1-7 único basado en su slotIndex
+     (que es único por diseño en el array players[]), de modo que
+     nunca puede haber dos jugadores con el mismo color.          */
+static int PlayerColorIndex(const Player *p) {
+    if (p->id == my_id) return 0;
+    return (p->slotIndex % 7) + 1;
+}
 
 static int    no_id_frames = 0;
 #define NO_ID_SPECTATOR_FRAMES 180
@@ -1221,6 +1262,139 @@ static void DrawDaatGrid(Camera cam) {
     EndMode3D();
 }
 
+/* ── HUD helpers ─────────────────────────────────────────────────────────── */
+
+static void HUD_LoadTextures(void) {
+    if (g_hudTexLoaded) return;
+    g_hudTexLoaded = true;
+    if (FileExists("data/pbase.png"))
+        g_pbase = LoadTexture("data/pbase.png");
+    const char *pfiles[4] = {
+        "data/p00.png", "data/p01.png", "data/p02.png", "data/p03.png"
+    };
+    for (int i = 0; i < 4; i++)
+        if (FileExists(pfiles[i]))
+            g_portraits[i] = LoadTexture(pfiles[i]);
+
+    /* Outline shader — mismo directorio que skybox.fs */
+    const char *fsPath = "data/shaders/outline.fs";
+    if (FileExists(fsPath)) {
+        g_shdrOutline     = LoadShader(0, fsPath);
+        g_outlineSizeLoc  = GetShaderLocation(g_shdrOutline, "outlineSize");
+        g_outlineColorLoc = GetShaderLocation(g_shdrOutline, "outlineColor");
+        g_textureSizeLoc  = GetShaderLocation(g_shdrOutline, "textureSize");
+        float sz = 2.0f;
+        SetShaderValue(g_shdrOutline, g_outlineSizeLoc, &sz, SHADER_UNIFORM_FLOAT);
+    }
+}
+
+/* Índice en CHARS[] a partir del charId de un Player (-1 si no encontrado) */
+static int CharIndexOf(const char *charId) {
+    if (!charId || !charId[0]) return -1;
+    for (int i = 0; i < CHARS_COUNT; i++)
+        if (strcmp(CHARS[i].charId, charId) == 0) return i;
+    return -1;
+}
+
+/*
+ * DrawPortraitWidget — dibuja un widget circular de HUD:
+ *   cx, cy  : centro del widget en pantalla
+ *   size    : diámetro (el marco pbase ocupa este tamaño)
+ *   charIdx : índice en g_portraits[] (0-3), -1 = sin portrait
+ *   voltage : 0-200
+ *   voltageMaxed / blinkOn : para el parpadeo en rojo
+ *   stocks  : número de stocks (se dibujan como puntos debajo)
+ *   isMe    : true = borde dorado, false = borde plateado
+ *
+ * Arco de voltaje: lado IZQUIERDO del círculo, de abajo (270°) hacia arriba (90°)
+ * es decir barrido en sentido antihorario desde -90° hasta +90° pasando por 180°.
+ * Con Raylib DrawRing usamos startAngle/endAngle en grados (0=derecha, CW positivo).
+ *
+ *   Voltaje=0   → sin arco
+ *   Voltaje=200 → arco completo del semicírculo izquierdo (180°)
+ *
+ * startAngle = 90° (abajo-izquierda), endAngle = 90° + 180°*t (arriba)
+ * pero Raylib DrawRing dibuja CW, así que vamos de 90 hasta 270 (pasando por 180).
+ */
+static void DrawPortraitWidget(int cx, int cy, int size,
+                               int charIdx, int playerId,
+                               float voltage, bool voltageMaxed, bool blinkOn,
+                               int stocks, bool isMe)
+{
+    float radius = size * 0.5f;
+    float arcOuter = radius * 0.82f;
+    float arcInner = radius * 0.66f;
+
+    Vector2 center = { (float)cx, (float)cy };
+
+    /* ── 0. Círculo de fondo con color del jugador (solo enemigos, fijo y opaco) ── */
+    if (!isMe) {
+        int ci = 1;
+        for (int _s = 0; _s < MAX_PLAYERS; _s++)
+            if (players[_s].active && players[_s].id == playerId)
+                { ci = PlayerColorIndex(&players[_s]); break; }
+        Color pc = PLAYER_COLORS[ci];
+        pc.a = 255;
+        DrawCircleV(center, radius * 0.62f, pc);   /* más pequeño que el portrait */
+    }
+
+    /* ── 1. Portrait — mismo tamaño exacto que pbase.png ── */
+    if (charIdx >= 0 && charIdx < 4 && g_portraits[charIdx].id > 0) {
+        Texture2D tex = g_portraits[charIdx];
+        Rectangle src = { 0, 0, isMe ? (float)tex.width : -(float)tex.width, (float)tex.height };
+        Rectangle dst = { cx - radius, cy - radius, (float)size, (float)size };
+        DrawTexturePro(tex, src, dst, (Vector2){0,0}, 0.0f, WHITE);
+    }
+
+    /* ── 2. Arco de voltaje (detrás del marco, delante del portrait) ── */
+    float t = voltage / 200.0f;
+    if (t > 1.0f) t = 1.0f;
+    if (t > 0.0f) {
+        float arcSpan    = 180.0f * t;
+        float startAngle = 90.0f;
+        float endAngle   = 90.0f + arcSpan;
+
+        Color arcCol;
+        if (voltageMaxed) {
+            arcCol = blinkOn ? (Color){255,30,30,255} : (Color){255,160,0,255};
+        } else {
+            arcCol = VoltageBarColor(t);
+        }
+        arcCol.a = 240;
+
+        int segments = (int)(arcSpan / 3.0f);
+        if (segments < 6) segments = 6;
+
+        DrawRing(center, arcInner, arcOuter, startAngle, endAngle, segments, arcCol);
+
+        if (voltageMaxed && blinkOn)
+            DrawRingLines(center, arcInner, arcOuter, startAngle, endAngle,
+                          segments, (Color){255,80,80,220});
+    }
+
+    /* ── 3. Marco pbase.png (ENCIMA del arco y del portrait) ── */
+    if (g_pbase.id > 0) {
+        Rectangle src = { 0, 0, (float)g_pbase.width, (float)g_pbase.height };
+        Rectangle dst = { cx - radius, cy - radius, (float)size, (float)size };
+        DrawTexturePro(g_pbase, src, dst, (Vector2){0,0}, 0.0f, WHITE);
+    } else {
+        Color bc = isMe ? (Color){255,215,0,200} : (Color){160,160,200,180};
+        DrawRing(center, radius * 0.85f, radius, 0.0f, 360.0f, 40, bc);
+    }
+
+    /* ── 4. Stocks (puntos bajo el widget) ── */
+    {
+        int dotR   = (int)(size * 0.06f); if (dotR < 3) dotR = 3;
+        int dotGap = dotR * 3;
+        int totalW = stocks * dotGap - (dotGap - dotR * 2);
+        int dotY   = cy + (int)radius + dotR + 6;
+        int dotX0  = cx - totalW / 2 + dotR;
+        Color dotCol = isMe ? (Color){255,215,0,230} : (Color){200,200,220,200};
+        for (int d = 0; d < stocks; d++)
+            DrawCircle(dotX0 + d * dotGap, dotY, (float)dotR, dotCol);
+    }
+}
+
 static void DrawGame(void) {
     static float camX       = 0.0f;
     static float camY       = CAM_Y_DEFAULT;
@@ -1426,6 +1600,17 @@ static void DrawGame(void) {
 
     for (int s = 0; s < MAX_PLAYERS; s++) {
         Player *p = &players[s];
+        if (!p->active) { p->prevRespawning = false; continue; }
+
+        /* ── Detectar reaparición y arrancar timers (antes del continue de respawn) ── */
+        if (p->prevRespawning && !p->respawning && !victory_pending && !match_over) {
+            p->outlineTimer = 3.5f;
+            if (p->id == my_id) p->youTimer = 4.5f;
+        }
+        p->prevRespawning = p->respawning;
+        if (p->outlineTimer > 0.0f) p->outlineTimer -= dt;
+        if (p->youTimer    > 0.0f) p->youTimer    -= dt;
+
         if (p->active != 1 || !p->character || p->respawning) continue;
         if (is_spectator && my_id > 0 && p->id == my_id) continue;
 
@@ -1436,7 +1621,6 @@ static void DrawGame(void) {
         }
 
         UpdateAnimatedCharacter(p->character, animDt);
-
         if (p->character->animController && !p->character->animController->playing) {
             if (victory_pending && p->id == winner_id) {
                 /* La animacion termino: damos 0.6s de margen y luego el overlay */
@@ -1535,7 +1719,87 @@ static void DrawGame(void) {
 
         Vector3 worldPos = { p->wx + playerShakeX, visualY + playerShakeY, 0.0f };
         float   drawRot  = p->visualRotation + (float)M_PI_2;
+
+        /* ── Outline shader — solo enemigos, solo durante outlineTimer ── */
+        bool doOutline = (g_shdrOutline.id > 0 && p->outlineTimer > 0.0f && p->id != my_id);
+        if (p->id != my_id && p->character && p->character->clothPanels &&
+                p->character->clothPanels->loaded) {
+            Color clothCol = PLAYER_COLORS[PlayerColorIndex(p)];
+            ClothSystem *cs = p->character->clothPanels;
+            for (int _ci = 0; _ci < cs->panelCount; _ci++)
+                cs->panels[_ci].color = clothCol;
+        }
+        /* Si hay outline, ocultamos la tela durante el draw con shader para que
+           el shader no la sobreescriba, y la redibujamos después sin shader. */
+        ClothSystem *clothToRedraw = NULL;
+        Vector3      clothWorldPos = {0};
+        Matrix       clothWorldRot = MatrixIdentity();
+        Vector3      clothWorldPiv = {0};
+        Vector3      clothCenter   = {0};
+        if (doOutline && p->character && p->character->clothPanels &&
+                p->character->clothPanels->loaded) {
+            clothToRedraw = p->character->clothPanels;
+            clothWorldPos = p->character->worldPosition;
+            clothWorldRot = MatrixRotateY(p->character->worldRotation);
+            clothWorldPiv = p->character->worldPivot;
+            clothCenter   = Vector3Add(p->character->worldPosition, p->character->autoCenter);
+            for (int _ci = 0; _ci < clothToRedraw->panelCount; _ci++)
+                clothToRedraw->panels[_ci].visible = false;
+        }
+        if (doOutline) {
+            int   ci  = PlayerColorIndex(p);
+            Color oc  = PLAYER_COLORS[ci];
+            float alpha = (p->outlineTimer < 1.0f) ? p->outlineTimer : 1.0f;
+            float col[4] = { oc.r/255.0f, oc.g/255.0f, oc.b/255.0f, alpha };
+            float tsz[2] = { 512.0f, 512.0f };
+            if (p->character->renderer && p->character->renderer->textureCount > 0 &&
+                p->character->renderer->textures[0].id > 0) {
+                tsz[0] = (float)p->character->renderer->textures[0].width;
+                tsz[1] = (float)p->character->renderer->textures[0].height;
+            }
+            float sz = 9.0f;   /* grosor del outline */
+            SetShaderValue(g_shdrOutline, g_outlineSizeLoc,  &sz,  SHADER_UNIFORM_FLOAT);
+            SetShaderValue(g_shdrOutline, g_outlineColorLoc,  col,  SHADER_UNIFORM_VEC4);
+            SetShaderValue(g_shdrOutline, g_textureSizeLoc,   tsz,  SHADER_UNIFORM_VEC2);
+            BeginShaderMode(g_shdrOutline);
+        }
         DrawAnimatedCharacterTransformed(p->character, scene_cam, worldPos, drawRot);
+        if (doOutline) EndShaderMode();
+
+        /* Redibujar la tela fuera del shader con su color de jugador */
+        if (clothToRedraw) {
+            for (int _ci = 0; _ci < clothToRedraw->panelCount; _ci++)
+                clothToRedraw->panels[_ci].visible = true;
+            BeginMode3D(scene_cam);
+            Cloth_Draw(clothToRedraw, scene_cam, clothCenter, true,  clothWorldPos, clothWorldRot, clothWorldPiv);
+            Cloth_Draw(clothToRedraw, scene_cam, clothCenter, false, clothWorldPos, clothWorldRot, clothWorldPiv);
+            EndMode3D();
+        }
+
+        /* ── Indicador "YOU ▼" para el jugador local — durante youTimer ── */
+        if (p->id == my_id && p->youTimer > 0.0f) {
+            float alpha = (p->youTimer < 1.0f) ? p->youTimer : 1.0f;
+            unsigned char a = (unsigned char)(alpha * 255.0f);
+            /* Parpadeo a 4Hz en el último segundo */
+            bool showBlink = true;
+            if (p->youTimer < 1.0f) showBlink = ((int)(p->youTimer * 8.0f) % 2 == 0);
+            if (showBlink) {
+                /* Proyectar posición mundo → pantalla para colocar el label */
+                Vector2 screenPos = GetWorldToScreen(
+                    (Vector3){ worldPos.x, worldPos.y + 1.6f, worldPos.z }, scene_cam);
+                const char *youTxt = "YOU";
+                int  fontSize = 28;
+                int  tw = MeasureText(youTxt, fontSize);
+                int  sx = (int)screenPos.x - tw / 2;
+                int  sy = (int)screenPos.y ;
+                /* Sombra */
+                DrawText(youTxt, sx+1, sy+1, fontSize, (Color){0,0,0,a});
+                DrawText(youTxt, sx,   sy,   fontSize, (Color){80,180,255,a});
+                /* Flechita parpadeante */
+                int arrowY = sy + fontSize + 2;
+                DrawText("v", (int)screenPos.x - 4, arrowY, fontSize, (Color){80,180,255,a});
+            }
+        }
     }
 
     if (IsKeyPressed(KEY_U)) debug_mode = !debug_mode;
@@ -1572,71 +1836,115 @@ static void DrawGame(void) {
     blinkTimer += dt;
     if (blinkTimer > 0.18f) { blinkTimer = 0.0f; blinkOn = !blinkOn; }
 
-    const int BAR_W = 120;
-    const int BAR_H = 8;
-    int       hudY  = 8;
+    /* ── Cargar texturas HUD una vez ── */
+    HUD_LoadTextures();
+
+    /* ── Recopilar jugadores activos ── */
+    /* myPlayer = el jugador local; enemies = resto, en orden de id */
+    Player *myPlayer = NULL;
+    Player *enemies[MAX_PLAYERS];
+    int     enemyCount = 0;
 
     for (int s = 0; s < MAX_PLAYERS; s++) {
         Player *p = &players[s];
         if (!p->active) continue;
-
-        const bool  isMe    = (!is_spectator && p->id == my_id);
-        const Color nameCol = isMe ? YELLOW : WHITE;
-
-        char hud[80];
-        const char *dispName = (p->username[0]) ? p->username : NULL;
-        if (dispName)
-            snprintf(hud, sizeof(hud), "%s: %d stocks", dispName, p->stocks);
-        else
-            snprintf(hud, sizeof(hud), "P%d: %d stocks", p->id, p->stocks);
-        DrawText(hud, 8, hudY, 12, nameCol);
-        hudY += 14;
-
-        DrawRectangle(8, hudY, BAR_W, BAR_H, (Color){30,30,50,200});
-
-        float t = p->voltage / 200.0f;
-        Color fillCol;
-        if (p->voltageMaxed) {
-            fillCol = blinkOn ? (Color){255,30,30,255} : (Color){255,160,0,255};
+        if (!is_spectator && p->id == my_id) {
+            myPlayer = p;
         } else {
-            fillCol = VoltageBarColor(t);
+            enemies[enemyCount++] = p;
         }
-        int fillW = (int)(BAR_W * t);
-        if (fillW > 0) DrawRectangle(8, hudY, fillW, BAR_H, fillCol);
+    }
 
-        if (p->voltageMaxed && blinkOn)
-            DrawRectangleLines(8, hudY, BAR_W, BAR_H, (Color){255,80,80,255});
+    /* En modo espectador tratamos a todos como enemigos en la misma fila */
+    if (is_spectator) {
+        myPlayer = NULL;
+        enemyCount = 0;
+        for (int s = 0; s < MAX_PLAYERS; s++) {
+            if (players[s].active) enemies[enemyCount++] = &players[s];
+        }
+    }
 
-        char vLabel[12];
-        snprintf(vLabel, sizeof(vLabel), "%.0f%%", p->voltage);
-        Color vLabelCol = (p->voltageMaxed && blinkOn) ? (Color){255,80,80,255} : nameCol;
-        DrawText(vLabel, 8 + BAR_W + 4, hudY, 10, vLabelCol);
+    /* ── Tamaños de los widgets ── */
+    /* Tamaño base del widget jugador: ~17% de la altura de pantalla, mín 100px */
+    int mySize = (int)(SCREEN_H * 0.17f);
+    if (mySize < 100) mySize = 100;
+    if (mySize > 200) mySize = 200;
 
-        if (p->blocking)
-            DrawText("[BLK]", 8 + BAR_W + 38, hudY, 10, (Color){80,200,255,255});
+    /* Los enemigos en fase final (1 enemigo) tienen el mismo tamaño que el jugador.
+       Con más enemigos se reduce para caber todos en la esquina inferior derecha. */
+    int enemySize;
+    if (enemyCount <= 1) {
+        enemySize = mySize;                        /* 1v1: mismo tamaño */
+    } else if (enemyCount <= 3) {
+        enemySize = (int)(mySize * 0.65f);
+    } else {
+        enemySize = (int)(mySize * 0.50f);
+    }
+    if (enemySize < 52) enemySize = 52;
 
-        hudY += BAR_H + 6;
+    /* ── Widget jugador local — esquina superior izquierda ── */
+    if (myPlayer) {
+        int margin = (int)(mySize * 0.10f); if (margin < 8) margin = 8;
+        int cx = margin + mySize / 2;
+        int cy = margin + mySize / 2;
+        int ci = CharIndexOf(myPlayer->charId);
+        DrawPortraitWidget(cx, cy, mySize,
+                           ci, myPlayer->id,
+                           myPlayer->voltage, myPlayer->voltageMaxed, blinkOn,
+                           myPlayer->stocks, true);
+
+        /* Nombre del jugador debajo */
+        const char *nm = myPlayer->username[0] ? myPlayer->username : "Tú";
+        int nameSz = (int)(mySize * 0.11f); if (nameSz < 10) nameSz = 10;
+        int dotRow = cy + mySize/2 + (int)(mySize*0.06f) + 4 + (int)(mySize*0.06f)*2 + 4;
+        DrawText(nm, cx - MeasureText(nm, nameSz)/2, dotRow + 2, nameSz, YELLOW);
+    }
+
+    /* ── Widgets enemigos — esquina inferior derecha ── */
+    if (enemyCount > 0) {
+        int eMargin = (int)(enemySize * 0.10f); if (eMargin < 6) eMargin = 6;
+        int gap     = (int)(enemySize * 0.12f); if (gap < 4) gap = 4;
+
+        /* Filas: con <=4 enemigos usamos 1 fila; con 5-7 usamos 2 filas */
+        int cols, rows;
+        if (enemyCount <= 4) { cols = enemyCount; rows = 1; }
+        else                 { cols = 4;          rows = 2; }
+
+        /* Esquina inferior derecha */
+        int totalW = cols * enemySize + (cols - 1) * gap;
+        int totalH = rows * enemySize + (rows - 1) * gap;
+
+        /* Espacio para los puntos de stock bajo cada widget */
+        int stockDotExtra = (int)(enemySize * 0.06f) * 2 + 8;
+
+        int startX = SCREEN_W - eMargin - totalW + enemySize / 2;
+        int startY = SCREEN_H - eMargin - stockDotExtra - totalH + enemySize / 2;
+
+        for (int e = 0; e < enemyCount; e++) {
+            Player *ep = enemies[e];
+            int row = e / cols;
+            int col = e % cols;
+            int ecx = startX + col * (enemySize + gap);
+            int ecy = startY + row * (enemySize + gap);
+            int ci  = CharIndexOf(ep->charId);
+            DrawPortraitWidget(ecx, ecy, enemySize,
+                               ci, ep->id,
+                               ep->voltage, ep->voltageMaxed, blinkOn,
+                               ep->stocks, false);
+        }
     }
 
     if (is_spectator) {
         DrawText("SPECTATOR", SCREEN_W - 90, 8, 12, (Color){80,200,255,255});
-    } else if (my_id > 0) {
-        char txt[80];
-        const Player *me = NULL;
-        for (int s = 0; s < MAX_PLAYERS; s++)
-            if (players[s].active && players[s].id == my_id) { me = &players[s]; break; }
-        if (me && me->username[0])
-            snprintf(txt, sizeof(txt), "%s", me->username);
-        else
-            snprintf(txt, sizeof(txt), "Player %d", my_id);
-        DrawText(txt, SCREEN_W - (int)(MeasureText(txt, 12) + 4), 8, 12, YELLOW);
-    } else if (no_id_frames > 60) {
-        DrawText("Connecting...", SCREEN_W - 100, 8, 12, (Color){220,140,40,255});
-        if (ws_player_count() > 0)
-            DrawText("Waiting for server...", SCREEN_W / 2 - 80, SCREEN_H / 2, 16,
-                     (Color){200,200,200,180});
-    } else {
-        DrawText("Connecting...", SCREEN_W - 100, 8, 12, (Color){220,140,40,255});
+    } else if (my_id <= 0) {
+        if (no_id_frames > 60) {
+            DrawText("Connecting...", SCREEN_W - 100, 8, 12, (Color){220,140,40,255});
+            if (ws_player_count() > 0)
+                DrawText("Waiting for server...", SCREEN_W / 2 - 80, SCREEN_H / 2, 16,
+                         (Color){200,200,200,180});
+        } else {
+            DrawText("Connecting...", SCREEN_W - 100, 8, 12, (Color){220,140,40,255});
+        }
     }
 
     /* Durante victory_pending: titulo flotante */
@@ -2029,6 +2337,12 @@ static void MainLoop(void) {
             victory_pending   = true;
             winner_id         = wid;
             victory_msg_delay = VICTORY_MSG_DELAY;
+
+            /* Apagar outline y YOU de todos los jugadores */
+            for (int s = 0; s < MAX_PLAYERS; s++) {
+                players[s].outlineTimer = 0.0f;
+                players[s].youTimer     = 0.0f;
+            }
 
             snprintf(winner_message, sizeof(winner_message),
                      (vstate == 1) ? "VICTORY" : "DERROTA");

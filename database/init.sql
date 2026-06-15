@@ -152,6 +152,27 @@ CREATE TABLE IF NOT EXISTS tournament_matches (
 
 CREATE INDEX IF NOT EXISTS idx_tournament_matches ON tournament_matches(tournament_id);
 
+-- ─── Tournament placements ────────────────────────────────
+CREATE TABLE IF NOT EXISTS tournament_placements (
+    id            SERIAL PRIMARY KEY,
+    tournament_id INTEGER NOT NULL REFERENCES tournaments(id) ON DELETE CASCADE,
+    user_id       INTEGER REFERENCES users(id) ON DELETE SET NULL,
+    client_id     INTEGER NOT NULL,
+    placement     INTEGER NOT NULL,
+    stocks_left   INTEGER NOT NULL DEFAULT 0,
+    eliminated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    counted       BOOLEAN NOT NULL DEFAULT FALSE,
+    UNIQUE (tournament_id, user_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_tournament_placements_tournament
+    ON tournament_placements (tournament_id);
+
+CREATE TABLE IF NOT EXISTS match_stat_writes (
+    match_id   INTEGER PRIMARY KEY REFERENCES matches(id) ON DELETE CASCADE,
+    written_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
 -- ─── Logros / Gamificación ────────────────────────────────
 CREATE TABLE IF NOT EXISTS achievements (
     id          SERIAL PRIMARY KEY,
