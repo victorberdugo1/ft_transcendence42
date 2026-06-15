@@ -56,10 +56,16 @@ function removeFromLobbyQueue(cid) {
 }
 
 function getLobbyQueue() {
+    // Build a set of dbUserIds that are currently sitting in the tournament
+    // room (pre-launch). These players must never be auto-matched into a 1v1
+    // while they are waiting for the tournament to start.
+    const _tournamentDbIds = new Set(tournamentRoom.players.map(e => e.dbUserId));
+
     return _lobbyJoinOrder.filter(cid =>
         players[cid]?.dbUserId != null &&
         !playerSession.has(cid) &&
-        players[cid]?._seekingMatch !== false
+        players[cid]?._seekingMatch !== false &&
+        !_tournamentDbIds.has(players[cid].dbUserId)
     );
 }
 
@@ -355,6 +361,16 @@ function createSession(mode, playerIds, extra = {}) {
 
     gameSessions.set(id, session);
     return session;
+}
+
+const FIGHT_START_DELAY_MS = 3000; // matches client-side countdown duration
+
+function armFightStartTimer(session) {
+    setTimeout(() => {
+        if (session && !session.finished) {
+            session.fightStarted = true;
+        }
+    }, FIGHT_START_DELAY_MS);
 }
 
 function startBrawl(clientIds) {
@@ -653,6 +669,7 @@ async function resolveMatchWinner(session, winnerClientId, loserClientId) {
 
     const winner      = players[winnerClientId];
     const winnerDbId  = winner?.dbUserId ?? null;
+    const winnerStocks = winner?.stocks ?? 0;
     const loserDbId   = session.loserDbId ?? null;
     const loserStocks = session.loserStocks ?? 0;
 

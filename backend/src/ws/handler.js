@@ -252,6 +252,19 @@ function sendWelcomeToPlayer(ws, clientId) {
             const _evictIdx = tournamentRoom.players.findIndex(e => e.dbUserId === players[clientId]?.dbUserId);
             if (_evictIdx !== -1) tournamentRoom.players.splice(_evictIdx, 1);
             console.log(`[TOURNAMENT-ROOM] evicted stale entry for dbUserId ${players[clientId]?.dbUserId} on welcome`);
+            // Tell the client it is no longer in a tournament room so that
+            // ModeTournament clears inTournamentRoom from sessionStorage and
+            // doesn't attempt tournament_join again on the next reload.
+            if (ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({
+                    type:         'tournament_room_update',
+                    players:      [],
+                    started:      false,
+                    tournamentId: null,
+                    maxPlayers:   tournamentRoom.maxPlayers,
+                    leftRoom:     true,
+                }));
+            }
         } else {
             ws.send(JSON.stringify({
                 type:         'tournament_room_update',
@@ -1023,6 +1036,16 @@ async function onConnection(ws, req) {
                     }
                 }
                 if (liveCid !== null) {
+                    // Skip anyone already inside an active session (1v1/training).
+                    // Pulling them in would silently orphan their current session.
+                    const existingSid = playerSession.get(liveCid);
+                    if (existingSid) {
+                        const existingSess = gameSessions.get(existingSid);
+                        if (existingSess && !existingSess.finished) {
+                            console.log(`[TOURNAMENT-ROOM] launch: skipping cid=${liveCid} (dbUserId=${entry.dbUserId}) — already in active session ${existingSid}`);
+                            continue;
+                        }
+                    }
                     participantIds.push(liveCid);
                     // Keep the room entry's clientId in sync with the live slot
                     // we're about to start the tournament with.
