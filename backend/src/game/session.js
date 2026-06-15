@@ -42,14 +42,6 @@ const tournamentRoom = {
     maxPlayers:   8,
 };
 
-// tournamentId -> { totalPlayers, eliminationLog: [{clientId, dbUserId, stocks, placement}], finalized: bool }
-const tournamentBrackets = new Map();
-
-// Set of session.id values that have ALREADY had resolveMatchWinner / stat
-// writes applied — guards against any double-invocation path (disconnect +
-// tick + grace-expiry all racing on the same session).
-const resolvedSessions = new Set();
-
 const _lobbyJoinOrder = [];
 
 function addToLobbyQueue(cid) {
@@ -317,8 +309,6 @@ function createPlayer(id, saved, ws) {
     };
 }
 
-const COUNTDOWN_MS = 3000; // must match client-side countdown duration
-
 function createSession(mode, playerIds, extra = {}) {
     const id      = String(nextSessionId++);
     const session = {
@@ -343,6 +333,8 @@ function createSession(mode, playerIds, extra = {}) {
     };
     for (const cid of playerIds) {
         session.playerFlags[cid] = { tookDamage: false, completedCombo: false };
+        playerSession.set(cid, id);
+        removeFromLobbyQueue(cid);
         const p = players[cid];
         session.dbUserIds[cid] = p?.dbUserId ?? null;
         playerSession.set(cid, id);
@@ -361,79 +353,6 @@ function createSession(mode, playerIds, extra = {}) {
 
     gameSessions.set(id, session);
     return session;
-}
-
-// Called whenever a reconnect causes a player's clientId to change while they
-// were already part of an active session (e.g. tournamentRoom remapped
-// clientId for a dbUserId, or a 'join'/'rejoin' path assigns a fresh slot).
-// Keeps session.playerIds, playerSession, session.dbUserIds, session.eliminated,
-// session.playerFlags, session.pendingEliminations, and session.pendingWinner
-// all referencing the SAME (new) clientId, so broadcasts/elimination checks
-// never operate on a stale id.
-function remapSessionPlayerId(oldCid, newCid) {
-    if (oldCid === newCid) return;
-    const sid = playerSession.get(oldCid);
-    if (!sid) return;
-    const session = gameSessions.get(sid);
-    if (!session) { playerSession.delete(oldCid); return; }
-
-    if (session.playerIds.has(oldCid)) {
-        session.playerIds.delete(oldCid);
-        session.playerIds.add(newCid);
-    }
-    if (session.eliminated.has(oldCid)) {
-        session.eliminated.delete(oldCid);
-        session.eliminated.add(newCid);
-    }
-    if (session.playerFlags?.[oldCid]) {
-        session.playerFlags[newCid] = session.playerFlags[oldCid];
-        delete session.playerFlags[oldCid];
-    }
-    if (session.dbUserIds && oldCid in session.dbUserIds) {
-        session.dbUserIds[newCid] = session.dbUserIds[oldCid];
-        delete session.dbUserIds[oldCid];
-    }
-    if (session.pendingEliminations?.[oldCid]) {
-        session.pendingEliminations[newCid] = session.pendingEliminations[oldCid];
-        delete session.pendingEliminations[oldCid];
-    }
-    if (session.pendingWinner) {
-        if (session.pendingWinner.winnerId === oldCid) session.pendingWinner.winnerId = newCid;
-        if (session.pendingWinner.loserId  === oldCid) session.pendingWinner.loserId  = newCid;
-    }
-    if (session.cpuIds) session.cpuIds = session.cpuIds.map(c => c === oldCid ? newCid : c);
-    if (session.cpuId === oldCid) session.cpuId = newCid;
-    if (session.humanId === oldCid) session.humanId = newCid;
-    if (session.cpusEliminated?.has(oldCid)) {
-        session.cpusEliminated.delete(oldCid);
-        session.cpusEliminated.add(newCid);
-    }
-
-    playerSession.delete(oldCid);
-    playerSession.set(newCid, sid);
-
-    const sb = spectatorsBySession.get(sid);
-    if (sb?.has(oldCid)) { sb.delete(oldCid); sb.add(newCid); }
-
-    if (hitstopBySession[sid]) {
-        const hs = hitstopBySession[sid];
-        if (hs.attackerId === oldCid) hs.attackerId = newCid;
-        if (hs.targetId   === oldCid) hs.targetId   = newCid;
-    }
-
-    console.log(`[REMAP] session ${sid}: clientId ${oldCid} -> ${newCid}`);
-}
-
-// Marks the session as "fight live" after the client-side countdown elapses.
-// Used to gate leave permissions: leave is BLOCKED from pairing until this
-// fires (SSS + countdown), then ALLOWED again once the fight is running.
-function armFightStartTimer(session) {
-    setTimeout(() => {
-        if (!gameSessions.has(session.id)) return;
-        if (session.finished) return;
-        session.fightStarted = true;
-        console.log(`[GAME] session ${session.id}: fight live — leave now permitted (forfeit)`);
-    }, COUNTDOWN_MS);
 }
 
 function startBrawl(clientIds) {
@@ -567,23 +486,6 @@ function tryAutoMatch() {
     }
 }
 
-function recordTournamentElimination(session, eliminatedId, eliminatedDbId, stocks) {
-    if (session.mode !== 'tournament' || !session.tournamentId) return;
-    const bracket = tournamentBrackets.get(session.tournamentId);
-    if (!bracket) return;
-    // Avoid duplicate entries for the same clientId (defensive against
-    // double-invocation from disconnect + grace-expiry races).
-    if (bracket.eliminationLog.some(e => e.clientId === eliminatedId)) return;
-    const remainingAfter = session.playerIds.size - session.eliminated.size; // includes this elimination already applied by caller
-    const placement = remainingAfter + 1; // e.g. if 0 remain after this, placement = 1 is reserved for champion (handled separately)
-    bracket.eliminationLog.push({
-        clientId:  eliminatedId,
-        dbUserId:  eliminatedDbId ?? session.dbUserIds?.[eliminatedId] ?? null,
-        stocks:    stocks ?? 0,
-        placement, // higher number = eliminated earlier; champion gets placement 1 in finalizeTournament
-    });
-}
-
 function handleElimination(loser) {
     const sessionId = playerSession.get(loser.id);
     const session   = sessionId ? gameSessions.get(sessionId) : null;
@@ -681,22 +583,7 @@ function cleanupSession(session, winnerClientId) {
     }, CLEANUP_LINGER_MS);
     delete hitstopBySession[session.id];
 
-    // Only reset the global confirmedStageId fallback once NO sessions are
-    // pending creation. Checking "every session is finished" is racy if a new
-    // session is created in the same tick this one finishes (the new session
-    // would already be in gameSessions as !finished, so the check below is
-    // safe) — but to be extra defensive, only reset if this was genuinely the
-    // last session AND no session.stageId is pending use.
-    const stillActive = [...gameSessions.values()].some(s => !s.finished);
-    if (!stillActive) confirmedStageId = -1;
-
-    // If this was a tournament session that's being cleaned up WITHOUT having
-    // gone through finalizeTournament (e.g. solo-guard ejection before any
-    // fight), drop its bracket bookkeeping so it doesn't leak.
-    if (session.tournamentId && tournamentBrackets.has(session.tournamentId)) {
-        const bracket = tournamentBrackets.get(session.tournamentId);
-        if (!bracket.finalized) tournamentBrackets.delete(session.tournamentId);
-    }
+    if ([...gameSessions.values()].every(s => s.finished)) confirmedStageId = -1;
 
     for (const cid of session.playerIds) {
         playerSession.delete(cid);
@@ -751,13 +638,10 @@ async function resolveMatchWinner(session, winnerClientId, loserClientId) {
     resolvedSessions.add(session.id);
     session.finished = true;
 
-    // Resolve identity from the session-time snapshot FIRST — players[] may
-    // already be deleted (disconnect-during-resolution race).
-    const winner       = players[winnerClientId];
-    const winnerDbId   = winner?.dbUserId ?? session.dbUserIds?.[winnerClientId] ?? null;
-    const loserDbId    = session.loserDbId ?? session.dbUserIds?.[loserClientId] ?? null;
-    const loserStocks  = session.loserStocks ?? 0;
-    const winnerStocks = winner?.stocks ?? 0;
+    const winner      = players[winnerClientId];
+    const winnerDbId  = winner?.dbUserId ?? null;
+    const loserDbId   = session.loserDbId ?? null;
+    const loserStocks = session.loserStocks ?? 0;
 
     broadcastToSession(session, { type: 'victory', winner: winnerClientId, loser: loserClientId, reloadRequired: true });
 

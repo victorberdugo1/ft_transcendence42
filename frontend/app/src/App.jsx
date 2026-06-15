@@ -538,30 +538,22 @@ function GameShell({ user, gameMode, gameOpts, inLobby, onBackToLobby, grace, on
             disabled={
               !!(grace && grace.clientId !== (window._myClientId ?? -1)) ||
               !!window._victoryActive ||
-              leaveAckPending ||
-              // PHASE GUARD: once paired (match_start received) and until the
-              // fight goes live (countdown elapses, session.fightStarted
-              // becomes true server-side), "Back to lobby" must be disabled —
-              // leaving here breaks the opponent's match setup. Before
-              // pairing (paired===false) and once the fight is live
-              // (leaveLocked===false) the button is enabled.
-              (paired && leaveLocked)
+              // Lock during SSS pre-match in versus — clicking Back here
+              // dissolves the pair and leaves the partner stuck with no opponent.
+              // The button re-enables once match_start fires (matchStarted=true).
+              (!matchStarted && gameMode === "versus")
             }
             title={
               window._victoryActive
                 ? "Victory animation in progress…"
                 : grace && grace.clientId !== (window._myClientId ?? -1)
                   ? "Your rival has a few seconds to reconnect..."
-                  : leaveAckPending
-                    ? "Leaving…"
-                    : (paired && leaveLocked)
-                      ? "Match is starting — please wait…"
-                      : !matchStarted && gameMode === "versus"
-                        ? "Waiting for a match…"
-                        : undefined
+                  : !matchStarted && gameMode === "versus"
+                    ? "Waiting for a match…"
+                    : undefined
             }
           >
-            {leaveAckPending ? "Leaving…" : "Back to lobby"}
+            Back to lobby
           </button>
         )}
         <div className="game-user">
