@@ -13,7 +13,7 @@ const {
     createPlayer, startDuel, startTournament, tryAutoMatch,
     handleElimination, resolveMatchWinner, getLastWatchedSession,
     addToLobbyQueue, removeFromLobbyQueue, getLobbyQueue,
-    remapSessionPlayerId, resetTournamentRoom, resolveTournamentGraceExpiry,
+    resetTournamentRoom, resolveTournamentGraceExpiry,
     tournamentBrackets,
     MAX_PLAYERS, GHOST_TTL,
     ATTACK_RANGE, ATTACK_RANGE_Y, DASH_ATTACK_RANGE_X,

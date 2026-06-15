@@ -6,6 +6,8 @@ FROM node:20-alpine
 
 WORKDIR /app
 
+RUN apk add --no-cache ca-certificates python3 make g++
+
 # ============================================================
 # Instalar dependencias (capa cacheable)
 # IMPORTANTE: el contexto ya es /backend (por docker-compose)

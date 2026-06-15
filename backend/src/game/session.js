@@ -29,6 +29,8 @@ const playerSession       = new Map();
 const playerCharSelected  = new Map();
 const hitstopBySession    = {};
 const spectatorsBySession = new Map();
+const tournamentBrackets  = new Map();
+const resolvedSessions    = new Set();
 
 let nextClientId     = 1;
 let nextSessionId    = 1;
@@ -1159,7 +1161,7 @@ module.exports = {
     tryAutoMatch, handleElimination, resolveMatchWinner, cleanupSession, getLastWatchedSession,
     addToLobbyQueue, removeFromLobbyQueue, getLobbyQueue,
     disconnectPlayer,
-    remapSessionPlayerId, resetTournamentRoom, resolveTournamentGraceExpiry,
+    resetTournamentRoom, resolveTournamentGraceExpiry,
     tournamentRoom,
     MAX_PLAYERS, GHOST_TTL,
     ATTACK_RANGE, ATTACK_RANGE_Y, DASH_ATTACK_RANGE_X,
