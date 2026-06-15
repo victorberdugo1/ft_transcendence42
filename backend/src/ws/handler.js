@@ -33,6 +33,29 @@ function liveWsForEntry(entry) {
     return null;
 }
 
+// Removes a player from the pre-tournament lobby room by dbUserId (if present)
+// and notifies the remaining room members of the updated player list.
+// No-op if the tournament has already started or the player isn't in the room.
+function removeFromTournamentRoom(dbUserId) {
+    if (tournamentRoom.started) return;
+    const idx = tournamentRoom.players.findIndex(p => p.dbUserId === dbUserId);
+    if (idx === -1) return;
+    tournamentRoom.players.splice(idx, 1);
+
+    const roomMsg = JSON.stringify({
+        type: 'tournament_room_update',
+        players:      tournamentRoom.players,
+        started:      tournamentRoom.started,
+        tournamentId: tournamentRoom.tournamentId,
+        maxPlayers:   tournamentRoom.maxPlayers,
+    });
+    for (const entry of tournamentRoom.players) {
+        const ws = liveWsForEntry(entry);
+        if (ws) ws.send(roomMsg);
+    }
+    console.log(`[TOURNAMENT-ROOM] ${dbUserId} removed — ${tournamentRoom.players.length}/${tournamentRoom.maxPlayers}`);
+}
+
 function setupWebSocket(server, wss) {
     server.on('upgrade', (req, socket, head) => {
         if (req.url === '/ws') wss.handleUpgrade(req, socket, head, ws => wss.emit('connection', ws, req));

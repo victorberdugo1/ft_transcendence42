@@ -488,6 +488,17 @@ function tryAutoMatch() {
     }
 }
 
+// Records an eliminated player into the tournament bracket's eliminationLog
+// so finalizeTournament can assign placements/losses afterwards. No-op for
+// non-tournament sessions or sessions without a tournamentId/bracket.
+function recordTournamentElimination(session, clientId, dbUserId, stocks) {
+    if (!session || session.mode !== 'tournament') return;
+    const bracket = tournamentBrackets.get(session.tournamentId);
+    if (!bracket) return;
+    if (!bracket.eliminationLog) bracket.eliminationLog = [];
+    bracket.eliminationLog.push({ clientId, dbUserId, stocks });
+}
+
 function handleElimination(loser) {
     const sessionId = playerSession.get(loser.id);
     const session   = sessionId ? gameSessions.get(sessionId) : null;
