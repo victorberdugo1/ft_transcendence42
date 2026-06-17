@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 const CHAR_PORTRAITS = {
   eld: "data/eldwin_portrait.jpg",
@@ -623,14 +623,14 @@ export default function FightLobby({
   }, [user.id, onLogout]);
 
   // ── Game entry guard ──────────────────────────────────────────────────────
-  function handleEnterGame(mode, opts = {}) {
+  const handleEnterGame = useCallback((mode, opts = {}) => {
     // Block all game entry while a leave-grace is pending (the server still has
     // us in an active session for up to 5s after pressing Back to lobby).
     // Entering training in this window would reconnectWS() and destroy the session.
     if (graceActive) return;
     setSessionError("");
     onEnterGame(mode, opts);
-  }
+  }, [graceActive, onEnterGame]);
 
   // ── Back guard ────────────────────────────────────────────────────────────
   function handleBack() {

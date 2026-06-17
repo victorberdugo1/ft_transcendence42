@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import logoImage from "../assets/logo.png";
 import Login from "./pages/auth/Login.jsx";
 import Privacy from "./pages/auth/Privacy.jsx";
@@ -530,7 +530,7 @@ function GameShell({ user, gameMode, gameOpts, inLobby, onBackToLobby, grace, on
       style={inLobby ? { visibility: "hidden", pointerEvents: "none" } : undefined}
     >
       <div className="game-toolbar">
-        {gameMode !== "tournament" && (
+        {(
           <button
             type="button"
             className="logout-button"
@@ -855,12 +855,12 @@ export default function App() {
     if (typeof window.reconnectWS === "function") window.reconnectWS();
   }
 
-  function handleEnterGame(mode, opts = {}) {
+  const handleEnterGame = useCallback((mode, opts = {}) => {
     setGameMode(mode);
     setGameOpts(opts);
     setGrace(null);
     setPage("game");
-  }
+  }, []);
 
   // Player clicks "Rejoin fight" from the GraceBanner
   function handleRejoinFight() {
