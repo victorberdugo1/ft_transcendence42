@@ -309,6 +309,41 @@ static int PlayerColorIndex(const Player *p) {
     return (p->slotIndex % 7) + 1;
 }
 
+/* Color del cloth/waistcloth de un jugador:
+   - El jugador local (p->id == my_id) NUNCA se tiñe: siempre conserva su
+     color original de la config (@CLOTH/@WAISTCLOTH).
+   - Para los enemigos: el "personaje repetido" se evalúa contra TODOS los
+     jugadores activos (incluido el jugador local). Si tú y un enemigo
+     elegís el mismo charId, eso ya cuenta como repetición y el enemigo
+     se tiñe (para diferenciarlo de tu propio personaje), aunque tú nunca
+     cambies de color.
+   - Si un enemigo no comparte su charId con ningún otro jugador activo
+     (ni contigo ni con otro enemigo), no se tiñe (color original).
+   - Cuando sí toca tintar, se usa EXACTAMENTE el mismo color que ese
+     jugador ya tiene asignado para el outline/HUD (PlayerColorIndex),
+     para que la tela coincida con su color de identificación y no un
+     índice distinto inventado aparte.
+   Devuelve true y escribe *outColor si corresponde tintar; false si debe
+   dejarse el color original de la config. */
+static bool PlayerClothTintColor(const Player *p, Color *outColor) {
+    if (p->id == my_id) return false;   /* el jugador local nunca se tiñe */
+    if (!p->charId[0]) return false;
+
+    int totalMatches = 0; /* cuántos jugadores activos (incluido yo) comparten este charId, sin contar a p */
+    for (int s = 0; s < MAX_PLAYERS; s++) {
+        Player *q = &players[s];
+        if (!q->active) continue;
+        if (q->id == p->id) continue;
+        if (strcmp(q->charId, p->charId) != 0) continue;
+        totalMatches++;
+    }
+
+    if (totalMatches == 0) return false; /* personaje único en la partida: color original */
+
+    if (outColor) *outColor = PLAYER_COLORS[PlayerColorIndex(p)];
+    return true;
+}
+
 static int    no_id_frames = 0;
 #define NO_ID_SPECTATOR_FRAMES 180
 
@@ -1722,16 +1757,33 @@ static void DrawGame(void) {
 
         /* ── Outline shader — solo enemigos, solo durante outlineTimer ── */
         bool doOutline = (g_shdrOutline.id > 0 && p->outlineTimer > 0.0f && p->id != my_id);
-        if (p->id != my_id && p->character && p->character->clothPanels &&
+
+        /* Tinte de color del cloth/waistcloth: el jugador local nunca se tiñe
+           (siempre su color de config). Los enemigos se tiñen solo si hay
+           2+ enemigos activos con el mismo charId (personaje repetido entre
+           rivales); si no, también conservan su color original. */
+        Color tintCol;
+        bool  shouldTint = PlayerClothTintColor(p, &tintCol);
+        if (p->character && p->character->clothPanels &&
                 p->character->clothPanels->loaded) {
-            Color clothCol = PLAYER_COLORS[PlayerColorIndex(p)];
             ClothSystem *cs = p->character->clothPanels;
             for (int _ci = 0; _ci < cs->panelCount; _ci++)
-                cs->panels[_ci].color = clothCol;
+                cs->panels[_ci].color = shouldTint ? tintCol : cs->panels[_ci].baseColor;
+        }
+        if (p->character && p->character->waistCloths &&
+                p->character->waistCloths->loaded) {
+            WaistClothSystem *wcs = p->character->waistCloths;
+            for (int _wi = 0; _wi < wcs->clothCount; _wi++) {
+                WaistCloth *wc = &wcs->cloths[_wi];
+                wc->color       = shouldTint ? tintCol : wc->baseColor;
+                wc->colorInside = shouldTint ? tintCol : wc->baseColorInside;
+            }
         }
         /* Si hay outline, ocultamos la tela durante el draw con shader para que
-           el shader no la sobreescriba, y la redibujamos después sin shader. */
-        ClothSystem *clothToRedraw = NULL;
+           el shader no la sobreescriba (quedaría blanca/con el efecto del
+           shader), y la redibujamos después sin shader con su color real. */
+        ClothSystem      *clothToRedraw      = NULL;
+        WaistClothSystem *waistClothToRedraw = NULL;
         Vector3      clothWorldPos = {0};
         Matrix       clothWorldRot = MatrixIdentity();
         Vector3      clothWorldPiv = {0};
@@ -1745,6 +1797,16 @@ static void DrawGame(void) {
             clothCenter   = Vector3Add(p->character->worldPosition, p->character->autoCenter);
             for (int _ci = 0; _ci < clothToRedraw->panelCount; _ci++)
                 clothToRedraw->panels[_ci].visible = false;
+        }
+        if (doOutline && p->character && p->character->waistCloths &&
+                p->character->waistCloths->loaded) {
+            waistClothToRedraw = p->character->waistCloths;
+            clothWorldPos = p->character->worldPosition;
+            clothWorldRot = MatrixRotateY(p->character->worldRotation);
+            clothWorldPiv = p->character->worldPivot;
+            clothCenter   = Vector3Add(p->character->worldPosition, p->character->autoCenter);
+            for (int _wi = 0; _wi < waistClothToRedraw->clothCount; _wi++)
+                waistClothToRedraw->cloths[_wi].visible = false;
         }
         if (doOutline) {
             int   ci  = PlayerColorIndex(p);
@@ -1766,13 +1828,23 @@ static void DrawGame(void) {
         DrawAnimatedCharacterTransformed(p->character, scene_cam, worldPos, drawRot);
         if (doOutline) EndShaderMode();
 
-        /* Redibujar la tela fuera del shader con su color de jugador */
-        if (clothToRedraw) {
-            for (int _ci = 0; _ci < clothToRedraw->panelCount; _ci++)
-                clothToRedraw->panels[_ci].visible = true;
+        /* Redibujar la tela fuera del shader con su color real (tintado o no) */
+        if (clothToRedraw || waistClothToRedraw) {
+            if (clothToRedraw)
+                for (int _ci = 0; _ci < clothToRedraw->panelCount; _ci++)
+                    clothToRedraw->panels[_ci].visible = true;
+            if (waistClothToRedraw)
+                for (int _wi = 0; _wi < waistClothToRedraw->clothCount; _wi++)
+                    waistClothToRedraw->cloths[_wi].visible = true;
             BeginMode3D(scene_cam);
-            Cloth_Draw(clothToRedraw, scene_cam, clothCenter, true,  clothWorldPos, clothWorldRot, clothWorldPiv);
-            Cloth_Draw(clothToRedraw, scene_cam, clothCenter, false, clothWorldPos, clothWorldRot, clothWorldPiv);
+            if (clothToRedraw) {
+                Cloth_Draw(clothToRedraw, scene_cam, clothCenter, true,  clothWorldPos, clothWorldRot, clothWorldPiv);
+                Cloth_Draw(clothToRedraw, scene_cam, clothCenter, false, clothWorldPos, clothWorldRot, clothWorldPiv);
+            }
+            if (waistClothToRedraw) {
+                WaistCloth_Draw(waistClothToRedraw, scene_cam, clothCenter, true,  clothWorldPos, clothWorldRot, clothWorldPiv);
+                WaistCloth_Draw(waistClothToRedraw, scene_cam, clothCenter, false, clothWorldPos, clothWorldRot, clothWorldPiv);
+            }
             EndMode3D();
         }
 
