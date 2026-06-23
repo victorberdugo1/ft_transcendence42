@@ -37,6 +37,8 @@ app.get('/api/me',        requireAuth, me);
 // ─── Profile routes ───────────────────────────────────────────────────────────
 
 app.get('/api/users/:id',              profile.getProfile);
+app.get('/api/profile/me',             requireAuth, profile.getMyProfileSummary);
+app.patch('/api/profile/avatar',        requireAuth, profile.updateAvatar);
 app.put('/api/profile',                requireAuth, profile.updateProfile);
 app.get('/api/users/:id/stats',        profile.getUserStats);
 app.get('/api/users/:id/history',      profile.getMatchHistory);

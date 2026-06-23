@@ -6,9 +6,11 @@ import Register from "./pages/auth/Register.jsx";
 import Terms from "./pages/auth/Terms.jsx";
 import FightLobby from "./pages/fight/FightLobby.jsx";
 import Lobby from "./pages/lobby/Lobby.jsx";
+import Profile from "./pages/profile/Profile.jsx";
 import "./pages/auth/auth.css";
 import "./pages/fight/fight.css";
 import "./pages/lobby/lobby.css";
+import "./pages/profile/profile.css";
 
 const GAME_RATIO = 800 / 600;
 
@@ -703,6 +705,8 @@ export default function App() {
         // had joined a tournament room. Without this the server keeps the slot.
         _cleanupMatchState();
         setPage("lobby");
+      } else if (currentPage === "profile") {
+        setPage("lobby");
       } else if (currentPage === "privacy" || currentPage === "terms") {
         setPage(legalBackPageRef.current || "lobby");
       } else if (authStatusRef.current === "authenticated") {
@@ -959,7 +963,7 @@ export default function App() {
   // GameShell MUST stay mounted across lobby / fightLobby / game pages so the
   // Emscripten WASM module is never torn down (re-initialising it crashes mainLoop).
   // It is hidden (visibility:hidden) whenever page !== "game".
-  const gameActive = page === "lobby" || page === "fightLobby" || page === "game";
+  const gameActive = page === "lobby" || page === "profile" || page === "fightLobby" || page === "game";
   const myClientId = window._myClientId ?? -1;
 
   return (
@@ -994,8 +998,15 @@ export default function App() {
           <Lobby
             user={user}
             onPlay={() => setPage("fightLobby")}
+            onProfile={() => setPage("profile")}
             onLogout={handleLogout}
           />
+        </div>
+      )}
+
+      {page === "profile" && (
+        <div style={{ position: "fixed", inset: 0, zIndex: 10 }}>
+          <Profile onBack={() => setPage("lobby")} />
         </div>
       )}
 

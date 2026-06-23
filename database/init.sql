@@ -93,6 +93,8 @@ CREATE TABLE IF NOT EXISTS matches (
     score2     INTEGER     DEFAULT 0 CHECK (score2 >= 0),
     winner_id  INTEGER     REFERENCES users(id) ON DELETE SET NULL,
     game_type  VARCHAR(50) DEFAULT 'brawler',
+    player1_char_id VARCHAR(20),
+    player2_char_id VARCHAR(20),
     played_at  TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     ended_at   TIMESTAMPTZ,
     duration_s INTEGER     CHECK (duration_s IS NULL OR duration_s >= 0),
