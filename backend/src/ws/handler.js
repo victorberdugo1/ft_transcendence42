@@ -819,6 +819,33 @@ async function onConnection(ws, req) {
                 : null;
 
             if (!leavingSession || leavingSession.finished) {
+                // LOBBY-PAIR GUARD: a real gameSession doesn't exist yet (we're
+                // still pre-match_start), but stage_select may have already
+                // paired this client with a partner by lobbyQueue adjacency
+                // (see the stage_select lobby-branch above). If so, this leave
+                // must be rejected exactly like the SSS/countdown guard below —
+                // letting it through here breaks the partner mid char/stage
+                // select and dissolves a pair the UI told them was locked.
+                // This guard does NOT apply to ws 'close' (tab close / F5),
+                // which is handled separately and is always allowed to drop
+                // the pair immediately.
+                const _lobbyQueueNow  = getLobbyQueue();
+                const _myIdx2   = _lobbyQueueNow.indexOf(clientId);
+                const _pairIdx2 = _myIdx2 >= 0 ? (_myIdx2 % 2 === 0 ? _myIdx2 + 1 : _myIdx2 - 1) : -1;
+                const _hasLobbyPartner = _myIdx2 >= 0 &&
+                    _pairIdx2 >= 0 && _pairIdx2 < _lobbyQueueNow.length;
+
+                if (_hasLobbyPartner) {
+                    console.log(`[SERVER] Player ${clientId} leave rejected — lobby pair in progress (stage/char select, no session yet)`);
+                    if (ws.readyState === WebSocket.OPEN) {
+                        ws.send(JSON.stringify({
+                            type: 'leave_ack', paired: true, graced: false, rejected: true,
+                            reason: 'pre_match_locked',
+                        }));
+                    }
+                    return;
+                }
+
                 notifyPairPartner(clientId);
                 removeFromLobbyQueue(clientId);
 
@@ -913,6 +940,24 @@ async function onConnection(ws, req) {
                 console.log(`[SERVER] Player ${clientId} grace expired — forfeit`);
             }, GRACE_MS);
 
+            return;
+        }
+
+        // Player clicked "Rejoin fight" on their own leave-grace banner —
+        // they never actually disconnected (same ws, same clientId), so the
+        // 'rejoin' flow doesn't apply here. Just cancel our own pending
+        // forfeit timer and tell the session we're back, mirroring the same
+        // pendingEliminations cleanup used elsewhere (join/rejoin paths).
+        if (msg.type === 'cancel_leave') {
+            if (!players[clientId]) return;
+            for (const [, sess] of gameSessions.entries()) {
+                if (sess.pendingEliminations?.[clientId]) {
+                    clearTimeout(sess.pendingEliminations[clientId]);
+                    delete sess.pendingEliminations[clientId];
+                    broadcastToSession(sess, { type: 'player_reconnected', clientId });
+                    console.log(`[SERVER] Player ${clientId} cancelled their own leave-grace — rejoining fight`);
+                }
+            }
             return;
         }
 
@@ -1331,7 +1376,13 @@ async function onConnection(ws, req) {
                 resolveTournamentGraceExpiry(disconnectedSession, clientId, disconnectedDbUserId);
                 console.log(`[SERVER] Player ${clientId} disconnected from tournament — immediate forfeit`);
             } else {
-                const GRACE_MS  = 1500;
+                // Was 1500ms — too short for a real reload/reconnect round trip
+                // (WASM re-init + WS handshake routinely takes 2-5s), so an
+                // accidental disconnect (wifi blip, F5) would forfeit the
+                // match before rejoin could land. Matched to the voluntary
+                // leave-mid-match grace (GRACE_MS = 5000 below) so accidental
+                // and voluntary disconnects give the same window to return.
+                const GRACE_MS  = 5000;
                 const expiresAt = Date.now() + GRACE_MS;
 
                 players[clientId] = p;
