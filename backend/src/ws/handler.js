@@ -819,6 +819,33 @@ async function onConnection(ws, req) {
                 : null;
 
             if (!leavingSession || leavingSession.finished) {
+                // LOBBY-PAIR GUARD: a real gameSession doesn't exist yet (we're
+                // still pre-match_start), but stage_select may have already
+                // paired this client with a partner by lobbyQueue adjacency
+                // (see the stage_select lobby-branch above). If so, this leave
+                // must be rejected exactly like the SSS/countdown guard below —
+                // letting it through here breaks the partner mid char/stage
+                // select and dissolves a pair the UI told them was locked.
+                // This guard does NOT apply to ws 'close' (tab close / F5),
+                // which is handled separately and is always allowed to drop
+                // the pair immediately.
+                const _lobbyQueueNow  = getLobbyQueue();
+                const _myIdx2   = _lobbyQueueNow.indexOf(clientId);
+                const _pairIdx2 = _myIdx2 >= 0 ? (_myIdx2 % 2 === 0 ? _myIdx2 + 1 : _myIdx2 - 1) : -1;
+                const _hasLobbyPartner = _myIdx2 >= 0 &&
+                    _pairIdx2 >= 0 && _pairIdx2 < _lobbyQueueNow.length;
+
+                if (_hasLobbyPartner) {
+                    console.log(`[SERVER] Player ${clientId} leave rejected — lobby pair in progress (stage/char select, no session yet)`);
+                    if (ws.readyState === WebSocket.OPEN) {
+                        ws.send(JSON.stringify({
+                            type: 'leave_ack', paired: true, graced: false, rejected: true,
+                            reason: 'pre_match_locked',
+                        }));
+                    }
+                    return;
+                }
+
                 notifyPairPartner(clientId);
                 removeFromLobbyQueue(clientId);
 
@@ -905,10 +932,32 @@ async function onConnection(ws, req) {
             console.log(`[SERVER] Player ${clientId} left mid-match — grace period started (${GRACE_MS}ms)`);
 
             leavingSession.pendingEliminations[clientId] = setTimeout(() => {
-                resolveGraceExpiry(leavingSession, clientId, null);
+                if (leavingSession.mode === 'tournament') {
+                    resolveTournamentGraceExpiry(leavingSession, clientId, null);
+                } else {
+                    resolveGraceExpiry(leavingSession, clientId, null);
+                }
                 console.log(`[SERVER] Player ${clientId} grace expired — forfeit`);
             }, GRACE_MS);
 
+            return;
+        }
+
+        // Player clicked "Rejoin fight" on their own leave-grace banner —
+        // they never actually disconnected (same ws, same clientId), so the
+        // 'rejoin' flow doesn't apply here. Just cancel our own pending
+        // forfeit timer and tell the session we're back, mirroring the same
+        // pendingEliminations cleanup used elsewhere (join/rejoin paths).
+        if (msg.type === 'cancel_leave') {
+            if (!players[clientId]) return;
+            for (const [, sess] of gameSessions.entries()) {
+                if (sess.pendingEliminations?.[clientId]) {
+                    clearTimeout(sess.pendingEliminations[clientId]);
+                    delete sess.pendingEliminations[clientId];
+                    broadcastToSession(sess, { type: 'player_reconnected', clientId });
+                    console.log(`[SERVER] Player ${clientId} cancelled their own leave-grace — rejoining fight`);
+                }
+            }
             return;
         }
 
@@ -917,6 +966,9 @@ async function onConnection(ws, req) {
                 if (players[clientId]?.ws?.readyState === WebSocket.OPEN)
                     players[clientId].ws.send(JSON.stringify({ type: 'tournament_room_error', reason: 'not_authenticated' }));
                 return;
+            }
+            if (!players[clientId]) {
+                await promoteToPlayer(null, false);
             }
             if (tournamentRoom.started) {
                 // If started but the tournament session is already finished/gone,
@@ -953,7 +1005,15 @@ async function onConnection(ws, req) {
                         if (players[clientId]) players[clientId].username = username;
                     } catch (_) {}
                 }
-                tournamentRoom.players.push({ clientId, dbUserId, username });
+                const _dupIdx = tournamentRoom.players.findIndex(p => p.dbUserId === dbUserId);
+                if (_dupIdx === -1) {
+                    tournamentRoom.players.push({ clientId, dbUserId, username });
+                } else {
+                    tournamentRoom.players[_dupIdx].clientId = clientId;
+                }
+            } else {
+                const _existing = tournamentRoom.players.find(p => p.dbUserId === dbUserId);
+                if (_existing) _existing.clientId = clientId;
             }
             const roomMsg = JSON.stringify({
                 type: 'tournament_room_update',
@@ -975,6 +1035,10 @@ async function onConnection(ws, req) {
             const idx = tournamentRoom.players.findIndex(p => p.dbUserId === dbUserId);
             if (idx === -1) return;
             tournamentRoom.players.splice(idx, 1);
+
+            if (!players[clientId]) {
+                await promoteToPlayer(null, true);
+            }
 
             // Restore the player to normal lobby-seeking state.
             // They joined with seekingMatch:false — undo that so autoMatch works if they switch modes.
@@ -1015,6 +1079,9 @@ async function onConnection(ws, req) {
                 if (players[clientId]?.ws?.readyState === WebSocket.OPEN)
                     players[clientId].ws.send(JSON.stringify({ type: 'tournament_room_error', reason: 'not_authenticated' }));
                 return;
+            }
+            if (!players[clientId]) {
+                await promoteToPlayer(null, false);
             }
             if (tournamentRoom.started) {
                 if (players[clientId]?.ws?.readyState === WebSocket.OPEN)
@@ -1306,27 +1373,16 @@ async function onConnection(ws, req) {
                 resolveMatchWinner(disconnectedSession, winnerId, loserId ?? clientId);
                 playerCharSelected.delete(clientId);
             } else if (disconnectedSession.mode === 'tournament') {
-                const remaining = [...disconnectedSession.playerIds].filter(id => id !== clientId && !disconnectedSession.eliminated.has(id));
-                disconnectedSession.eliminated.add(clientId);
-                disconnectedSession.loserDbId   = disconnectedDbUserId;
-                disconnectedSession.loserStocks  = p.stocks ?? 0;
-                playerCharSelected.delete(clientId);
-                delete lastState[clientId];
-                broadcastToSession(disconnectedSession, { type: 'player_eliminated', clientId });
-                broadcastToSession(disconnectedSession, { type: 'leave_grace_expired', clientId });
-                if (remaining.length === 1) {
-                    resolveMatchWinner(disconnectedSession, remaining[0], clientId);
-                } else if (remaining.length === 0) {
-                    disconnectedSession.finished = true;
-                    broadcastToSession(disconnectedSession, { type: 'match_end', winner: null, loser: clientId, matchId: null, mode: disconnectedSession.mode });
-                    setTimeout(() => {
-                        broadcastToSession(disconnectedSession, { type: 'match_finished', sessionId: disconnectedSession.id });
-                        gameSession.cleanupSession(disconnectedSession, null);
-                    }, 6000);
-                }
+                resolveTournamentGraceExpiry(disconnectedSession, clientId, disconnectedDbUserId);
                 console.log(`[SERVER] Player ${clientId} disconnected from tournament — immediate forfeit`);
             } else {
-                const GRACE_MS  = 1500;
+                // Was 1500ms — too short for a real reload/reconnect round trip
+                // (WASM re-init + WS handshake routinely takes 2-5s), so an
+                // accidental disconnect (wifi blip, F5) would forfeit the
+                // match before rejoin could land. Matched to the voluntary
+                // leave-mid-match grace (GRACE_MS = 5000 below) so accidental
+                // and voluntary disconnects give the same window to return.
+                const GRACE_MS  = 5000;
                 const expiresAt = Date.now() + GRACE_MS;
 
                 players[clientId] = p;
@@ -1365,6 +1421,11 @@ async function onConnection(ws, req) {
 
             const _graceTimer = setTimeout(() => {
                 lobbyReconnectGrace.delete(_graceCid);
+                const _revived = players[_graceCid];
+                if (_revived?.ws && _revived.ws.readyState === WebSocket.OPEN) {
+                    console.log(`[SERVER] Player ${_graceCid} lobby-grace skipped -- slot reclaimed by reconnect`);
+                    return;
+                }
                 notifyPairPartner(_graceCid);
                 removeFromLobbyQueue(_graceCid);
                 if (_graceSeek) notifyNewLobbyHost();

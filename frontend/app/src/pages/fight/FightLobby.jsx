@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 const CHAR_PORTRAITS = {
   eld: "data/eldwin_portrait.jpg",
@@ -507,6 +507,7 @@ export default function FightLobby({
   onPrivacy,
   onTerms,
   graceActive = false,
+  sssLocked   = false,
 }) {
   const [stats,         setStats]         = useState(null);
   const [logoutLoading, setLogoutLoading] = useState(false);
@@ -623,19 +624,18 @@ export default function FightLobby({
   }, [user.id, onLogout]);
 
   // ── Game entry guard ──────────────────────────────────────────────────────
-  function handleEnterGame(mode, opts = {}) {
+  const handleEnterGame = useCallback((mode, opts = {}) => {
     // Block all game entry while a leave-grace is pending (the server still has
     // us in an active session for up to 5s after pressing Back to lobby).
     // Entering training in this window would reconnectWS() and destroy the session.
     if (graceActive) return;
     setSessionError("");
     onEnterGame(mode, opts);
-  }
+  }, [graceActive, onEnterGame]);
 
   // ── Back guard ────────────────────────────────────────────────────────────
   function handleBack() {
-    // Blocked while a grace is active — we could still rejoin the fight.
-    if (graceActive) return;
+    if (graceActive || sssLocked) return;
     onBack();
   }
 
@@ -656,17 +656,20 @@ export default function FightLobby({
     <div className="auth-page">
       <div className="auth-card lobby-card" style={{ position: "relative" }}>
 
-        {/* Back button — top-right corner, disabled during grace period */}
-        <button
-          type="button"
-          className="fight-lobby-back-button"
-          onClick={handleBack}
-          disabled={graceActive}
-          title={graceActive ? "Waiting for the server to release your previous match…" : undefined}
-          style={{ position: "absolute", top: "1rem", right: "1rem" }}
-        >
-          ← Go back
-        </button>
+        {/* Back button — hidden while SSS pair is active (stage_confirmed
+             received, match_start not yet) or grace is pending */}
+        {!sssLocked && (
+          <button
+            type="button"
+            className="fight-lobby-back-button"
+            onClick={handleBack}
+            disabled={graceActive}
+            title={graceActive ? "Waiting for the server to release your previous match…" : undefined}
+            style={{ position: "absolute", top: "1rem", right: "1rem" }}
+          >
+            ← Go back
+          </button>
+        )}
 
         <p className="auth-eyebrow">ft_transcendence</p>
         <h1 className="auth-title">Fight Lobby</h1>

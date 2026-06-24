@@ -405,6 +405,11 @@ function connectWS() {
         } else if (msg.type === 'stage_confirmed') {
             window._confirmedStageId = msg.stageId | 0;
             try { sessionStorage.setItem('confirmedStageId', String(msg.stageId | 0)); } catch (_) {}
+            // Signal that a lobby pair has formed (host selected stage) —
+            // the Back button must be locked until pair_dissolved or match_start.
+            // _matchSession is null here (only set on match_start), so the
+            // guard was always true and has been removed.
+            window.dispatchEvent(new CustomEvent('lobby_paired'));
 
         } else if (msg.type === 'stage_reset') {
             window._confirmedStageId = undefined;
@@ -412,6 +417,8 @@ function connectWS() {
                 sessionStorage.removeItem('confirmedStageId');
                 _sssClear();
             } catch (_) {}
+            // Pair dissolved server-side (partner left before match_start).
+            window.dispatchEvent(new CustomEvent('lobby_unpaired'));
 
         } else if (msg.type === 'host_status') {
             window._isHost = !!msg.isHost;
@@ -570,7 +577,16 @@ function connectWS() {
         } else if (msg.type === 'leave_ack') {
             // Server's authoritative answer to our 'leave' request — tells us
             // whether we were paired/in-session (graced) or free (instant).
-            window._leaveAck = { paired: !!msg.paired, graced: !!msg.graced, expiresAt: msg.expiresAt ?? null, sessionId: msg.sessionId ?? null };
+            // BUG FIX: `rejected`/`reason` were previously dropped here, so
+            // App.jsx's `if (detail.rejected)` branch could never fire — the
+            // UI always treated a leave as accepted and navigated back to the
+            // lobby even when the server had just rejected it (e.g. a lobby
+            // pair in progress during stage/character select).
+            window._leaveAck = {
+                paired: !!msg.paired, graced: !!msg.graced,
+                expiresAt: msg.expiresAt ?? null, sessionId: msg.sessionId ?? null,
+                rejected: !!msg.rejected, reason: msg.reason ?? null,
+            };
             window.dispatchEvent(new CustomEvent('leave_ack', { detail: window._leaveAck }));
 
         } else if (['player_eliminated', 'tournament_waiting', 'tournament_end', 'players_joined', 'player_disconnected', 'player_reconnected'].includes(msg.type)) {
@@ -595,6 +611,7 @@ function connectWS() {
             try {
                 ['charSelectData', 'pendingCharSelect', 'confirmedStageId'].forEach(k => sessionStorage.removeItem(k));
             } catch (_) {}
+            window.dispatchEvent(new CustomEvent('lobby_unpaired'));
             window.dispatchEvent(new CustomEvent('pair_dissolved'));
 
         } else if (msg.type === 'tournament_room_update') {
@@ -688,6 +705,12 @@ async function fetchActiveSessions() {
     return res.json();
 }
 window.fetchActiveSessions = fetchActiveSessions;
+
+function cancelLeaveGrace() {
+    if (window._ws?.readyState === WebSocket.OPEN)
+        window._ws.send(JSON.stringify({ type: 'cancel_leave' }));
+}
+window.cancelLeaveGrace = cancelLeaveGrace;
 
 function sendStageSelect(stageId) {
     window._confirmedStageId = stageId | 0;
