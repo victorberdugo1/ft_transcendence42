@@ -551,6 +551,63 @@ Static pages, no API calls.
 
 ### Profile — `social/profile.js`
 
+#### `GET /api/profile/me` *(auth)*
+
+Returns the authenticated user's profile summary, including global stats from
+`user_stats`, character stats calculated from `matches`, and the best character.
+
+```bash
+curl -k -b cookies.txt https://localhost:8443/api/profile/me
+```
+
+Response (200):
+```json
+{
+  "user": { "id": 42, "username": "player1", "avatar": "character:eld" },
+  "globalStats": { "wins": 3, "losses": 8, "draws": 0, "totalMatches": 11, "winRate": 27.27, "xp": 450, "level": 5 },
+  "bestCharacter": { "charId": "eld", "name": "Eldwin", "wins": 2, "losses": 1, "draws": 0, "totalMatches": 3, "winRate": 66.67, "preview": null },
+  "characters": [],
+  "matchHistory": [
+    {
+      "id": 123,
+      "result": "win",
+      "opponent": { "id": 7, "username": "otherPlayer" },
+      "player": { "id": 42, "username": "player1", "charId": "eld", "characterName": "Eldwin" },
+      "opponentPlayer": { "id": 7, "username": "otherPlayer", "charId": "gab", "characterName": "Gabriel" },
+      "score": { "player": 3, "opponent": 1, "raw": "3 - 1" },
+      "gameType": "brawler",
+      "playedAt": "2026-06-23T18:42:00.000Z"
+    }
+  ]
+}
+```
+
+Errors: `401` no session
+
+---
+
+#### `PATCH /api/profile/avatar` *(auth)*
+
+Stores one of the predefined profile avatars for the authenticated user.
+
+```bash
+curl -k -b cookies.txt -X PATCH https://localhost:8443/api/profile/avatar \
+  -H "Content-Type: application/json" \
+  -d '{"avatar":"character:eld"}'
+```
+
+Allowed values: `character:eld`, `character:hil`, `character:qui`,
+`character:gab`, `logo:main`, `logo:mini`.
+
+Response (200):
+```json
+{ "avatar": "character:eld" }
+```
+
+Errors: `400` invalid avatar, `401` no session
+
+---
+
 #### `GET /api/users/:id`
 
 Returns public profile of user `id`. No auth required.

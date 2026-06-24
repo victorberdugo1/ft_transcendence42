@@ -5,7 +5,7 @@ import logoImage from "../../../assets/logo.png";
 // onLogout is passed from App.jsx which already calls /api/logout + reconnectWS,
 // so this component just fires it directly without duplicating that logic.
 
-export default function Lobby({ user, onPlay, onLogout }) {
+export default function Lobby({ user, onPlay, onProfile, onLogout }) {
   const playerName = user.username || user.email || "player";
 
   const menuItems = [
@@ -20,7 +20,8 @@ export default function Lobby({ user, onPlay, onLogout }) {
       className: "lobby-tile-profile",
       label:     "Profile",
       kicker:    "Fighter",
-      disabled:  true,
+      action:    onProfile,
+      disabled:  false,
     },
     {
       className: "lobby-tile-achievements",

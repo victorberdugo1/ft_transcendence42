@@ -32,10 +32,19 @@ const spectatorsBySession = new Map();
 const tournamentBrackets  = new Map();
 const resolvedSessions    = new Set();
 
+let matchPersistenceSchemaReady = null;
 let nextClientId     = 1;
 let nextSessionId    = 1;
 let frameId          = 0;
 let confirmedStageId = -1;
+
+const XP_PER_WIN        = 100;
+const TOURNAMENT_WIN_XP = 500;
+const FIGHT_START_DELAY_MS = 3000;
+
+function levelExprForXp(sqlExpr) {
+    return `GREATEST(1, FLOOR((SQRT(1 + 8 * ((${sqlExpr})::numeric / ${XP_PER_WIN}.0)) - 1) / 2)::int)`;
+}
 
 const tournamentRoom = {
     players:      [],
@@ -45,6 +54,25 @@ const tournamentRoom = {
 };
 
 const _lobbyJoinOrder = [];
+
+async function ensureMatchPersistenceSchema() {
+    if (!matchPersistenceSchemaReady) {
+        matchPersistenceSchemaReady = (async () => {
+            await db.query(`ALTER TABLE matches ADD COLUMN IF NOT EXISTS player1_char_id VARCHAR(20)`);
+            await db.query(`ALTER TABLE matches ADD COLUMN IF NOT EXISTS player2_char_id VARCHAR(20)`);
+            await db.query(
+                `CREATE TABLE IF NOT EXISTS match_stat_writes (
+                    match_id   INTEGER PRIMARY KEY REFERENCES matches(id) ON DELETE CASCADE,
+                    written_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+                )`
+            );
+        })().catch(err => {
+            matchPersistenceSchemaReady = null;
+            throw err;
+        });
+    }
+    return matchPersistenceSchemaReady;
+}
 
 function addToLobbyQueue(cid) {
     if (!_lobbyJoinOrder.includes(cid)) _lobbyJoinOrder.push(cid);
@@ -56,10 +84,12 @@ function removeFromLobbyQueue(cid) {
 }
 
 function getLobbyQueue() {
+    const _tournamentDbIds = new Set(tournamentRoom.players.map(e => e.dbUserId));
     return _lobbyJoinOrder.filter(cid =>
         players[cid]?.dbUserId != null &&
         !playerSession.has(cid) &&
-        players[cid]?._seekingMatch !== false
+        players[cid]?._seekingMatch !== false &&
+        !_tournamentDbIds.has(players[cid].dbUserId)
     );
 }
 
@@ -118,10 +148,8 @@ function buildPlayerSnapshot(p) {
 
 function broadcastState() {
     const sessionSnapshots = new Map();
-
     for (const p of Object.values(players)) {
         if (!p.ws || p.ws.readyState !== WebSocket.OPEN) continue;
-
         const sid = playerSession.get(p.id);
         if (!sid) {
             const solo = {};
@@ -129,7 +157,6 @@ function broadcastState() {
             p.ws.send(JSON.stringify({ type: 'state', frameId: ++frameId, players: solo }));
             continue;
         }
-
         if (!sessionSnapshots.has(sid)) {
             const session  = gameSessions.get(sid);
             const snapshot = {};
@@ -141,14 +168,12 @@ function broadcastState() {
             }
             sessionSnapshots.set(sid, JSON.stringify({ type: 'state', frameId: ++frameId, players: snapshot }));
         }
-
         p.ws.send(sessionSnapshots.get(sid));
     }
 }
 
 function sendStateToSpectator(spec) {
     if (!spec.ws || spec.ws.readyState !== WebSocket.OPEN) return;
-
     let sessionIds = null;
     if (spec.watchingSession) {
         const sess = gameSessions.get(spec.watchingSession);
@@ -159,7 +184,6 @@ function sendStateToSpectator(spec) {
             spec.ws.send(JSON.stringify({ type: 'spectator_session_changed', watchingSession: null }));
         }
     }
-
     const snapshot = {};
     for (const [id, p] of Object.entries(players)) {
         if (sessionIds && !sessionIds.has(Number(id))) continue;
@@ -175,7 +199,6 @@ function tickSpectators() {
     if (specList.length === 0) return;
 
     const cache = new Map();
-
     for (const spec of specList) {
         if (!spec.ws || spec.ws.readyState !== WebSocket.OPEN) continue;
         const sid = spec.watchingSession;
@@ -243,7 +266,7 @@ function buildCharSelectAck(selectorCharId, selectorClientId, stageId, session =
         playerIds = lobbyIds;
     }
 
-    const usedChars = new Set([selectorCharId]);
+    const usedChars  = new Set([selectorCharId]);
     const playersOut = {};
 
     for (let i = 0; i < Math.min(playerIds.length, 8); i++) {
@@ -315,22 +338,15 @@ function createSession(mode, playerIds, extra = {}) {
     const id      = String(nextSessionId++);
     const session = {
         id, mode,
-        playerIds:    new Set(playerIds),
-        eliminated:   new Set(),
-        // Snapshot of dbUserId per clientId at session-creation time. This is
-        // the AUTHORITATIVE identity record for stat writes — never re-read
-        // players[cid].dbUserId later, since the player object may be deleted
-        // (disconnect) before async stat-writing code runs.
-        dbUserIds:    {},
-        tournamentId: null, round: null, matchDbId: null,
-        startedAt:    new Date(), finished: false,
-        loserDbId: null, loserStocks: 0, playerFlags: {},
-        // Ordered log of eliminations for this session: { clientId, dbUserId, stocks, placement }
+        playerIds:      new Set(playerIds),
+        eliminated:     new Set(),
+        dbUserIds:      {},
+        charIds:        {},
+        tournamentId:   null, round: null, matchDbId: null,
+        startedAt:      new Date(), finished: false,
+        loserDbId:      null, loserStocks: 0, playerFlags: {},
         eliminationLog: [],
-        // false during pre-match SSS/countdown, true once the fight is live.
-        // Drives leave-permission gating (Issue: leave allowed before pairing
-        // and during the live fight, BLOCKED during SSS/countdown).
-        fightStarted: false,
+        fightStarted:   false,
         ...extra,
     };
     for (const cid of playerIds) {
@@ -339,15 +355,16 @@ function createSession(mode, playerIds, extra = {}) {
         removeFromLobbyQueue(cid);
         const p = players[cid];
         session.dbUserIds[cid] = p?.dbUserId ?? null;
+        session.charIds[cid]   = p?.charId ?? playerCharSelected.get(cid) ?? null;
         if (p) p.stocks = 3;
     }
 
     if (extra.tournamentId) {
         tournamentBrackets.set(extra.tournamentId, {
-            totalPlayers: playerIds.length,
+            totalPlayers:   playerIds.length,
             eliminationLog: [],
-            finalized: false,
-            sessionId: id,
+            finalized:      false,
+            sessionId:      id,
         });
     }
 
@@ -355,13 +372,10 @@ function createSession(mode, playerIds, extra = {}) {
     return session;
 }
 
-const COUNTDOWN_MS = 3000; // must match App.jsx COUNTDOWN_MS
-
 function armFightStartTimer(session) {
     setTimeout(() => {
-        if (session.finished) return;
-        session.fightStarted = true;
-    }, COUNTDOWN_MS);
+        if (session && !session.finished) session.fightStarted = true;
+    }, FIGHT_START_DELAY_MS);
 }
 
 function startBrawl(clientIds) {
@@ -454,9 +468,9 @@ function startTraining(humanClientId, cpuCharIds = ['eld'], stageId = 0) {
     const session = createSession('training', allIds, {
         isCpuSession: true,
         cpuIds,
-        cpuId: cpuIds[0],
+        cpuId:          cpuIds[0],
         stageId,
-        humanId: humanClientId,
+        humanId:        humanClientId,
         cpusEliminated: new Set(),
     });
     for (const cpu of cpus) cpu.stocks = 3;
@@ -471,9 +485,7 @@ function startTraining(humanClientId, cpuCharIds = ['eld'], stageId = 0) {
 function tryAutoMatch() {
     const busyIds = new Set();
     for (const sess of gameSessions.values()) {
-        if (!sess.finished) {
-            for (const cid of sess.playerIds) busyIds.add(cid);
-        }
+        if (!sess.finished) for (const cid of sess.playerIds) busyIds.add(cid);
     }
 
     const eligible = getLobbyQueue().filter(cid =>
@@ -495,9 +507,6 @@ function tryAutoMatch() {
     }
 }
 
-// Records an eliminated player into the tournament bracket's eliminationLog
-// so finalizeTournament can assign placements/losses afterwards. No-op for
-// non-tournament sessions or sessions without a tournamentId/bracket.
 function recordTournamentElimination(session, clientId, dbUserId, stocks) {
     if (!session || session.mode !== 'tournament') return;
     const bracket = tournamentBrackets.get(session.tournamentId);
@@ -611,17 +620,17 @@ function cleanupSession(session, winnerClientId) {
         const p = players[cid];
         if (p) {
             delete p._pendingStageId;
-            p.stocks        = 3;
-            p.voltage       = 0;
-            p.voltageMaxed  = false;
-            p.attacking     = false;
-            p.dashing       = false;
-            p.blocking      = false;
-            p.crouching     = false;
-            p.hitTargets    = new Set();
+            p.stocks       = 3;
+            p.voltage      = 0;
+            p.voltageMaxed = false;
+            p.attacking    = false;
+            p.dashing      = false;
+            p.blocking     = false;
+            p.crouching    = false;
+            p.hitTargets   = new Set();
             p.kbx = 0; p.kby = 0; p.vx = 0; p.vy = 0;
-            p.animation     = 'idle';
-            p.animTimer     = 0;
+            p.animation    = 'idle';
+            p.animTimer    = 0;
         }
         const spec = spectators[cid];
         if (spec?.eliminated) {
@@ -648,9 +657,6 @@ function cleanupSession(session, winnerClientId) {
 }
 
 async function resolveMatchWinner(session, winnerClientId, loserClientId) {
-    // Idempotency guard: never run DB stat-writing logic twice for the same
-    // session, no matter which code path (tick pendingWinner loop, disconnect
-    // handler, grace-expiry handler) triggers resolution.
     if (resolvedSessions.has(session.id)) {
         console.log(`[GAME] resolveMatchWinner: session ${session.id} already resolved — skipping duplicate call`);
         return;
@@ -658,11 +664,13 @@ async function resolveMatchWinner(session, winnerClientId, loserClientId) {
     resolvedSessions.add(session.id);
     session.finished = true;
 
-    const winner      = players[winnerClientId];
-    const winnerDbId  = winner?.dbUserId ?? null;
+    const winner       = players[winnerClientId];
+    const winnerDbId   = winner?.dbUserId ?? null;
     const winnerStocks = winner?.stocks ?? 0;
-    const loserDbId   = session.loserDbId ?? null;
-    const loserStocks = session.loserStocks ?? 0;
+    const loserDbId    = session.loserDbId ?? null;
+    const loserStocks  = session.loserStocks ?? 0;
+    const winnerCharId = session.charIds?.[winnerClientId] ?? players[winnerClientId]?.charId ?? playerCharSelected.get(winnerClientId) ?? null;
+    const loserCharId  = session.charIds?.[loserClientId]  ?? players[loserClientId]?.charId  ?? playerCharSelected.get(loserClientId)  ?? null;
 
     broadcastToSession(session, { type: 'victory', winner: winnerClientId, loser: loserClientId, reloadRequired: true });
 
@@ -676,12 +684,15 @@ async function resolveMatchWinner(session, winnerClientId, loserClientId) {
     }
 
     try {
+        await ensureMatchPersistenceSchema();
+
         const { rows } = await db.query(
-            `INSERT INTO matches (player1_id, player2_id, winner_id, score1, score2, game_type)
-             VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`,
+            `INSERT INTO matches (player1_id, player2_id, winner_id, score1, score2, game_type, player1_char_id, player2_char_id)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id`,
             [winnerDbId, loserDbId, winnerDbId,
              winnerStocks, loserStocks,
-             session.mode === 'tournament' ? 'tournament' : 'brawler']
+             session.mode === 'tournament' ? 'tournament' : 'brawler',
+             winnerCharId, loserCharId]
         );
         session.matchDbId = rows[0].id;
 
@@ -692,10 +703,6 @@ async function resolveMatchWinner(session, winnerClientId, loserClientId) {
             );
         }
 
-        // Idempotency at the DB level too: claim this match_id before writing
-        // stats. If the row already exists (shouldn't happen given the
-        // resolvedSessions guard, but defends against process restarts mid-flow)
-        // skip the stat increments entirely.
         const { rowCount: claimed } = await db.query(
             `INSERT INTO match_stat_writes (match_id) VALUES ($1) ON CONFLICT DO NOTHING`,
             [session.matchDbId]
@@ -708,14 +715,10 @@ async function resolveMatchWinner(session, winnerClientId, loserClientId) {
                 console.error('[GAME] updateStatsAfterMatch error (continuing with inline stats):', err.message);
             }
 
-            // For 1v1 / brawl / training-vs-human matches, this is the single
-            // source of truth for win/loss. For tournament mode, per-match
-            // win/loss for the FINAL match is also written here; all OTHER
-            // tournament eliminations are scored in finalizeTournament.
             await Promise.all([
                 winnerDbId ? db.query(
-                    `UPDATE user_stats SET wins = wins + 1, xp = xp + 100,
-                     level = GREATEST(level, FLOOR(SQRT((xp + 100) / 50.0))::int), updated_at = NOW()
+                    `UPDATE user_stats SET wins = wins + 1, xp = xp + ${XP_PER_WIN},
+                     level = ${levelExprForXp(`xp + ${XP_PER_WIN}`)}, updated_at = NOW()
                      WHERE user_id = $1`,
                     [winnerDbId]
                 ) : Promise.resolve(),
@@ -748,9 +751,6 @@ async function resolveMatchWinner(session, winnerClientId, loserClientId) {
     broadcastToSession(session, { type: 'match_end', winner: winnerClientId, loser: loserClientId, matchId: session.matchDbId, mode: session.mode });
 
     if (session.mode === 'tournament') {
-        // Record the LAST elimination (the runner-up, since the champion
-        // never appears in eliminationLog) before finalizing, then finalize
-        // using the session snapshot — never re-read players[] for identity.
         recordTournamentElimination(session, loserClientId, loserDbId, loserStocks);
         await finalizeTournament(session.tournamentId, winnerClientId, winnerDbId, winnerStocks);
     }
@@ -761,9 +761,6 @@ async function resolveMatchWinner(session, winnerClientId, loserClientId) {
     }, 6000);
 }
 
-// championDbId / championStocks are passed explicitly from resolveMatchWinner's
-// session-time snapshot — NEVER re-read players[championClientId] here, since
-// the champion's connection may have closed before this async function runs.
 async function finalizeTournament(tournamentId, championClientId, championDbId = null, championStocks = 0) {
     const bracket = tournamentBrackets.get(tournamentId);
 
@@ -782,31 +779,20 @@ async function finalizeTournament(tournamentId, championClientId, championDbId =
 
         if (championDbId) {
             await db.query(
-                `UPDATE user_stats SET xp = xp + 500,
-                 level = GREATEST(level, FLOOR(SQRT((xp + 500) / 50))::int), updated_at = NOW()
+                `UPDATE user_stats SET xp = xp + ${TOURNAMENT_WIN_XP},
+                 level = ${levelExprForXp(`xp + ${TOURNAMENT_WIN_XP}`)}, updated_at = NOW()
                  WHERE user_id = $1`,
                 [championDbId]
             );
         }
 
-        // ── Score every eliminated participant ──────────────────────────
-        // bracket.eliminationLog contains one entry per eliminated player
-        // (including the runner-up, appended just before this call). The
-        // champion is NOT in eliminationLog. Every entry here gets a
-        // tournament loss + a placement row; the champion gets a placement
-        // row with placement=1 and a tournament win.
-        const log = bracket?.eliminationLog ?? [];
+        const log          = bracket?.eliminationLog ?? [];
         const totalPlayers = bracket?.totalPlayers ?? (log.length + 1);
 
-        // Placement: champion = 1. Eliminations are pushed in elimination
-        // order (earliest-eliminated first), so the LAST entry in log is the
-        // runner-up (placement 2), and so on backwards.
         for (let i = 0; i < log.length; i++) {
-            const entry = log[i];
-            entry.placement = totalPlayers - i; // last entry -> placement 2, first entry -> placement totalPlayers
+            log[i].placement = totalPlayers - i;
         }
 
-        // Insert placement rows (idempotent via UNIQUE(tournament_id, user_id))
         const placementRows = [
             { dbUserId: championDbId, clientId: championClientId, placement: 1, stocks: championStocks },
             ...log.map(e => ({ dbUserId: e.dbUserId, clientId: e.clientId, placement: e.placement, stocks: e.stocks })),
@@ -822,14 +808,10 @@ async function finalizeTournament(tournamentId, championClientId, championDbId =
                      RETURNING id`,
                     [tournamentId, row.dbUserId ?? null, row.clientId, row.placement, row.stocks ?? 0]
                 );
-                if (rowCount === 0) continue; // already recorded — skip stat write below
+                if (rowCount === 0) continue;
 
                 if (row.dbUserId) {
-                    if (row.placement === 1) {
-                        // Champion's win was already counted via resolveMatchWinner's
-                        // final-match winner update — do NOT double count here.
-                    } else {
-                        // Every eliminated participant gets a tournament loss.
+                    if (row.placement !== 1) {
                         await db.query(
                             `UPDATE user_stats SET losses = losses + 1, updated_at = NOW() WHERE user_id = $1`,
                             [row.dbUserId]
@@ -849,11 +831,10 @@ async function finalizeTournament(tournamentId, championClientId, championDbId =
     } catch (err) {
         console.error('[TOURNAMENT] finalize error:', err.message);
     }
+
     broadcastToAll({ type: 'tournament_end', tournamentId, champion: championClientId, championDbId: championDbId ?? null });
     console.log(`[TOURNAMENT] ${tournamentId} finished — champion: ${championClientId} (dbUserId=${championDbId})`);
 
-    // Deterministically reset the shared waiting room now that this
-    // tournament is done — no more polling/_scheduleRoomReset needed.
     if (tournamentRoom.tournamentId === tournamentId) {
         resetTournamentRoom(true);
     }
@@ -934,7 +915,7 @@ function tick() {
             .map(cid => players[cid])
             .filter(p => p && !p.respawning && !_frozenIds.has(p.id));
 
-        const hs = hitstopBySession[session.id];
+        const hs            = hitstopBySession[session.id];
         const hitstopActive = hs && hs.framesLeft > 0;
 
         const sessionPlayersMap = {};
@@ -994,11 +975,8 @@ function tick() {
         if (session._soloGuardFired) continue;
         if (Date.now() - session.startedAt.getTime() < 3000) continue;
 
-        const humanIds = [...session.playerIds].filter(cid => !players[cid]?.isCpu);
-        const connected = humanIds.filter(cid => {
-            const p = players[cid];
-            return p?.ws?.readyState === WebSocket.OPEN;
-        });
+        const humanIds  = [...session.playerIds].filter(cid => !players[cid]?.isCpu);
+        const connected = humanIds.filter(cid => players[cid]?.ws?.readyState === WebSocket.OPEN);
 
         if (session.mode === '1v1') {
             if (connected.length === 1 && humanIds.length === 2) {
@@ -1038,8 +1016,6 @@ function tick() {
                     }
                 }, 200);
                 cleanupSession(session, null);
-                // No finalizeTournament will run for an aborted tournament —
-                // reset the shared room synchronously here instead.
                 if (session.tournamentId) {
                     tournamentBrackets.delete(session.tournamentId);
                     if (tournamentRoom.tournamentId === session.tournamentId) {
@@ -1090,14 +1066,6 @@ function disconnectPlayer(dbUserId) {
     console.log(`[AUTH] disconnectPlayer: no active WS found for dbUserId=${dbUserId}`);
 }
 
-// Deterministic, synchronous tournament-room reset. Replaces the previous
-// polling _scheduleRoomReset. Called directly from finalizeTournament (normal
-// completion) and from cleanupSession-adjacent code paths (abnormal
-// termination — solo guard, all-disconnect).
-//
-// notify: when true, push a fresh tournament_room_update to anyone still
-// referenced in tournamentRoom.players (best-effort — most will already have
-// reloaded by this point).
 function resetTournamentRoom(notify = true) {
     const stalePlayers = tournamentRoom.players;
     tournamentRoom.players      = [];
@@ -1123,18 +1091,14 @@ function resetTournamentRoom(notify = true) {
     console.log('[TOURNAMENT-ROOM] reset (deterministic)');
 }
 
-// Tournament-mode disconnect/leave grace expiry. Mirrors the generic
-// resolveGraceExpiry in handler.js but additionally records the elimination
-// in the tournament bracket so loss-counting in finalizeTournament stays
-// correct even when a player never reconnects.
 function resolveTournamentGraceExpiry(session, clientId, fallbackDbId) {
     if (!session.pendingEliminations) session.pendingEliminations = {};
     delete session.pendingEliminations[clientId];
 
     if (session.finished) return;
 
-    const p2          = players[clientId];
-    const leavingDbId = p2?.dbUserId ?? session.dbUserIds?.[clientId] ?? fallbackDbId ?? null;
+    const p2            = players[clientId];
+    const leavingDbId   = p2?.dbUserId ?? session.dbUserIds?.[clientId] ?? fallbackDbId ?? null;
     const leavingStocks = p2?.stocks ?? 0;
 
     delete players[clientId];
