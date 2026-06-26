@@ -1,0 +1,699 @@
+/* ── manual.css ──────────────────────────────────────────────────────────────
+   Enuma Fighter · Tome of Combat
+   Unified with the rest of the app: dark glass / neon shell (same language as
+   Profile + Lobby) wrapping a parchment-and-Cinzel "ancient tome" reading
+   surface for the actual manual content.
+   ──────────────────────────────────────────────────────────────────────────── */
+
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=IM+Fell+English:ital@0;1&family=Press+Start+2P&display=swap');
+
+.mn-page {
+  --mn-bg: #07090f;
+  --mn-panel: rgba(17, 20, 31, 0.72);
+  --mn-panel-strong: rgba(24, 28, 42, 0.86);
+  --mn-line: rgba(158, 220, 255, 0.18);
+  --mn-line-hot: rgba(255, 232, 112, 0.36);
+  --mn-text: #f8f5ec;
+  --mn-muted: rgba(248, 245, 236, 0.66);
+  --mn-cyan: #58dcff;
+  --mn-gold: #ffe870;
+  --mn-pink: #ff63c7;
+
+  /* parchment surface, used only inside section bodies */
+  --mn-parchment: #f0e6c8;
+  --mn-parchment2: #e4d5a8;
+  --mn-ink: #1c0e00;
+  --mn-gold-dim: #8b6914;
+  --mn-blue: #1a3a7a;
+  --mn-crimson: #8b1a1a;
+
+  height: 100vh;
+  min-height: 100vh;
+  width: 100vw;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  position: relative;
+  isolation: isolate;
+  color: var(--mn-text);
+  background:
+    radial-gradient(circle at 18% 18%, rgba(255, 65, 107, 0.22), transparent 28rem),
+    radial-gradient(circle at 82% 12%, rgba(88, 220, 255, 0.2), transparent 26rem),
+    radial-gradient(circle at 62% 92%, rgba(255, 232, 112, 0.13), transparent 24rem),
+    linear-gradient(135deg, #05060a 0%, #10131d 48%, #07090f 100%);
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  scrollbar-color: rgba(88, 220, 255, 0.42) rgba(255, 255, 255, 0.06);
+}
+
+.mn-page::-webkit-scrollbar { width: 10px; }
+.mn-page::-webkit-scrollbar-track { background: rgba(255, 255, 255, 0.06); }
+.mn-page::-webkit-scrollbar-thumb {
+  border: 2px solid rgba(7, 9, 15, 0.9);
+  border-radius: 999px;
+  background: rgba(88, 220, 255, 0.48);
+}
+
+.mn-page::before,
+.mn-page::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+}
+
+.mn-page::before {
+  background:
+    linear-gradient(115deg, transparent 0 18%, rgba(255, 255, 255, 0.06) 18% 18.25%, transparent 18.25% 100%),
+    linear-gradient(115deg, transparent 0 72%, rgba(88, 220, 255, 0.08) 72% 72.3%, transparent 72.3% 100%),
+    linear-gradient(rgba(255, 255, 255, 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px);
+  background-size: auto, auto, 84px 84px, 84px 84px;
+  opacity: 0.6;
+  transform: skewY(-3deg) scale(1.08);
+}
+
+.mn-page::after {
+  background: linear-gradient(180deg, transparent 0%, rgba(0, 0, 0, 0.42) 100%);
+}
+
+/* ── Sticky topbar: logo + back button, same shell language as Profile header ── */
+.mn-topbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 10px 20px;
+  background: linear-gradient(
+    180deg,
+    rgba(7, 9, 15, 0.95) 0%,
+    rgba(7, 9, 15, 0.82) 35%,
+    rgba(7, 9, 15, 0.5) 65%,
+    rgba(7, 9, 15, 0.18) 88%,
+    rgba(7, 9, 15, 0) 100%
+  );
+  -webkit-mask-image: linear-gradient(180deg, #000 0%, #000 55%, transparent 100%);
+  mask-image: linear-gradient(180deg, #000 0%, #000 55%, transparent 100%);
+  backdrop-filter: blur(10px);
+}
+
+.mn-topbar-logo {
+  height: 40px;
+  width: auto;
+  object-fit: contain;
+  filter: drop-shadow(0 0 10px rgba(88, 220, 255, 0.4));
+}
+
+/* ── Shell: the glass frame that holds the whole manual ── */
+.mn-shell {
+  width: min(900px, calc(100vw - 36px));
+  margin: 0 auto;
+  padding: 76px 0 44px;
+  animation: mnEnter 420ms ease both;
+}
+
+@keyframes mnEnter {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── The tome: glass card wrapper, parchment surface inside ── */
+.mn-tome {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--mn-line);
+  border-top-color: rgba(158, 220, 255, 0.4);
+  border-radius: 8px;
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.03)),
+    linear-gradient(
+      180deg,
+      rgba(24, 28, 42, 0.92) 0%,
+      rgba(20, 23, 35, 0.78) 30%,
+      rgba(17, 20, 31, 0.6) 60%,
+      rgba(14, 16, 25, 0.42) 100%
+    );
+  box-shadow:
+    0 24px 60px rgba(0, 0, 0, 0.38),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(18px);
+}
+
+.mn-tome::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background:
+    linear-gradient(120deg, rgba(88, 220, 255, 0.16), transparent 34%),
+    linear-gradient(300deg, rgba(255, 232, 112, 0.1), transparent 32%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.06) 0%, transparent 55%);
+  opacity: 0.85;
+}
+
+/* ── Corner ornaments (kept, recolored to cyan/gold) ── */
+.mn-corner {
+  position: absolute;
+  width: 40px;
+  height: 40px;
+  color: var(--mn-cyan);
+  z-index: 5;
+  pointer-events: none;
+  opacity: 0.55;
+}
+.mn-corner-tl { top: 6px;  left: 6px; }
+.mn-corner-tr { top: 6px;  right: 6px; transform: scaleX(-1); }
+.mn-corner-bl { bottom: 6px; left: 6px;  transform: scaleY(-1); }
+.mn-corner-br { bottom: 6px; right: 6px;  transform: scale(-1, -1); }
+
+/* ── Cover ── */
+.mn-cover {
+  position: relative;
+  z-index: 1;
+  padding: 40px 36px 32px;
+  text-align: center;
+  border-bottom: 1px solid var(--mn-line);
+}
+
+.mn-cover::after {
+  content: '';
+  position: absolute;
+  bottom: -16px; left: 50%;
+  transform: translateX(-50%);
+  width: 360px; height: 32px;
+  background: radial-gradient(ellipse, rgba(88, 220, 255, 0.16) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.mn-cover-eyebrow {
+  font-family: 'Cinzel', serif;
+  font-size: 9px;
+  letter-spacing: 5px;
+  color: var(--mn-gold);
+  opacity: 0.85;
+  text-transform: uppercase;
+  margin-bottom: 20px;
+}
+
+.mn-cover-title {
+  font-family: 'Cinzel', serif;
+  font-size: clamp(24px, 5.5vw, 40px);
+  font-weight: 700;
+  line-height: 1.2;
+  color: #fff;
+  text-shadow:
+    0 0 30px rgba(88, 220, 255, 0.32),
+    2px 2px 0 rgba(0, 0, 0, 0.5);
+  letter-spacing: 3px;
+  margin-bottom: 16px;
+}
+
+.mn-cover-divider {
+  display: flex;
+  justify-content: center;
+  gap: 14px;
+  color: var(--mn-gold);
+  font-size: 10px;
+  opacity: 0.6;
+  margin-bottom: 14px;
+}
+
+.mn-cover-sub {
+  font-family: 'IM Fell English', Georgia, serif;
+  font-style: italic;
+  font-size: 13px;
+  color: var(--mn-muted);
+  letter-spacing: 2px;
+}
+
+/* ── Body: parchment reading surface inside the glass tome ── */
+.mn-body {
+  position: relative;
+  z-index: 1;
+  margin: 18px;
+  border-radius: 6px;
+  background: var(--mn-parchment);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='0.045'/%3E%3C/svg%3E");
+  box-shadow:
+    inset 0 0 0 1px rgba(0, 0, 0, 0.25),
+    0 18px 40px rgba(0, 0, 0, 0.4);
+  padding: 36px 32px;
+}
+
+/* ── Section ── */
+.mn-section {
+  margin-bottom: 36px;
+  padding-bottom: 36px;
+  border-bottom: 1px solid var(--mn-gold-dim);
+}
+.mn-section:last-child {
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.mn-section-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 18px;
+}
+
+.mn-section-num {
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--mn-parchment);
+  background: var(--mn-ink);
+  padding: 4px 10px;
+  letter-spacing: 1px;
+  flex-shrink: 0;
+}
+
+.mn-section-title {
+  font-family: 'Press Start 2P', monospace;
+  font-size: clamp(8px, 1.8vw, 11px);
+  color: var(--mn-ink);
+  letter-spacing: 1px;
+  line-height: 1.6;
+}
+
+/* ── Body text ── */
+.mn-section-body p {
+  font-size: 15px;
+  line-height: 1.85;
+  margin-bottom: 14px;
+  color: #1c0e00;
+}
+.mn-section-body p:last-child { margin-bottom: 0; }
+
+.mn-term {
+  font-style: italic;
+  font-weight: bold;
+  color: var(--mn-blue);
+}
+
+.mn-danger { color: var(--mn-crimson); }
+
+/* ── Controls layout ── */
+.mn-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.mn-ctrl-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 14px;
+}
+
+.mn-ctrl-label {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 7px;
+  letter-spacing: 1px;
+  color: var(--mn-blue);
+  min-width: 110px;
+  flex-shrink: 0;
+}
+
+.mn-ctrl-keys {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.mn-ctrl-or {
+  font-style: italic;
+  font-size: 12px;
+  color: #7a6040;
+  opacity: 0.7;
+}
+
+.mn-ctrl-note {
+  font-size: 11px;
+  font-style: italic;
+  color: #7a6040;
+}
+
+/* ── kbd ── */
+kbd {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 7px;
+  padding: 4px 7px;
+  background: var(--mn-ink);
+  color: var(--mn-parchment);
+  border: 1px solid #5a4020;
+  box-shadow: 0 2px 0 #0a0600;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+
+/* ── Move list ── */
+.mn-move-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  margin-bottom: 20px;
+  border: 1px solid var(--mn-gold-dim);
+}
+
+.mn-move {
+  display: grid;
+  grid-template-columns: 130px 1fr;
+  gap: 0;
+  background: var(--mn-parchment2);
+  border-bottom: 1px solid rgba(139, 105, 20, 0.2);
+}
+.mn-move:last-child { border-bottom: none; }
+
+.mn-move-input {
+  padding: 12px 14px;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 7px;
+  line-height: 1.8;
+  color: var(--mn-blue);
+  border-right: 1px solid rgba(139, 105, 20, 0.25);
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.mn-move-info {
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.mn-move-info strong {
+  font-size: 13px;
+  font-family: 'Cinzel', serif;
+  letter-spacing: 0.5px;
+}
+.mn-move-info span {
+  font-size: 13px;
+  line-height: 1.6;
+  color: #3a2a10;
+}
+
+.mn-move-highlight { background: #e8d090 !important; }
+.mn-move-highlight .mn-move-info strong { color: var(--mn-crimson); }
+
+/* ── Callout (combo chain) ── */
+.mn-callout {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--mn-ink);
+  color: var(--mn-parchment);
+  padding: 12px 16px;
+  font-size: 12px;
+  flex-wrap: wrap;
+}
+
+.mn-callout-label {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 7px;
+  color: var(--mn-gold);
+  letter-spacing: 1px;
+  white-space: nowrap;
+}
+
+.mn-combo-chain {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 7px;
+  color: var(--mn-parchment);
+}
+
+.mn-arrow {
+  color: var(--mn-gold);
+  font-size: 10px;
+}
+
+.mn-callout-note {
+  font-style: italic;
+  font-size: 12px;
+  color: rgba(240, 230, 200, 0.55);
+  margin-left: auto;
+}
+
+/* ── Lists ── */
+.mn-list {
+  padding-left: 20px;
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.mn-list li {
+  font-size: 14px;
+  line-height: 1.7;
+  color: #1c0e00;
+}
+
+/* ── Tip box ── */
+.mn-tip {
+  margin-top: 14px;
+  background: rgba(139, 105, 20, 0.1);
+  border-left: 3px solid var(--mn-gold-dim);
+  padding: 10px 14px;
+  font-size: 13px;
+  line-height: 1.7;
+  color: #3a2a10;
+}
+
+/* ── Voltage bar ── */
+.mn-voltage-bar {
+  display: grid;
+  grid-template-columns: 1fr 1fr 80px;
+  margin-top: 16px;
+  border: 1px solid var(--mn-gold-dim);
+  overflow: hidden;
+  font-size: 12px;
+  text-align: center;
+  line-height: 1.5;
+}
+
+.mn-voltage-safe,
+.mn-voltage-warn,
+.mn-voltage-crit {
+  padding: 12px 8px;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 7px;
+}
+
+.mn-voltage-safe { background: #c8e8c0; color: #1a4a10; }
+.mn-voltage-warn {
+  background: #e8d870;
+  color: #5a4000;
+  border-left: 1px solid var(--mn-gold-dim);
+}
+.mn-voltage-crit {
+  background: var(--mn-crimson);
+  color: #fff;
+  border-left: 1px solid #6a0a0a;
+}
+
+/* ── Pro tips list ── */
+.mn-tips-list {
+  list-style: none;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.mn-tips-list li {
+  display: flex;
+  gap: 12px;
+  font-size: 14px;
+  line-height: 1.75;
+  color: #1c0e00;
+}
+
+.mn-tip-icon {
+  flex-shrink: 0;
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+/* ── Footer ── */
+.mn-footer {
+  position: relative;
+  z-index: 1;
+  padding: 16px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-top: 1px solid var(--mn-line);
+}
+
+.mn-footer-mark {
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: var(--mn-muted);
+  text-transform: uppercase;
+}
+
+/* ── Buttons (shared visual language with Profile) ── */
+.mn-back-btn {
+  min-height: 42px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  padding: 0 16px;
+  color: var(--mn-text);
+  background:
+    linear-gradient(135deg, rgba(88, 220, 255, 0.14), rgba(255, 255, 255, 0.055)),
+    rgba(255, 255, 255, 0.08);
+  font: inherit;
+  font-weight: 900;
+  font-size: 0.82rem;
+  letter-spacing: 0;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease;
+}
+
+.mn-back-btn:hover {
+  transform: translateY(-2px);
+  border-color: rgba(88, 220, 255, 0.34);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.28), 0 0 18px rgba(88, 220, 255, 0.14);
+}
+
+/* ── Stage diagram ── */
+.mn-stage-diagram {
+  position: relative;
+  border: 2px solid var(--mn-gold-dim);
+  background: #060810;
+  padding: 18px;
+  margin: 20px 0;
+}
+
+.mn-stage-badge {
+  position: absolute;
+  top: -1px; right: 16px;
+  font-family: 'Cinzel', serif;
+  font-size: 7px;
+  font-weight: 700;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--mn-gold-dim);
+  background: #060810;
+  border: 1px solid var(--mn-gold-dim);
+  padding: 2px 10px;
+  opacity: 0.75;
+}
+
+.mn-stage-variants {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.mn-stage-variant {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.mn-stage-name {
+  font-family: 'Cinzel', serif;
+  font-size: 7px;
+  letter-spacing: 3px;
+  color: var(--mn-gold);
+  opacity: 0.5;
+  text-transform: uppercase;
+  text-align: center;
+}
+
+.mn-stage-inner {
+  position: relative;
+  height: 110px;
+  border: 1px solid #1a2040;
+  overflow: hidden;
+}
+
+/* Void boundaries */
+.mn-stage-bound {
+  position: absolute;
+  background: repeating-linear-gradient(
+    180deg,
+    #aa2222 0, #aa2222 4px,
+    transparent 4px, transparent 8px
+  );
+  opacity: 0.7;
+}
+.mn-stage-bound-l { top: 0; bottom: 0; left: 0; width: 2px; }
+.mn-stage-bound-r { top: 0; bottom: 0; right: 0; width: 2px; }
+.mn-stage-bound-b {
+  bottom: 0; left: 0; right: 0; height: 2px;
+  background: repeating-linear-gradient(
+    90deg,
+    #aa2222 0, #aa2222 4px,
+    transparent 4px, transparent 8px
+  );
+}
+
+/* Platforms */
+.mn-plat {
+  position: absolute;
+  background: #2a3060;
+  border: 1px solid #4a6aaa;
+}
+.mn-plat-main { bottom: 0; left: 0; right: 0; height: 10px; background: #1a2050; border-color: #3a5a99; }
+
+/* Player dot */
+.mn-player-dot {
+  position: absolute;
+  width: 8px; height: 16px;
+  background: #00ff88;
+  border: 1px solid #00cc66;
+  bottom: 10px; left: 30%;
+  box-shadow: 0 0 7px #00ff88;
+}
+
+/* Stage labels */
+.mn-slabel {
+  position: absolute;
+  font-family: 'Cinzel', serif;
+  font-size: 7px;
+  color: #aa4444;
+  letter-spacing: 1px;
+}
+.mn-slabel-l { top: 3px; left: 4px; }
+.mn-slabel-r { top: 3px; right: 4px; }
+.mn-slabel-b { bottom: 13px; left: 4px; }
+
+/* ── Responsive ── */
+@media (max-width: 680px) {
+  .mn-shell { padding: 64px 0 32px; width: min(100vw - 20px, 900px); }
+  .mn-topbar { padding: 8px 14px; }
+  .mn-topbar-logo { height: 30px; }
+  .mn-back-btn { font-size: 0.74rem; padding: 0 12px; min-height: 38px; }
+  .mn-shell-header { flex-direction: column; align-items: stretch; }
+  .mn-body { padding: 28px 18px; margin: 14px; }
+  .mn-cover { padding: 32px 22px 28px; }
+  .mn-move { grid-template-columns: 1fr; }
+  .mn-move-input { border-right: none; border-bottom: 1px solid rgba(139, 105, 20, 0.25); }
+  .mn-ctrl-label { min-width: 90px; font-size: 6px; }
+  .mn-callout-note { display: none; }
+  .mn-corner { width: 30px; height: 30px; }
+  .mn-stage-variants { grid-template-columns: 1fr; }
+}
