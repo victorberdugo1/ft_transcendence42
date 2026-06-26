@@ -6,10 +6,12 @@ import Register from "./pages/auth/Register.jsx";
 import Terms from "./pages/auth/Terms.jsx";
 import FightLobby from "./pages/fight/FightLobby.jsx";
 import Lobby from "./pages/lobby/Lobby.jsx";
+import Manual from "./pages/manual/Manual.jsx";
 import Profile from "./pages/profile/Profile.jsx";
 import "./pages/auth/auth.css";
 import "./pages/fight/fight.css";
 import "./pages/lobby/lobby.css";
+import "./pages/manual/manual.css";
 import "./pages/profile/profile.css";
 
 const GAME_RATIO = 800 / 600;
@@ -1094,8 +1096,15 @@ export default function App() {
             user={user}
             onPlay={() => setPage("fightLobby")}
             onProfile={() => setPage("profile")}
+            onManual={() => setPage("manual")}
             onLogout={handleLogout}
           />
+        </div>
+      )}
+
+      {page === "manual" && (
+        <div style={{ position: "fixed", inset: 0, zIndex: 10 }}>
+          <Manual onBack={() => setPage("lobby")} />
         </div>
       )}
 
