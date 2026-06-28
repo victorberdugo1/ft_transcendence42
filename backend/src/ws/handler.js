@@ -11,6 +11,7 @@ const {
     sendStateToSpectator, listActiveSessions,
     buildCharSelectAck, sendAllCharSelectsTo,
     createPlayer, startDuel, startTournament, tryAutoMatch,
+    fillTournamentBots,
     handleElimination, resolveMatchWinner, getLastWatchedSession,
     addToLobbyQueue, removeFromLobbyQueue, getLobbyQueue,
     resetTournamentRoom, resolveTournamentGraceExpiry,
@@ -65,7 +66,7 @@ function setupWebSocket(server, wss) {
 }
 
 function applyCharDef(p, charId) {
-    const def = CHARACTER_DEFS[charId] ?? CHARACTER_DEFS.eld;
+    const def = CHARACTER_DEFS[charId] ?? CHARACTER_DEFS.def;
     p.charId          = charId;
     p.moveSpeed       = def.moveSpeed;
     p.dashSpeed       = def.dashSpeed;
@@ -309,6 +310,7 @@ function resolveGraceExpiry(session, clientId, fallbackDbId) {
 }
 
 async function onConnection(ws, req) {
+    ws._connectedAt = Date.now();   // timestamp para que disconnectPlayer no mate WS recientes
     let clientId    = null;
     let dbUserId    = null;
     let isSpectator = false;
@@ -501,6 +503,11 @@ async function onConnection(ws, req) {
     ws.on('message', async (raw) => {
         let msg;
         try { msg = JSON.parse(raw); } catch { return; }
+        // Registrar cuándo llegó el primer mensaje de este WS.
+        // disconnectPlayer usa este timestamp para no cerrar conexiones recientes
+        // (evita matar un WS nuevo que tomó el slot justo antes de que el
+        // endpoint HTTP de login procesara su llamada a disconnectPlayer).
+        if (!ws._firstMsgAt) ws._firstMsgAt = Date.now();
 
         if (msg.type === 'join') {
             if (dbUserId) {
@@ -1124,14 +1131,21 @@ async function onConnection(ws, req) {
                     players[clientId].ws.send(JSON.stringify({ type: 'tournament_room_error', reason: 'not_enough_players' }));
                 return;
             }
+            // Pad up to 8 with CPU bots using default character (eld).
+            const allParticipantIds = fillTournamentBots(participantIds);
+            const botCount = allParticipantIds.length - participantIds.length;
+            if (botCount > 0) {
+                console.log(`[TOURNAMENT-ROOM] Added ${botCount} bot(s) to fill the bracket to 8`);
+            }
             tournamentRoom.started = true;
             try {
-                const tournamentId = await startTournament(participantIds, dbUserId);
+                const tournamentId = await startTournament(allParticipantIds, dbUserId);
                 tournamentRoom.tournamentId = tournamentId;
                 const startedMsg = JSON.stringify({
                     type: 'tournament_started',
                     tournamentId,
-                    playerIds: participantIds,
+                    playerIds: allParticipantIds,
+                    botIds: allParticipantIds.slice(participantIds.length),
                 });
                 for (const entry of tournamentRoom.players) {
                     const livePl = liveWsForEntry(entry);

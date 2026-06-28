@@ -40,7 +40,9 @@ let confirmedStageId = -1;
 
 const XP_PER_WIN        = 100;
 const TOURNAMENT_WIN_XP = 500;
-const FIGHT_START_DELAY_MS = 3000;
+const FIGHT_START_DELAY_MS            = 5000; // default (1v1)
+const FIGHT_START_DELAY_TRAINING_MS   = 4000;
+const FIGHT_START_DELAY_TOURNAMENT_MS = 8000;
 
 function levelExprForXp(sqlExpr) {
     return `GREATEST(1, FLOOR((SQRT(1 + 8 * ((${sqlExpr})::numeric / ${XP_PER_WIN}.0)) - 1) / 2)::int)`;
@@ -286,7 +288,7 @@ function buildCharSelectAck(selectorCharId, selectorClientId, stageId, session =
             playersOut[i].charId = charId;
         }
         const { clientId: cid, charId } = playersOut[i];
-        const a = CHARACTER_ASSETS[charId] ?? CHARACTER_ASSETS.eld;
+        const a = CHARACTER_ASSETS[charId] ?? CHARACTER_ASSETS.def;
         playersOut[i] = { clientId: cid, charId, texCfg: a.texCfg, texSets: a.texSets, animBase: a.animBase };
     }
 
@@ -356,7 +358,7 @@ function createSession(mode, playerIds, extra = {}) {
         const p = players[cid];
         session.dbUserIds[cid] = p?.dbUserId ?? null;
         session.charIds[cid]   = p?.charId ?? playerCharSelected.get(cid) ?? null;
-        if (p) p.stocks = 3;
+        if (p) p.stocks = p._initialStocks ?? 3;
     }
 
     if (extra.tournamentId) {
@@ -372,10 +374,10 @@ function createSession(mode, playerIds, extra = {}) {
     return session;
 }
 
-function armFightStartTimer(session) {
+function armFightStartTimer(session, delayMs = FIGHT_START_DELAY_MS) {
     setTimeout(() => {
         if (session && !session.finished) session.fightStarted = true;
-    }, FIGHT_START_DELAY_MS);
+    }, delayMs);
 }
 
 function startBrawl(clientIds) {
@@ -434,7 +436,10 @@ async function startTournament(clientIds, creatorDbId) {
         if (p?._pendingStageId !== undefined) { stageId = p._pendingStageId; delete p._pendingStageId; break; }
     }
 
-    const session = createSession('tournament', clientIds, { tournamentId, round: 1, stageId });
+    const botIds = clientIds.filter(cid => players[cid]?.isCpu);
+
+    const session = createSession('tournament', clientIds, { tournamentId, round: 1, stageId,
+        ...(botIds.length > 0 ? { botIds } : {}) });
 
     for (const spec of Object.values(spectators)) {
         if (spec.watchingSession !== null) continue;
@@ -445,12 +450,26 @@ async function startTournament(clientIds, creatorDbId) {
         }
     }
 
+    // Bots are created directly inside the tournament session (fillTournamentBots →
+    // createCpuPlayer), so they never go through the lobby char_select flow that
+    // normally triggers buildCharSelectAck. Without this, clients never receive
+    // texCfg/texSets/animBase for bot clientIds and their textures never load.
+    // One char_select_ack scoped to this session covers every clientId in
+    // session.playerIds (humans + bots) in its `players` map, so a single
+    // emission is enough — no need to repeat it per bot.
+    if (botIds.length > 0) {
+        const firstBotId   = botIds[0];
+        const firstBotChar = players[firstBotId]?.charId ?? playerCharSelected.get(firstBotId) ?? 'def';
+        const botsAck = buildCharSelectAck(firstBotChar, firstBotId, stageId, session);
+        broadcastToSession(session, botsAck);
+    }
+
     broadcastToSession(session, {
         type: 'match_start', mode: 'tournament', sessionId: session.id,
         tournamentId, round: 1, countdown: true, stageId,
         players: clientIds,
     });
-    armFightStartTimer(session);
+    armFightStartTimer(session, FIGHT_START_DELAY_TOURNAMENT_MS);
 
     console.log(`[TOURNAMENT] Survivor started: id=${tournamentId} session=${session.id} — ${clientIds.length} players stage=${stageId}`);
     return tournamentId;
@@ -474,12 +493,41 @@ function startTraining(humanClientId, cpuCharIds = ['eld'], stageId = 0) {
         cpusEliminated: new Set(),
     });
     for (const cpu of cpus) cpu.stocks = 3;
+    armFightStartTimer(session, FIGHT_START_DELAY_TRAINING_MS);
     broadcastToSession(session, {
         type: 'match_start', mode: 'training', sessionId: session.id,
         countdown: true, cpuIds, cpuId: cpuIds[0], stageId,
     });
     console.log(`[GAME] Training started: session ${session.id} — player ${humanClientId} vs CPUs [${cpuCharIds.join(', ')}] stage=${stageId}`);
     return session;
+}
+
+// ── fillTournamentBots ────────────────────────────────────────────────────────
+// Pads `humanClientIds` up to MAX_TOURNAMENT_PLAYERS (8) with CPU bots that
+// use the default character (eld) and default assets.  Returns the full array
+// of clientIds (humans first, then bots) to be passed to startTournament.
+const MAX_TOURNAMENT_PLAYERS = 8;
+
+function fillTournamentBots(humanClientIds) {
+    const botsNeeded = MAX_TOURNAMENT_PLAYERS - humanClientIds.length;
+    if (botsNeeded <= 0) return humanClientIds;
+
+    const botIds = [];
+    for (let i = 0; i < botsNeeded; i++) {
+        // Tournament bots always use the 'def' (Default) character —
+        // neutral stats, default textures and animations, never selectable by humans.
+        // They also only get 1 stock (vs. 3 for humans), so they're eliminated
+        // on their first loss instead of surviving like a real opponent.
+        const bot = createCpuPlayer('def', CHARACTER_DEFS, GROUND_Y);
+        bot.stocks         = 1;
+        bot._initialStocks = 1;
+        players[bot.id]  = bot;
+        playerCharSelected.set(bot.id, bot.charId);
+        botIds.push(bot.id);
+        console.log(`[TOURNAMENT-BOTS] created bot id=${bot.id} charId=${bot.charId} stocks=${bot.stocks}`);
+    }
+
+    return [...humanClientIds, ...botIds];
 }
 
 function tryAutoMatch() {
@@ -571,6 +619,7 @@ function handleElimination(loser) {
         delete players[eliminatedId];
         playerSession.delete(eliminatedId);
 
+        // Bots have no WebSocket — skip spectator promotion entirely.
         if (eliminatedWs?.readyState === WebSocket.OPEN) {
             const newSpec = {
                 id: eliminatedId, dbUserId: eliminatedDbId, ws: eliminatedWs,
@@ -674,6 +723,9 @@ async function resolveMatchWinner(session, winnerClientId, loserClientId) {
 
     broadcastToSession(session, { type: 'victory', winner: winnerClientId, loser: loserClientId, reloadRequired: true });
 
+    // isCpuSession = pure training match — skip DB writes and go straight to cleanup.
+    // Bot-padded tournaments (botIds) are NOT isCpuSession and must go through the
+    // full resolve path so finalizeTournament is called and humans see match_end.
     if (session.isCpuSession) {
         broadcastToSession(session, { type: 'match_end', winner: winnerClientId, loser: loserClientId, matchId: null, mode: session.mode });
         setTimeout(() => {
@@ -957,8 +1009,15 @@ function tick() {
     }
 
     for (const session of gameSessions.values()) {
-        if (!session.isCpuSession || session.finished) continue;
-        const cpuIdList = session.cpuIds ?? [session.cpuId];
+        if (session.finished) continue;
+        // Tick CPU players: training sessions (isCpuSession) AND tournament sessions
+        // that were padded with bots (botIds present).
+        const hasCpus = session.isCpuSession || (session.botIds && session.botIds.length > 0);
+        if (!hasCpus) continue;
+        // Bots must not move or attack during the countdown — wait for fightStarted,
+        // exactly the same gate the physics tick already imposes on human inputs.
+        if (!session.fightStarted) continue;
+        const cpuIdList = session.cpuIds ?? session.botIds ?? [session.cpuId];
         const humanTarget = [...session.playerIds]
             .filter(id => !cpuIdList.includes(id) && players[id] && !players[id].respawning)
             .map(id => players[id])[0] ?? null;
@@ -1023,6 +1082,31 @@ function tick() {
                     }
                 }
             }
+
+            // All humans are gone (eliminated or disconnected). Previously this
+            // declared the last surviving bot as tournament champion; now the
+            // tournament simply ends with no winner and the session is closed,
+            // regardless of how many bots are still alive.
+            if (!session._soloGuardFired && !hasPendingGrace) {
+                const remaining   = [...session.playerIds].filter(id => !session.eliminated.has(id));
+                const humanAlive  = remaining.filter(id => !players[id]?.isCpu);
+                if (humanAlive.length === 0) {
+                    session._soloGuardFired = true;
+                    session.finished = true;
+                    console.log(`[SOLO-GUARD] tournament session ${session.id}: no humans left (${remaining.length} bot(s) remaining) — ending tournament with no winner`);
+                    broadcastToSession(session, { type: 'match_end', winner: null, loser: null, matchId: null, mode: session.mode });
+                    broadcastToAll({ type: 'tournament_end', tournamentId: session.tournamentId, champion: null, championDbId: null });
+                    if (session.tournamentId) {
+                        db.query(`UPDATE tournaments SET status = 'finished' WHERE id = $1`, [session.tournamentId])
+                            .catch(err => console.error('[TOURNAMENT] no-winner finalize error:', err.message));
+                        tournamentBrackets.delete(session.tournamentId);
+                    }
+                    setTimeout(() => {
+                        broadcastToSession(session, { type: 'match_finished', sessionId: session.id });
+                        cleanupSession(session, null);
+                    }, 200);
+                }
+            }
         }
     }
 
@@ -1046,11 +1130,25 @@ function tick() {
 
 setInterval(tick, 1000 / TICK_RATE);
 
-function disconnectPlayer(dbUserId) {
+function disconnectPlayer(dbUserId, wsToEvict) {
     if (!dbUserId) return;
     console.log(`[AUTH] disconnectPlayer called for dbUserId=${dbUserId}, players=${Object.keys(players).length}, spectators=${Object.keys(spectators).length}`);
+    // Margen de seguridad: no cerrar un WS que se conectó hace menos de 1 segundo.
+    // Evita el race condition donde el endpoint HTTP de login llama disconnectPlayer
+    // justo después de que un nuevo WS tomó el slot para una sesión de training.
+    const EVICT_MIN_AGE_MS = 1000;
+    const now = Date.now();
     for (const [cid, p] of Object.entries(players)) {
         if (p.dbUserId === dbUserId) {
+            if (wsToEvict && p.ws !== wsToEvict) {
+                console.log(`[AUTH] disconnectPlayer: skipping clientId=${cid} — ws already replaced (new connection took over)`);
+                return;
+            }
+            const wsAge = p.ws?._connectedAt ? (now - p.ws._connectedAt) : Infinity;
+            if (wsAge < EVICT_MIN_AGE_MS) {
+                console.log(`[AUTH] disconnectPlayer: skipping clientId=${cid} — ws is only ${wsAge}ms old (race condition guard)`);
+                return;
+            }
             console.log(`[AUTH] closing WS for player clientId=${cid} readyState=${p.ws?.readyState}`);
             if (p.ws?.readyState === 1) p.ws.close(1000, 'logout');
             return;
@@ -1058,6 +1156,15 @@ function disconnectPlayer(dbUserId) {
     }
     for (const [cid, spec] of Object.entries(spectators)) {
         if (spec.dbUserId === dbUserId) {
+            if (wsToEvict && spec.ws !== wsToEvict) {
+                console.log(`[AUTH] disconnectPlayer: skipping spectator clientId=${cid} — ws already replaced`);
+                return;
+            }
+            const wsAge = spec.ws?._connectedAt ? (now - spec.ws._connectedAt) : Infinity;
+            if (wsAge < EVICT_MIN_AGE_MS) {
+                console.log(`[AUTH] disconnectPlayer: skipping spectator clientId=${cid} — ws is only ${wsAge}ms old (race condition guard)`);
+                return;
+            }
             console.log(`[AUTH] closing WS for spectator clientId=${cid} readyState=${spec.ws?.readyState}`);
             if (spec.ws?.readyState === 1) spec.ws.close(1000, 'logout');
             return;
@@ -1118,7 +1225,24 @@ function resolveTournamentGraceExpiry(session, clientId, fallbackDbId) {
 
     const remaining = [...session.playerIds].filter(id => !session.eliminated.has(id));
     if (remaining.length === 1) {
-        resolveMatchWinner(session, remaining[0], clientId);
+        const onlyId = remaining[0];
+        if (session.mode === 'tournament' && players[onlyId]?.isCpu) {
+            session.finished = true;
+            console.log(`[SOLO-GUARD] tournament session ${session.id}: last human left, only bot ${onlyId} remains — ending tournament with no winner`);
+            broadcastToSession(session, { type: 'match_end', winner: null, loser: clientId, matchId: null, mode: session.mode });
+            broadcastToAll({ type: 'tournament_end', tournamentId: session.tournamentId, champion: null, championDbId: null });
+            if (session.tournamentId) {
+                db.query(`UPDATE tournaments SET status = 'finished' WHERE id = $1`, [session.tournamentId])
+                    .catch(err => console.error('[TOURNAMENT] no-winner finalize error:', err.message));
+                tournamentBrackets.delete(session.tournamentId);
+            }
+            setTimeout(() => {
+                broadcastToSession(session, { type: 'match_finished', sessionId: session.id });
+                cleanupSession(session, null);
+            }, 200);
+        } else {
+            resolveMatchWinner(session, onlyId, clientId);
+        }
     } else if (remaining.length === 0) {
         session.finished = true;
         broadcastToSession(session, { type: 'match_end', winner: null, loser: clientId, matchId: null, mode: session.mode });
@@ -1141,6 +1265,7 @@ module.exports = {
     broadcastToSession, broadcastToAll, broadcastState, sendStateToSpectator,
     listActiveSessions, buildCharSelectAck, sendAllCharSelectsTo,
     createPlayer, startBrawl, startDuel, startTournament, startTraining,
+    fillTournamentBots,
     tryAutoMatch, handleElimination, resolveMatchWinner, cleanupSession, getLastWatchedSession,
     addToLobbyQueue, removeFromLobbyQueue, getLobbyQueue,
     disconnectPlayer,

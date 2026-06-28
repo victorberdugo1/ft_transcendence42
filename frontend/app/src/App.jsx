@@ -99,7 +99,7 @@ function LoadingScreen({ onPrivacy, onTerms }) {
 // re-initialises (doing so crashes preMainLoop). inLobby=true hides the
 // canvas behind the lobby overlay without unmounting it.
 
-function GameShell({ user, gameMode, gameOpts, inLobby, onBackToLobby, grace, onRegisterBack }) {
+function GameShell({ user, gameMode, gameOpts, gameOptsRef, inLobby, onBackToLobby, grace, onRegisterBack }) {
   const canvasRef = useRef(null);
   const scriptRef = useRef(null);
   const [visible,       setVisible]       = useState(false);
@@ -294,7 +294,7 @@ function GameShell({ user, gameMode, gameOpts, inLobby, onBackToLobby, grace, on
     window._canvasWidth  = w;
     window._canvasHeight = h;
     window._pendingGameMode = gameMode;
-    window._pendingGameOpts = gameOpts ?? {};
+    window._pendingGameOpts = gameOptsRef.current ?? {};
     window.Module = { canvas: canvasRef.current, locateFile: (p) => `/${p}` };
 
     if (!scriptRef.current) {
@@ -318,8 +318,12 @@ function GameShell({ user, gameMode, gameOpts, inLobby, onBackToLobby, grace, on
   useEffect(() => {
     if (inLobby) return;
 
+    // Leer opts desde la ref en lugar de la prop para no depender de gameOpts
+    // (que es un objeto nuevo en cada render y provocaría doble disparo del efecto).
+    const currentOpts = gameOptsRef.current ?? {};
+
     window._pendingGameMode = gameMode;
-    window._pendingGameOpts = gameOpts ?? {};
+    window._pendingGameOpts = currentOpts;
     setVisible(false);
     setStatus("Connecting\u2026");
     setMatchStarted(false);
@@ -342,8 +346,9 @@ function GameShell({ user, gameMode, gameOpts, inLobby, onBackToLobby, grace, on
     // new 'open' event and sends 'join'.
     if (gameMode === "training") {
       window._pendingGameMode = "training";
-      window._pendingGameOpts = gameOpts ?? {};
-      window._pendingTraining = gameOpts ?? { cpuCharIds: ["eld"], stageId: 0 };
+      window._pendingGameOpts = currentOpts;
+      window._pendingTraining = currentOpts ?? { cpuCharIds: ["eld"], stageId: 0 };
+      console.log('[GameShell] training: calling reconnectWS, pendingTraining=', JSON.stringify(window._pendingTraining));
       if (typeof window.reconnectWS === "function") window.reconnectWS();
       return;
     }
@@ -351,7 +356,7 @@ function GameShell({ user, gameMode, gameOpts, inLobby, onBackToLobby, grace, on
     // Spectate: also needs a clean WS connection to enter the spectator pool fresh.
     if (gameMode === "spectate") {
       window._pendingGameMode = "spectate";
-      window._pendingGameOpts = gameOpts ?? {};
+      window._pendingGameOpts = currentOpts;
       if (typeof window.reconnectWS === "function") window.reconnectWS();
       return;
     }
@@ -369,7 +374,7 @@ function GameShell({ user, gameMode, gameOpts, inLobby, onBackToLobby, grace, on
         });
         window._ws.send(JSON.stringify({ type: "rejoin", clientId: parseInt(savedId, 10), seekingMatch: gameMode === "versus" }));
       } else if (gameMode === "spectate") {
-        window._ws.send(JSON.stringify({ type: "watch", sessionId: gameOpts?.sessionId ?? null }));
+        window._ws.send(JSON.stringify({ type: "watch", sessionId: currentOpts?.sessionId ?? null }));
       } else if (gameMode === "tournament") {
         window._pendingTournament = true;
         window._ws.send(JSON.stringify({ type: "join", seekingMatch: false }));
@@ -391,11 +396,13 @@ function GameShell({ user, gameMode, gameOpts, inLobby, onBackToLobby, grace, on
     }, 50);
     return () => clearInterval(timer);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [inLobby, gameMode, gameOpts]);
+  }, [inLobby, gameMode]); // gameOpts excluido intencionalmente — se lee via gameOptsRef
 
   // Poll until the game state confirms we are in-game
   useEffect(() => {
     if (inLobby) return;
+
+    console.log('[GameShell] poll started — gameMode:', gameMode, '_myClientId:', window._myClientId);
 
     const poll = setInterval(() => {
       if (window._isSpectator && window._myClientId > 0) {
@@ -403,11 +410,13 @@ function GameShell({ user, gameMode, gameOpts, inLobby, onBackToLobby, grace, on
       }
       const id = window._myClientId;
       if (id > 0 && window._gameState?.players?.[id]) {
+        console.log('[GameShell] poll: visible! id=', id, 'players=', Object.keys(window._gameState.players));
         setVisible(true); setStatus(""); clearInterval(poll);
       }
     }, 50);
 
     const onStart    = () => {
+      console.log('[GameShell] match_start received — myClientId:', window._myClientId, 'matchSession:', window._matchSession);
       setStatus(""); setMatchStarted(true); matchStartedRef.current = true; setPairDissolved(false);
       // Lobby pair is now a real session — clear the pre-match lobby lock.
       setLobbyPaired(false); lobbyPairedRef.current = false;
@@ -641,7 +650,6 @@ function GameShell({ user, gameMode, gameOpts, inLobby, onBackToLobby, grace, on
           ref={canvasRef}
           id="canvas"
           className="game-canvas"
-          style={{ opacity: visible ? 1 : 0 }}
         />
       </div>
     </div>
@@ -725,6 +733,9 @@ export default function App() {
   const [legalBackPage, setLegalBackPage] = useState("auth");
   const [gameMode,      setGameMode]      = useState("versus");
   const [gameOpts,      setGameOpts]      = useState({});
+  // Ref espejo de gameOpts — permite que el efecto de GameShell lea los opts
+  // actuales sin necesitar gameOpts como dependencia (evita doble disparo).
+  const gameOptsRef = useRef({});
   const [grace,         setGrace]         = useState(null);
   // True while stage_confirmed arrived but match_start has not yet —
   // i.e. the lobby SSS pair is active. Blocks ALL back-navigation at
@@ -939,8 +950,9 @@ export default function App() {
   }
 
   const handleEnterGame = useCallback((mode, opts = {}) => {
-    setGameMode(mode);
-    setGameOpts(opts);
+    gameOptsRef.current = opts;  // actualizar ref ANTES del setState para que
+    setGameMode(mode);           // el efecto de GameShell lea el valor correcto
+    setGameOpts(opts);           // sin necesitar gameOpts como dependencia
     setGrace(null);
     setPage("game");
   }, []);
@@ -1071,6 +1083,7 @@ export default function App() {
           user={user}
           gameMode={gameMode}
           gameOpts={gameOpts}
+          gameOptsRef={gameOptsRef}
           inLobby={page !== "game"}
           onBackToLobby={() => setPage("fightLobby")}
           grace={grace}

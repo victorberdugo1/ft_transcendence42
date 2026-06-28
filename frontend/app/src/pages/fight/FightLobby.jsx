@@ -333,6 +333,8 @@ function ModeTournament({ onEnterGame, matchCooldown = 0, graceActive = false })
   const playerCount = room?.players?.length ?? 0;
   const maxPlayers  = room?.maxPlayers ?? 8;
   const canLaunch   = inRoom && playerCount >= 2 && !room?.started && !launching;
+  // When ≥2 humans are present the remaining slots will be filled with bots on launch.
+  const willUseBots = playerCount >= 2 && playerCount < maxPlayers;
 
   if (!inRoom) {
     return (
@@ -387,10 +389,17 @@ function ModeTournament({ onEnterGame, matchCooldown = 0, graceActive = false })
           </div>
         ))}
         {Array.from({ length: maxPlayers - playerCount }).map((_, i) => (
-          <div key={`empty-${i}`} className="lobby-session-row" style={{ opacity: 0.35 }}>
+          <div key={`empty-${i}`} className="lobby-session-row" style={{ opacity: willUseBots ? 0.55 : 0.35 }}>
             <div className="lobby-session-info">
               <span className="lobby-session-badge">#{playerCount + i + 1}</span>
-              <span className="lobby-session-players" style={{ fontStyle: "italic" }}>Waiting…</span>
+              {willUseBots ? (
+                <>
+                  <span className="lobby-session-players" style={{ fontStyle: "italic" }}>Bot (CPU)</span>
+                  <span className="lobby-session-specs" style={{ fontSize: "0.72rem" }}>auto-fill</span>
+                </>
+              ) : (
+                <span className="lobby-session-players" style={{ fontStyle: "italic" }}>Waiting…</span>
+              )}
             </div>
           </div>
         ))}
@@ -409,7 +418,9 @@ function ModeTournament({ onEnterGame, matchCooldown = 0, graceActive = false })
           ? "Starting\u2026"
           : playerCount < 2
             ? "Waiting for players\u2026"
-            : `Start tournament (${playerCount} players)`}
+            : willUseBots
+              ? `Start tournament (${playerCount} players + ${maxPlayers - playerCount} bots)`
+              : `Start tournament (${playerCount} players)`}
       </button>
 
       <button
