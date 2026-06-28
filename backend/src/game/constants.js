@@ -98,6 +98,7 @@ const PLAYER_HEIGHT = 0.72;
 const MAX_PLAYERS   = 8;
 
 const CHARACTER_DEFS = {
+    def: { name: 'Default', moveSpeed: MOVE_SPEED, dashSpeed: DASH_SPEED, attackKnockback: ATTACK_KNOCKBACK, attackRange: ATTACK_RANGE },
     eld: { name: 'Eldwin',  moveSpeed: 4.5, dashSpeed: 13.0, attackKnockback: 16.0, attackRange: 0.55 },
     hil: { name: 'Hilda',   moveSpeed: 5.5, dashSpeed: 15.0, attackKnockback: 12.0, attackRange: 0.50 },
     qui: { name: 'Quimbur', moveSpeed: 3.8, dashSpeed: 11.0, attackKnockback: 18.0, attackRange: 0.60 },
@@ -105,12 +106,14 @@ const CHARACTER_DEFS = {
 };
 
 const CHARACTER_ASSETS = {
+    def: { texCfg: 'data/textures/default/bone_textures.txt', texSets: 'data/textures/default/texture_sets.txt', animBase: 'data/animations/default/', portrait: null },
     eld: { texCfg: 'data/textures/eld/bone_textures.txt', texSets: 'data/textures/eld/texture_sets.txt', animBase: 'data/animations/eld/', portrait: 'data/eldwin_portrait.jpg'  },
     hil: { texCfg: 'data/textures/hil/bone_textures.txt', texSets: 'data/textures/hil/texture_sets.txt', animBase: 'data/animations/hil/', portrait: 'data/hilda_portrait.jpg'   },
     qui: { texCfg: 'data/textures/qui/bone_textures.txt', texSets: 'data/textures/qui/texture_sets.txt', animBase: 'data/animations/qui/', portrait: 'data/quimbur_portrait.jpg' },
     gab: { texCfg: 'data/textures/gab/bone_textures.txt', texSets: 'data/textures/gab/texture_sets.txt', animBase: 'data/animations/gab/', portrait: 'data/gabriel_portrait.jpg' },
 };
 
+// CHAR_IDS: solo los seleccionables por humanos — 'def' es exclusivo de bots de torneo
 const CHAR_IDS = ['eld', 'hil', 'qui', 'gab'];
 
 module.exports = {
