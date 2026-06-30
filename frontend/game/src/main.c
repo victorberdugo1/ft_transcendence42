@@ -1,6 +1,7 @@
 #include "raylib.h"
 #include "raymath.h"
 #include "bones_core.h"
+#include "effects.h"
 
 #include <emscripten/emscripten.h>
 #include <math.h>
@@ -281,6 +282,9 @@ typedef struct {
     float outlineTimer;
     float youTimer;
     bool  prevRespawning;
+
+    FxState fx;
+    bool    wasInAir;
 } Player;
 
 static Player players[MAX_PLAYERS];
@@ -466,15 +470,11 @@ static const CharDef CHARS[5] = {
     { "hil", "Hilda",   "data/textures/hil/bone_textures.txt", "data/textures/hil/texture_sets.txt", "data/animations/hil/", "data/hilda_portrait.jpg"   },
     { "qui", "Quimbur", "data/textures/qui/bone_textures.txt", "data/textures/qui/texture_sets.txt", "data/animations/qui/", "data/quimbur_portrait.jpg" },
     { "gab", "Gabriel", "data/textures/gab/bone_textures.txt", "data/textures/gab/texture_sets.txt", "data/animations/gab/", "data/gabriel_portrait.jpg" },
-    // 'def' (Default) is the tournament-bot-only character: never shown on the
-    // CSS select screen (see CHARS_SELECTABLE below), but must be a real
-    // CharDef entry so it goes through the exact same texture/anim loading
-    // path as every other character instead of the separate hardcoded
-    // fallback in InitPlayer/LoadPlayerAnim.
+    
     { "def", "Default", "data/textures/default/bone_textures.txt", "data/textures/default/texture_sets.txt", "data/animations/default/", NULL },
 };
-#define CHARS_COUNT      5   // total entries in CHARS[] (lookup/animation/texture resolution)
-#define CHARS_SELECTABLE 4   // entries shown on the CSS select screen (excludes 'def')
+#define CHARS_COUNT      5
+#define CHARS_SELECTABLE 4
 
 typedef struct { int id; const char *name; const char *preview; const char *desc; } StageDef;
 
@@ -707,11 +707,7 @@ EM_JS(void, ws_send_char_select, (const char *charId, int charIdx, int stageId),
     try { sessionStorage.setItem('pendingCharSelect', JSON.stringify({charId:id,charIdx:charIdx,stageId:stageId})); } catch(e){}
     if (typeof window.sendCharSelect === 'function') window.sendCharSelect(id, charIdx, stageId);
 });
-// Tells the server this client has actually finished loading textures and
-// animations for its own character (not just picked one) and is ready to
-// fight. The server gates bot movement/attacks on every human sending this
-// before starting the round, so a slow asset load can't leave a player
-// defenseless against bots that are already acting.
+
 EM_JS(void, ws_send_fight_ready, (void), {
     if (typeof window.sendFightReady === 'function') window.sendFightReady();
 });
@@ -1130,6 +1126,16 @@ static void FetchState(void) {
 
         if (phitId != players[slot].hitId) {
             players[slot].hitId = phitId;
+
+            float hitFacing = (players[slot].rotation > 1.0f) ? -1.0f : 1.0f;
+            if (players[slot].blocking) {
+                Fx_Trigger(&players[slot].fx, FX_BLOCK,
+                           players[slot].wx, players[slot].wy, hitFacing);
+            } else {
+                Fx_Trigger(&players[slot].fx, FX_HIT,
+                           players[slot].wx, players[slot].wy, hitFacing);
+            }
+
             if (players[slot].character) {
                 int ai = AnimIndex("hurt");
                 LoadPlayerAnim(&players[slot], ai);
@@ -1146,6 +1152,7 @@ static void FetchState(void) {
                 players[slot].animIndex = ai;
                 strcpy_safe(players[slot].animation, "jump", sizeof(players[slot].animation));
             }
+            players[slot].wasInAir = true;
         } else if (strncmp(players[slot].animation, panim, sizeof(players[slot].animation)) != 0) {
 
             if (!players[slot].victoryLanding) {
@@ -1159,6 +1166,19 @@ static void FetchState(void) {
                         strncmp(players[slot].animation, "attack", 6) != 0) {
                     players[slot].attackFlashTimer  = 0.3f;
                     players[slot].attackFlashFacing = (prot > 1.0f) ? -1.0f : 1.0f;
+                }
+                if (strncmp(panim, "dash", 4) == 0 &&
+                        strncmp(players[slot].animation, "dash", 4) != 0) {
+                    float facing = (prot > 1.0f) ? -1.0f : 1.0f;
+                    Fx_Trigger(&players[slot].fx, FX_DASH, players[slot].wx, players[slot].wy, facing);
+                }
+                if (strncmp(panim, "jump", 4) == 0 &&
+                        strncmp(players[slot].animation, "jump", 4) != 0) {
+                    players[slot].wasInAir = true;
+                }
+                if (players[slot].wasInAir && strncmp(panim, "jump", 4) != 0) {
+                    players[slot].wasInAir = false;
+                    Fx_Trigger(&players[slot].fx, FX_LANDING, players[slot].wx, players[slot].wy, 1.0f);
                 }
                 strcpy_safe(players[slot].animation, panim, sizeof(players[slot].animation));
             }
@@ -1676,6 +1696,7 @@ static void DrawGame(void) {
                         : (p->wy       - (p->hasAnchorY ? p->anchorYOffset : 0.0f));
 
         float playerShakeX = 0.0f, playerShakeY = 0.0f;
+        Fx_Update(&p->fx, dt);
         if (p->hitShakeTimer > 0.0f) {
             p->hitShakeTimer -= dt;
             if (p->hitShakeTimer < 0.0f) {
@@ -1718,14 +1739,12 @@ static void DrawGame(void) {
         Vector3      clothWorldPos = {0};
         Matrix       clothWorldRot = MatrixIdentity();
         Vector3      clothWorldPiv = {0};
-        Vector3      clothCenter   = {0};
         if (doOutline && p->character && p->character->clothPanels &&
                 p->character->clothPanels->loaded) {
             clothToRedraw = p->character->clothPanels;
             clothWorldPos = p->character->worldPosition;
             clothWorldRot = MatrixRotateY(p->character->worldRotation);
             clothWorldPiv = p->character->worldPivot;
-            clothCenter   = Vector3Add(p->character->worldPosition, p->character->autoCenter);
             for (int _ci = 0; _ci < clothToRedraw->panelCount; _ci++)
                 clothToRedraw->panels[_ci].visible = false;
         }
@@ -1735,7 +1754,6 @@ static void DrawGame(void) {
             clothWorldPos = p->character->worldPosition;
             clothWorldRot = MatrixRotateY(p->character->worldRotation);
             clothWorldPiv = p->character->worldPivot;
-            clothCenter   = Vector3Add(p->character->worldPosition, p->character->autoCenter);
             for (int _wi = 0; _wi < waistClothToRedraw->clothCount; _wi++)
                 waistClothToRedraw->cloths[_wi].visible = false;
         }
@@ -1759,6 +1777,10 @@ static void DrawGame(void) {
         DrawAnimatedCharacterTransformed(p->character, scene_cam, worldPos, drawRot);
         if (doOutline) EndShaderMode();
 
+        BeginMode3D(scene_cam);
+        Fx_Draw(&p->fx, scene_cam);
+        EndMode3D();
+
         if (clothToRedraw || waistClothToRedraw) {
             if (clothToRedraw)
                 for (int _ci = 0; _ci < clothToRedraw->panelCount; _ci++)
@@ -1766,15 +1788,47 @@ static void DrawGame(void) {
             if (waistClothToRedraw)
                 for (int _wi = 0; _wi < waistClothToRedraw->clothCount; _wi++)
                     waistClothToRedraw->cloths[_wi].visible = true;
+
+            /* Igual que el camino principal de dibujo: cada celda de cloth se
+               recolecta como un DrawableQuad con su propia profundidad de
+               cámara y se ordena junto con el resto, en vez del viejo
+               sándwich de 2 pasadas (behindOnly) que comparaba un único punto
+               de referencia por panel contra el centro del personaje. Ese
+               método fallaba con paneles grandes o ángulos de cámara donde
+               una parte del panel queda delante y otra detrás del cuerpo,
+               haciendo que el panel completo "saltara" entero a la pasada
+               equivocada mientras el personaje se movía. */
+            static DrawableQuad redrawQuads[MAX_DRAWABLE_QUADS];
+            int redrawQuadCount = 0;
+            if (clothToRedraw)
+                Cloth_Collect(clothToRedraw, scene_cam, clothWorldPos, clothWorldRot,
+                              clothWorldPiv, redrawQuads, &redrawQuadCount, MAX_DRAWABLE_QUADS);
+            if (waistClothToRedraw)
+                WaistCloth_Collect(waistClothToRedraw, scene_cam, clothWorldPos, clothWorldRot,
+                                    clothWorldPiv, redrawQuads, &redrawQuadCount, MAX_DRAWABLE_QUADS);
+
+            for (int i = 0; i < redrawQuadCount - 1; i++) {
+                bool swapped = false;
+                for (int j = 0; j < redrawQuadCount - i - 1; j++) {
+                    if (redrawQuads[j].depth < redrawQuads[j + 1].depth) {
+                        DrawableQuad t      = redrawQuads[j];
+                        redrawQuads[j]      = redrawQuads[j + 1];
+                        redrawQuads[j + 1]  = t;
+                        swapped = true;
+                    }
+                }
+                if (!swapped) break;
+            }
+
             BeginMode3D(scene_cam);
-            if (clothToRedraw) {
-                Cloth_Draw(clothToRedraw, scene_cam, clothCenter, true,  clothWorldPos, clothWorldRot, clothWorldPiv);
-                Cloth_Draw(clothToRedraw, scene_cam, clothCenter, false, clothWorldPos, clothWorldRot, clothWorldPiv);
-            }
-            if (waistClothToRedraw) {
-                WaistCloth_Draw(waistClothToRedraw, scene_cam, clothCenter, true,  clothWorldPos, clothWorldRot, clothWorldPiv);
-                WaistCloth_Draw(waistClothToRedraw, scene_cam, clothCenter, false, clothWorldPos, clothWorldRot, clothWorldPiv);
-            }
+            BeginBlendMode(BLEND_ALPHA_PREMULTIPLY);
+            rlDisableBackfaceCulling();
+            rlDisableDepthMask();
+            for (int i = 0; i < redrawQuadCount; i++)
+                DrawableQuad_Draw(&redrawQuads[i]);
+            rlEnableDepthMask();
+            rlEnableBackfaceCulling();
+            EndBlendMode();
             EndMode3D();
         }
 
@@ -2314,10 +2368,6 @@ static void MainLoop(void) {
     FetchState();
     FlushOnePlayerInit();
 
-    // Signal the server once this client's own character has actually finished
-    // loading (not just been picked) for the current round. Tracked by the
-    // AnimatedCharacter pointer so a new round (new character rebuild after
-    // InitPlayer) triggers a fresh signal instead of firing only once ever.
     if (!is_spectator && my_id > 0) {
         static void *fight_ready_for_character = NULL;
         for (int s = 0; s < MAX_PLAYERS; s++) {
@@ -2376,7 +2426,7 @@ static void MainLoop(void) {
 int main(void) {
     memset(players, 0, sizeof(players));
 
-    SetTraceLogLevel(LOG_NONE);
+    SetTraceLogLevel(LOG_WARNING);
     InitWindow(SCREEN_W, SCREEN_H, "Enuma Fighter");
     SetTargetFPS(0);
 
@@ -2389,6 +2439,8 @@ int main(void) {
     };
 
     game_ready = true;
+
+    Fx_LoadTextures();
 
     {
 
@@ -2409,6 +2461,7 @@ int main(void) {
         if (players[i].active) FreePlayer(&players[i]);
     Skybox_Unload();
     PlatTex_Unload();
+    Fx_UnloadTextures();
     CloseWindow();
     return 0;
 }
