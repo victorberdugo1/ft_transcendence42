@@ -348,6 +348,8 @@ float ws_get_countdown_elapsed(void);
 int   ws_get_hitstop_frames_left(void);
 float ws_get_hitstop_shake(void);
 int   ws_get_hitstop_target_id(void);
+int   ws_get_hitstop_tier_for_target(int targetId);
+int   ws_get_hitstop_is_dash_attack(int targetId);
 
 EM_JS(int, js_canvas_width, (void), {
     return (window._canvasWidth > 0) ? (window._canvasWidth | 0) : 800;
@@ -406,6 +408,28 @@ EM_JS(int, ws_get_hitstop_target_id, (void), {
     var hs = window._hitstopState;
     if (!hs) return -1;
     return (hs.targetId | 0);
+});
+/* Devuelve el tier del golpe (índice en la tabla de abajo) si targetId
+   coincide con el objetivo del hitstop actual; -1 si no hay info (p.ej.
+   por una carrera de tiempos entre el mensaje 'hitstop' y la sync de
+   estado). No consume el estado -- a diferencia de
+   ws_get_hitstop_frames_left, puede llamarse varias veces sin efectos
+   secundarios. */
+EM_JS(int, ws_get_hitstop_tier_for_target, (int targetId), {
+    var hs = window._hitstopState;
+    if (!hs) return -1;
+    if ((hs.targetId | 0) !== targetId) return -1;
+    var tiers = ['micro', 'light', 'medium', 'heavy', 'ultra'];
+    var idx = tiers.indexOf(hs.tier);
+    return idx;
+});
+/* Igual que ws_get_hitstop_tier_for_target pero para el flag de dash
+   attack: -1 si no hay info para ese targetId, 0/1 en caso contrario. */
+EM_JS(int, ws_get_hitstop_is_dash_attack, (int targetId), {
+    var hs = window._hitstopState;
+    if (!hs) return -1;
+    if ((hs.targetId | 0) !== targetId) return -1;
+    return hs.isDashAttack ? 1 : 0;
 });
 EM_JS(int, ws_get_countdown, (void), {
     if (!window._countdownStart || window._countdownDone) return 0;
@@ -1128,13 +1152,25 @@ static void FetchState(void) {
             players[slot].hitId = phitId;
 
             float hitFacing = (players[slot].rotation > 1.0f) ? -1.0f : 1.0f;
-            if (players[slot].blocking) {
-                Fx_Trigger(&players[slot].fx, FX_BLOCK,
-                           players[slot].wx, players[slot].wy, hitFacing);
-            } else {
-                Fx_Trigger(&players[slot].fx, FX_HIT,
-                           players[slot].wx, players[slot].wy, hitFacing);
-            }
+
+            /* Fila 2 del sheet ('bighit') es un golpe fuerte, no un efecto
+               de bloqueo -- se elige según el tier de hitstop calculado en
+               el servidor (physics.js: calcHitstop), no según si el
+               jugador estaba bloqueando. 'heavy' y 'ultra' son los índices
+               3 y 4 en la tabla de tiers. Si por una carrera de tiempos
+               aún no ha llegado el mensaje 'hitstop' correspondiente
+               (tier == -1), se usa el efecto normal de HIT por defecto.
+
+               Los dash attacks también cuentan como golpe fuerte aunque el
+               voltaje del atacante no alcance el tier 'heavy'/'ultra' --
+               el impacto visual del embiste debe notarse siempre, no solo
+               cuando el voltaje está cerca del 200%. */
+            int tier = ws_get_hitstop_tier_for_target(players[slot].id);
+            bool isDashHit = (ws_get_hitstop_is_dash_attack(players[slot].id) == 1);
+            bool isBigHit = (tier >= 3) || isDashHit;
+
+            Fx_Trigger(&players[slot].fx, isBigHit ? FX_BIGHIT : FX_HIT,
+                       players[slot].wx, players[slot].wy, hitFacing);
 
             if (players[slot].character) {
                 int ai = AnimIndex("hurt");
@@ -1591,6 +1627,25 @@ static void DrawGame(void) {
 
     const float TURN_SPEED = 12.0f;
 
+    /* Prepase de efectos: se dibujan TODOS los efectos de TODOS los
+       jugadores antes que cualquier personaje. Antes el efecto de cada
+       jugador se dibujaba dentro de su propia iteración del bucle, así
+       que con varios jugadores activos el orden de oclusión dependía del
+       slot (el último jugador del array siempre tapaba a los efectos de
+       los anteriores). FxInstance guarda su propia posición de mundo en
+       el momento del Fx_Trigger, así que dibujarlo aquí no depende del
+       estado de animación/posición visual que se calcula más abajo. */
+    BeginMode3D(scene_cam);
+    for (int s = 0; s < MAX_PLAYERS; s++) {
+        Player *p = &players[s];
+        if (!p->active || p->active != 1 || !p->character || p->respawning) continue;
+        if (is_spectator && my_id > 0 && p->id == my_id) continue;
+        if ((victory_pending || match_over) && p->id != winner_id) continue;
+        Fx_Update(&p->fx, dt);
+        Fx_Draw(&p->fx, scene_cam);
+    }
+    EndMode3D();
+
     for (int s = 0; s < MAX_PLAYERS; s++) {
         Player *p = &players[s];
         if (!p->active) { p->prevRespawning = false; continue; }
@@ -1696,7 +1751,6 @@ static void DrawGame(void) {
                         : (p->wy       - (p->hasAnchorY ? p->anchorYOffset : 0.0f));
 
         float playerShakeX = 0.0f, playerShakeY = 0.0f;
-        Fx_Update(&p->fx, dt);
         if (p->hitShakeTimer > 0.0f) {
             p->hitShakeTimer -= dt;
             if (p->hitShakeTimer < 0.0f) {
@@ -1776,10 +1830,6 @@ static void DrawGame(void) {
         }
         DrawAnimatedCharacterTransformed(p->character, scene_cam, worldPos, drawRot);
         if (doOutline) EndShaderMode();
-
-        BeginMode3D(scene_cam);
-        Fx_Draw(&p->fx, scene_cam);
-        EndMode3D();
 
         if (clothToRedraw || waistClothToRedraw) {
             if (clothToRedraw)

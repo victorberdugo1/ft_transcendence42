@@ -398,6 +398,8 @@ function connectWS() {
                 window._hitstopState = {
                     framesLeft: msg.frames, tier: msg.tier, shakeAmt,
                     attackerId: msg.attackerId, targetId: msg.targetId, startFrames: msg.frames,
+                    isDashAttack: !!msg.isDashAttack,
+                    startTime: performance.now(),
                 };
             }
             window.dispatchEvent(new CustomEvent('hitstop', { detail: window._hitstopState }));

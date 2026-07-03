@@ -17,7 +17,7 @@ extern "C" {
 typedef enum {
     FX_DASH = 0,
     FX_HIT,
-    FX_BLOCK,
+    FX_BIGHIT,
     FX_LANDING,
     FX_TYPE_COUNT
 } FxType;
@@ -166,17 +166,27 @@ static inline void Fx_DrawInstance(FxType type, const FxInstance *inst, Camera c
     }
     Color tint = (Color){255, 255, 255, alpha};
 
-    /* Desactivamos test Y escritura de profundidad: este sprite no debe
-       competir en el depth buffer con la plataforma/escenario. Si solo
-       desactivábamos la escritura, el test seguía activo y, al estar el
-       efecto casi a la misma distancia de cámara que el borde de la
-       plataforma, el resultado del test "parpadeaba" entre frames
-       (z-fighting) — por eso a veces se veía y a veces no. */
-    rlDisableDepthTest();
+    /* El "tapa todo" no era por el depth TEST sino por la escritura al
+       depth buffer: aunque un píxel del sprite sea transparente
+       (alpha=0), DrawBillboardRec igual escribe su profundidad para todo
+       el quad si el depth mask está activo. Como el FX se dibuja antes
+       que los personajes en este mismo frame (ver el bucle de arriba en
+       main.c), cualquier jugador tapado por el rectángulo completo del
+       billboard -- no solo por su silueta visible -- queda oculto detrás.
+
+       Para arreglarlo alcanza con desactivar la ESCRITURA de profundidad
+       (dejamos el test activo, así el FX se sigue ocultando bien detrás
+       de lo que esté delante). El punto importante es forzar el flush
+       del batch de rlgl justo antes y después del toggle: rlgl no aplica
+       el estado de GL en el momento en que se encola el draw call, sino
+       cuando el batch se vacía, así que sin el flush el cambio de estado
+       podía terminar aplicándose a otros draws distintos del que
+       queríamos. */
+    rlDrawRenderBatchActive();
     rlDisableDepthMask();
     DrawBillboardRec(camera, g_fxSheet, src, pos, size, tint);
+    rlDrawRenderBatchActive();
     rlEnableDepthMask();
-    rlEnableDepthTest();
 }
 
 static inline void Fx_Draw(const FxState *fx, Camera camera) {
