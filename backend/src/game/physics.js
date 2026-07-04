@@ -96,6 +96,7 @@ function applyHit(attacker, target, ctx) {
                 broadcastToSession(session, {
                     type: 'hitstop', tier: hs.tier, frames: hs.durationFrames,
                     attackerId: attacker.id, targetId: target.id,
+                    isDashAttack: !!attacker._isDashAttack,
                 });
             }
         }
