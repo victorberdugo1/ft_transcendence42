@@ -313,7 +313,7 @@ async function getMatchHistory(req, res) {
     }
 }
 
-async function getUserAchievements(req, res) {
+async function getUserAchievements(req, res) {  
     const userId = parseInt(req.params.id);
     try {
         const { rows } = await db.query(

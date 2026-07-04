@@ -5,13 +5,15 @@ RESET := \033[0m
 
 ENV_CHECK = if [ ! -f .env ]; then cp .env.example .env; echo ".env created. Edit it before running Docker"; else echo ".env already exists, not overwritten"; fi
 
+DEV_COMPOSE := docker-compose.dev.yml
+
 all: up ## Alias for 'up' (default target)
 
 up: ## Start containers in detached mode
 	@$(ENV_CHECK) && docker compose up -d
 
-dev: ## Start containers in foreground (dev mode, logs attached)
-	@$(ENV_CHECK) && docker compose up
+dev: ## Start dev stack from docker-compose.dev.yml (hot-reload, foreground)
+	@$(ENV_CHECK) && docker compose -f $(DEV_COMPOSE) up
 
 wasm: ## Rebuild frontend (WASM) and restart detached
 	@$(ENV_CHECK) && docker compose build frontend && docker compose up -d
