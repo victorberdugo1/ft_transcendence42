@@ -6,13 +6,23 @@ RESET := \033[0m
 ENV_CHECK = if [ ! -f .env ]; then cp .env.example .env; echo ".env created. Edit it before running Docker"; else echo ".env already exists, not overwritten"; fi
 
 DEV_COMPOSE := docker-compose.dev.yml
+GAME_BUILDER_IMAGE := ft_transcendence42-game-builder:dev
 
 all: up ## Alias for 'up' (default target)
 
 up: ## Start containers in detached mode
 	@$(ENV_CHECK) && docker compose up -d
 
-dev: ## Start dev stack from docker-compose.dev.yml (hot-reload, foreground)
+dev-assets: ## Build/extract game.js, game.wasm, game.data into frontend/dist for Vite dev
+	@mkdir -p frontend/dist
+	@docker build -f frontend/Dockerfile --target game-builder -t $(GAME_BUILDER_IMAGE) frontend
+	@cid=$$(docker create $(GAME_BUILDER_IMAGE)); \
+		docker cp $$cid:/build/game.js frontend/dist/game.js; \
+		docker cp $$cid:/build/game.wasm frontend/dist/game.wasm; \
+		docker cp $$cid:/build/game.data frontend/dist/game.data; \
+		docker rm $$cid >/dev/null
+
+dev: dev-assets ## Start dev stack from docker-compose.dev.yml (hot-reload, foreground)
 	@$(ENV_CHECK) && docker compose -f $(DEV_COMPOSE) up
 
 wasm: ## Rebuild frontend (WASM) and restart detached
@@ -62,4 +72,4 @@ help: ## Show this help message
 	@echo "$(YELLOW)Available commands:$(RESET)"
 	@awk 'BEGIN {FS = ":.*##"} /^[a-zA-Z0-9_%-]+:.*##/ { printf "  $(CYAN)%-15s$(RESET) %s\n", $$1, $$2 }' $(MAKEFILE_LIST)
 
-.PHONY: all up down dev build logs clean destroy delete re shell-% wasm wasm-full help
+.PHONY: all up down dev dev-assets build logs clean destroy delete re shell-% wasm wasm-full help
