@@ -1,10 +1,12 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 
 function isValidEmail(email) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
 
 export default function Login({ onLogin, onSwitchToRegister }) {
+  const { t } = useTranslation();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -17,12 +19,12 @@ export default function Login({ onLogin, onSwitchToRegister }) {
     const normalizedEmail = email.trim().toLowerCase();
 
     if (!normalizedEmail || !password) {
-      setError("Email and password are required.");
+      setError(t("validation.emailPasswordRequired"));
       return;
     }
 
     if (!isValidEmail(normalizedEmail)) {
-      setError("Please enter a valid email address.");
+      setError(t("validation.invalidEmail"));
       return;
     }
 
@@ -46,14 +48,14 @@ export default function Login({ onLogin, onSwitchToRegister }) {
       const data = await response.json();
 
       if (!response.ok) {
-        setError(data.error || "Login failed.");
+        setError(data.error || t("validation.loginFailed"));
         return;
       }
 
       onLogin(data.user);
     } catch (requestError) {
       console.error("[auth] login failed:", requestError);
-      setError("Could not reach the server. Please try again.");
+      setError(t("validation.serverUnreachable"));
     } finally {
       setLoading(false);
     }
@@ -62,7 +64,7 @@ export default function Login({ onLogin, onSwitchToRegister }) {
   return (
     <form className="auth-form" onSubmit={handleSubmit}>
       <label className="auth-label" htmlFor="login-email">
-        Email
+        {t("auth.email")}
       </label>
       <input
         id="login-email"
@@ -71,11 +73,11 @@ export default function Login({ onLogin, onSwitchToRegister }) {
         value={email}
         onChange={(event) => setEmail(event.target.value)}
         autoComplete="email"
-        placeholder="you@example.com"
+        placeholder={t("auth.emailPlaceholder")}
       />
 
       <label className="auth-label" htmlFor="login-password">
-        Password
+        {t("auth.password")}
       </label>
       <div className="password-input-wrapper">
         <input
@@ -85,7 +87,7 @@ export default function Login({ onLogin, onSwitchToRegister }) {
           value={password}
           onChange={(event) => setPassword(event.target.value)}
           autoComplete="current-password"
-          placeholder="Your password"
+          placeholder={t("auth.passwordPlaceholder")}
         />
         <button
           type="button"
@@ -100,13 +102,13 @@ export default function Login({ onLogin, onSwitchToRegister }) {
       {error ? <p className="auth-error">{error}</p> : null}
 
       <button className="auth-submit" type="submit" disabled={loading}>
-        {loading ? "Signing in..." : "Sign in"}
+        {loading ? t("auth.signingIn") : t("auth.signIn")}
       </button>
 
       <p className="auth-switch">
-        Need an account?{" "}
+        {t("auth.needAccount")} {" "}
         <button type="button" className="auth-link" onClick={onSwitchToRegister}>
-          Create one
+          {t("auth.createOne")}
         </button>
       </p>
     </form>

@@ -1,10 +1,12 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 
 function isValidEmail(email) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
 
 export default function Register({ onLogin, onSwitchToLogin }) {
+  const { t } = useTranslation();
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -21,27 +23,27 @@ export default function Register({ onLogin, onSwitchToLogin }) {
     const normalizedEmail = email.trim().toLowerCase();
 
     if (!normalizedUsername || !normalizedEmail || !password || !confirmPassword) {
-      setError("All fields are required.");
+      setError(t("validation.allFieldsRequired"));
       return;
     }
 
     if (normalizedUsername.length < 3) {
-      setError("Username must be at least 3 characters long.");
+      setError(t("validation.usernameMin"));
       return;
     }
 
     if (!isValidEmail(normalizedEmail)) {
-      setError("Please enter a valid email address.");
+      setError(t("validation.invalidEmail"));
       return;
     }
 
     if (password.length < 8) {
-      setError("Password must be at least 8 characters long.");
+      setError(t("validation.passwordMin"));
       return;
     }
 
     if (password !== confirmPassword) {
-      setError("Passwords do not match.");
+      setError(t("validation.passwordMismatch"));
       return;
     }
 
@@ -66,14 +68,14 @@ export default function Register({ onLogin, onSwitchToLogin }) {
       const data = await response.json();
 
       if (!response.ok) {
-        setError(data.error || "Register failed.");
+        setError(data.error || t("validation.registerFailed"));
         return;
       }
 
       onLogin(data.user);
     } catch (requestError) {
       console.error("[auth] register failed:", requestError);
-      setError("Could not reach the server. Please try again.");
+      setError(t("validation.serverUnreachable"));
     } finally {
       setLoading(false);
     }
@@ -82,7 +84,7 @@ export default function Register({ onLogin, onSwitchToLogin }) {
   return (
     <form className="auth-form" onSubmit={handleSubmit}>
       <label className="auth-label" htmlFor="register-username">
-        Username
+        {t("auth.username")}
       </label>
       <input
         id="register-username"
@@ -91,11 +93,11 @@ export default function Register({ onLogin, onSwitchToLogin }) {
         value={username}
         onChange={(event) => setUsername(event.target.value)}
         autoComplete="username"
-        placeholder="Choose a username"
+        placeholder={t("auth.usernamePlaceholder")}
       />
 
       <label className="auth-label" htmlFor="register-email">
-        Email
+        {t("auth.email")}
       </label>
       <input
         id="register-email"
@@ -104,11 +106,11 @@ export default function Register({ onLogin, onSwitchToLogin }) {
         value={email}
         onChange={(event) => setEmail(event.target.value)}
         autoComplete="email"
-        placeholder="you@example.com"
+        placeholder={t("auth.emailPlaceholder")}
       />
 
       <label className="auth-label" htmlFor="register-password">
-        Password
+        {t("auth.password")}
       </label>
       <div className="password-input-wrapper">
         <input
@@ -118,7 +120,7 @@ export default function Register({ onLogin, onSwitchToLogin }) {
           value={password}
           onChange={(event) => setPassword(event.target.value)}
           autoComplete="new-password"
-          placeholder="At least 8 characters"
+          placeholder={t("auth.registerPasswordPlaceholder")}
         />
         <button
           type="button"
@@ -131,7 +133,7 @@ export default function Register({ onLogin, onSwitchToLogin }) {
       </div>
 
       <label className="auth-label" htmlFor="register-confirm-password">
-        Confirm password
+        {t("auth.confirmPassword")}
       </label>
       <div className="password-input-wrapper">
         <input
@@ -141,7 +143,7 @@ export default function Register({ onLogin, onSwitchToLogin }) {
           value={confirmPassword}
           onChange={(event) => setConfirmPassword(event.target.value)}
           autoComplete="new-password"
-          placeholder="Repeat your password"
+          placeholder={t("auth.confirmPasswordPlaceholder")}
         />
         <button
           type="button"
@@ -156,13 +158,13 @@ export default function Register({ onLogin, onSwitchToLogin }) {
       {error ? <p className="auth-error">{error}</p> : null}
 
       <button className="auth-submit" type="submit" disabled={loading}>
-        {loading ? "Creating account..." : "Create account"}
+        {loading ? t("auth.creatingAccount") : t("auth.createAccount")}
       </button>
 
       <p className="auth-switch">
-        Already have an account?{" "}
+        {t("auth.haveAccount")} {" "}
         <button type="button" className="auth-link" onClick={onSwitchToLogin}>
-          Sign in
+          {t("auth.switchToSignIn")}
         </button>
       </p>
     </form>
