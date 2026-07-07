@@ -44,5 +44,177 @@
     "backToLobby": "Volver al Lobby",
     "coverEyebrow": "TOMO DE COMBATE · CODICE OFICIAL",
     "coverSub": "Temporada 01 · Manual de instrucciones"
-  }
+  },
+  "legal": {
+    "back": "Volver",
+    "appName": "Enuma Fighter",
+    "termsTitle": "Términos del Servicio",
+    "termsIntro": "Estos Términos y Condiciones se aplican a la aplicación web Enuma Fighter y a los servicios relacionados operados por aprenafe, isegura-, mmarinov, vberdugo y fcela-ga (el \"Proveedor del Servicio\"). Al acceder o utilizar la Aplicación, aceptas estos Términos. Vigentes desde el 2026-06-05.",
+    "termsSections": [
+      {
+        "title": "Licencia de uso de la Aplicación",
+        "body": [
+          "El Proveedor del Servicio te concede una licencia limitada, no exclusiva, intransferible y revocable para utilizar la Aplicación con fines personales o de uso interno.",
+          "No puedes reproducir, distribuir, modificar, crear obras derivadas, realizar ingeniería inversa, descompilar o desmontar la Aplicación, salvo que la legislación aplicable lo permita expresamente."
+        ]
+      },
+      {
+        "title": "Propiedad Intelectual",
+        "body": [
+          "El Proveedor del Servicio conserva todos los derechos de propiedad intelectual sobre la Aplicación, incluyendo su código fuente, diseño, marcas, nombres comerciales, logotipos e identidad visual.",
+          "Nada de lo establecido en estos Términos te concede derechos de propiedad o licencias para utilizar la propiedad intelectual del Proveedor del Servicio, salvo autorización expresa."
+        ]
+      },
+      {
+        "title": "Terminación",
+        "body": [
+          "El Proveedor del Servicio podrá suspender o cancelar tu acceso si incumples de forma sustancial estos Términos.",
+          "Siempre que sea razonablemente posible, recibirás un aviso por escrito con catorce (14) días de antelación para corregir el incumplimiento antes de la cancelación.",
+          "La suspensión inmediata podrá producirse cuando así lo exija la ley o cuando tu conducta ponga en riesgo la seguridad, la integridad o el funcionamiento de la Aplicación."
+        ]
+      },
+      {
+        "title": "Requisitos de edad",
+        "body": [
+          "Debes tener al menos 16 años para utilizar la Aplicación.",
+          "Al acceder a la Aplicación, declaras que estás legalmente autorizado para utilizarla en tu jurisdicción.",
+          "Si eres menor de 16 años, un padre, madre o tutor legal deberá revisar y aceptar estos Términos en tu nombre."
+        ]
+      },
+      {
+        "title": "Contenido generado por los usuarios y uso aceptable",
+        "body": [
+          "Aceptas no publicar, cargar o transmitir contenido ilegal, abusivo, amenazante, difamatorio, discriminatorio, engañoso, fraudulento, spam, phishing o cualquier otro contenido perjudicial.",
+          "No debes vulnerar la privacidad, la propiedad intelectual ni otros derechos legales de terceros.",
+          "El Proveedor del Servicio se reserva el derecho de eliminar contenido que infrinja estos Términos, suspender o cancelar las cuentas de infractores reincidentes y cooperar con las autoridades competentes cuando la ley lo requiera.",
+          "Al enviar contenido, otorgas al Proveedor del Servicio una licencia no exclusiva, mundial y libre de regalías para utilizar, reproducir, distribuir y mostrar dicho contenido únicamente con el fin de operar, mejorar y prestar la Aplicación.",
+          "Declaras y garantizas que eres el titular de los derechos necesarios o que dispones de la autorización correspondiente para enviar dicho contenido."
+        ]
+      },
+      {
+        "title": "Limitación de responsabilidad",
+        "body": [
+          "En la máxima medida permitida por la legislación aplicable, el Proveedor del Servicio no será responsable de daños indirectos, incidentales, especiales, consecuenciales o punitivos derivados del uso de la Aplicación.",
+          "Nada de lo dispuesto en estos Términos excluye o limita la responsabilidad por fallecimiento o lesiones personales causadas por negligencia, fraude, declaración fraudulenta o cualquier otra responsabilidad que legalmente no pueda excluirse."
+        ]
+      },
+      {
+        "title": "Indemnización",
+        "body": [
+          "En la medida permitida por la ley, aceptas indemnizar y mantener indemne al Proveedor del Servicio, sus filiales, directivos, empleados y agentes frente a reclamaciones derivadas de tu incumplimiento de estos Términos o del uso indebido intencionado de la Aplicación.",
+          "Esta obligación no se aplicará a reclamaciones derivadas de la propia negligencia o conducta ilícita del Proveedor del Servicio."
+        ]
+      },
+      {
+        "title": "Ley aplicable y jurisdicción",
+        "body": [
+          "Estos Términos se regirán por las leyes de la jurisdicción en la que esté establecido el Proveedor del Servicio, excluyendo las normas sobre conflicto de leyes.",
+          "Nada de lo establecido en estos Términos limita los derechos imperativos de los consumidores reconocidos por la legislación aplicable."
+        ]
+      },
+      {
+        "title": "Cumplimiento del Reglamento de Servicios Digitales (DSA)",
+        "body": [
+          "Cuando la Aplicación tenga la consideración de servicio intermediario conforme al Reglamento (UE) 2022/2065 (Digital Services Act), el Proveedor del Servicio mantendrá un punto de contacto adecuado para usuarios y autoridades competentes.",
+          "Las decisiones de moderación de contenido incluirán una explicación cuando la ley lo exija y los usuarios podrán utilizar los mecanismos de recurso o resolución de conflictos disponibles."
+        ]
+      },
+      {
+        "title": "Cambios en estos Términos",
+        "body": [
+          "El Proveedor del Servicio podrá actualizar estos Términos periódicamente.",
+          "Cualquier modificación entrará en vigor tras su publicación junto con la fecha de entrada en vigor actualizada.",
+          "Las versiones anteriores podrán facilitarse previa solicitud razonable cuando la legislación aplicable así lo exija."
+        ]
+      },
+      {
+        "title": "Contacto",
+        "body": [
+          "Si tienes cualquier duda o sugerencia sobre estos Términos, puedes ponerte en contacto con el Proveedor del Servicio: aprenafe, isegura-, mmarinov, vberdugo y fcela-ga."
+        ]
+      }
+    ]
+  },
+  "privacyTitle": "Política de Privacidad",
+  "privacyIntro": "Esta Política de Privacidad se aplica a la aplicación web Enuma Fighter y a los servicios relacionados operados por aprenafe, isegura-, mmarinov, vberdugo y fcela-ga (el \"Proveedor del Servicio\"). Vigente desde el 2026-06-05.",
+  "privacySections": [
+    {
+      "title": "Recopilación y uso de la información",
+      "body": [
+        "La Aplicación recopila información cuando la utilizas. Esta información puede incluir la dirección IP de tu dispositivo, las páginas que visitas, el tiempo que permaneces en ellas y tu sistema operativo."
+      ]
+    },
+    {
+      "title": "Cookies y tecnologías de seguimiento",
+      "body": [
+        "La Aplicación o sus SDK de terceros pueden utilizar cookies, SDK, píxeles y tecnologías similares para proporcionar funcionalidades, realizar análisis o prestar el servicio. Cuando la legislación aplicable lo requiera, el Proveedor del Servicio solicitará tu consentimiento antes de utilizar tecnologías de seguimiento no esenciales."
+      ]
+    },
+    {
+      "title": "Tus derechos",
+      "body": [
+        "Puedes solicitar acceso, rectificación o eliminación de los datos personales que el Proveedor del Servicio conserve sobre ti. Para ejercer estos derechos o retirar tu consentimiento cuando el tratamiento se base en él, ponte en contacto con el Proveedor del Servicio: aprenafe, isegura-, mmarinov, vberdugo y fcela-ga."
+      ]
+    },
+    {
+      "title": "Derechos de privacidad en California (CCPA/CPRA)",
+      "body": [
+        "Si resides en California, tienes derecho a conocer qué información personal se recopila, solicitar su eliminación, oponerte a la venta o compartición de dicha información y no sufrir discriminación por ejercer estos derechos. Para ejercerlos, contacta con el Proveedor del Servicio."
+      ]
+    },
+    {
+      "title": "Acceso de terceros",
+      "body": [
+        "Únicamente se transmiten de forma periódica datos agregados y anonimizados a servicios externos para ayudar al Proveedor del Servicio a mejorar la Aplicación. El Proveedor del Servicio podrá divulgar información cuando sea requerido por la ley, para proteger derechos o la seguridad, investigar fraudes o responder a solicitudes de las autoridades, así como compartirla con proveedores de confianza sujetos a las obligaciones de esta política."
+      ]
+    },
+    {
+      "title": "Transferencias internacionales de datos",
+      "body": [
+        "El Proveedor del Servicio o sus proveedores podrán transferir datos personales a países fuera de tu país de residencia, incluido fuera del Espacio Económico Europeo (EEE). Cuando la legislación aplicable lo exija, se utilizarán Cláusulas Contractuales Tipo, decisiones de adecuación u otros mecanismos legalmente reconocidos."
+      ]
+    },
+    {
+      "title": "Derecho de oposición",
+      "body": [
+        "Puedes dejar de proporcionar información dejando de utilizar el sitio web. Para solicitar la eliminación de tus datos personales o retirar tu consentimiento, ponte en contacto con el Proveedor del Servicio."
+      ]
+    },
+    {
+      "title": "Conservación de los datos",
+      "body": [
+        "Los datos proporcionados por el usuario se conservarán durante el tiempo que utilices la Aplicación y durante 12 meses adicionales. Los datos recopilados automáticamente se conservarán hasta 24 meses desde su obtención. Los datos agregados y anonimizados podrán conservarse indefinidamente. Los datos necesarios para cumplir obligaciones legales se conservarán durante el tiempo exigido por la legislación aplicable."
+      ]
+    },
+    {
+      "title": "Menores de edad",
+      "body": [
+        "La Aplicación no está destinada a menores de 16 años. El Proveedor del Servicio no recopila conscientemente información personal identificable de menores. Si consideras que un menor ha proporcionado datos personales, ponte en contacto con el Proveedor del Servicio."
+      ]
+    },
+    {
+      "title": "Seguridad",
+      "body": [
+        "El Proveedor del Servicio aplica medidas físicas, electrónicas y organizativas para proteger la información que procesa y almacena. En caso de una violación de seguridad que afecte a tus datos personales, serás informado de acuerdo con la legislación aplicable."
+      ]
+    },
+    {
+      "title": "Cambios en esta Política",
+      "body": [
+        "El Proveedor del Servicio podrá actualizar periódicamente esta Política de Privacidad y notificará los cambios relevantes publicando la versión actualizada junto con su fecha de entrada en vigor. Las versiones anteriores estarán disponibles previa solicitud."
+      ]
+    },
+    {
+      "title": "Tu consentimiento",
+      "body": [
+        "Cuando el tratamiento de datos se base en tu consentimiento, este se otorgará mediante una acción afirmativa. Podrás retirarlo en cualquier momento sin que ello afecte a la licitud del tratamiento realizado con anterioridad."
+      ]
+    },
+    {
+      "title": "Contacto",
+      "body": [
+        "Si tienes cualquier duda sobre esta Política de Privacidad o sobre el tratamiento de tus datos personales, puedes ponerte en contacto con el Proveedor del Servicio: aprenafe, isegura-, mmarinov, vberdugo y fcela-ga."
+      ]
+    }
+  ]
 }

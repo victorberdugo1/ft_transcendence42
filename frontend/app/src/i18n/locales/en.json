@@ -44,5 +44,177 @@
     "backToLobby": "Back to Lobby",
     "coverEyebrow": "TOME OF COMBAT · OFFICIAL CODEX",
     "coverSub": "Season 01 · Instruction Manual"
-  }
+  },
+  "legal": {
+    "back": "Back",
+    "appName": "Enuma Fighter",
+    "termsTitle": "Terms of Service",
+    "termsIntro": "These Terms and Conditions apply to the Enuma Fighter web application and related services operated by aprenafe, isegura-, mmarinov, vberdugo, fcela-ga (the \"Service Provider\"). By accessing or using the Application, you agree to these Terms. Effective as of 2026-06-05.",
+    "termsSections": [
+      {
+        "title": "License to Use the Application",
+        "body": [
+          "The Service Provider grants you a limited, non-exclusive, non-transferable and revocable license to use the Application for personal or internal business purposes.",
+          "You may not reproduce, distribute, modify, create derivative works from, reverse engineer, decompile or disassemble the Application except where expressly permitted by applicable law."
+        ]
+      },
+      {
+        "title": "Intellectual Property",
+        "body": [
+          "The Service Provider retains all intellectual property rights in the Application, including its source code, design, trademarks, service marks, trade names, logos and branding.",
+          "Nothing in these Terms grants you any ownership rights or license to use the Service Provider's intellectual property except as expressly stated."
+        ]
+      },
+      {
+        "title": "Termination",
+        "body": [
+          "The Service Provider may suspend or terminate your access if you materially breach these Terms.",
+          "Where reasonably possible, you will receive fourteen (14) days' written notice to remedy the breach before termination.",
+          "Immediate suspension may occur where required by law or where your conduct threatens the security, integrity or operation of the Application."
+        ]
+      },
+      {
+        "title": "Eligibility",
+        "body": [
+          "You must be at least 16 years old to use the Application.",
+          "By accessing the Application, you represent that you are legally permitted to use it in your jurisdiction.",
+          "If you are under 16 years of age, a parent or legal guardian must review and accept these Terms on your behalf."
+        ]
+      },
+      {
+        "title": "User-Generated Content and Acceptable Use",
+        "body": [
+          "You agree not to upload, publish or transmit content that is unlawful, abusive, threatening, defamatory, discriminatory, misleading, fraudulent, spam, phishing or otherwise harmful.",
+          "You must not infringe the privacy, intellectual property or other legal rights of third parties.",
+          "The Service Provider reserves the right to remove violating content, suspend or terminate repeat offenders and cooperate with competent authorities where required by law.",
+          "By submitting content, you grant the Service Provider a non-exclusive, worldwide, royalty-free license to use, reproduce, distribute and display that content solely for operating, improving and providing the Application.",
+          "You represent and warrant that you own or otherwise control all rights necessary to submit such content."
+        ]
+      },
+      {
+        "title": "Limitation of Liability",
+        "body": [
+          "To the fullest extent permitted by applicable law, the Service Provider shall not be liable for indirect, incidental, consequential, special or punitive damages arising from your use of the Application.",
+          "Nothing in these Terms excludes or limits liability for death or personal injury caused by negligence, fraud, fraudulent misrepresentation or any liability that cannot legally be excluded."
+        ]
+      },
+      {
+        "title": "Indemnification",
+        "body": [
+          "To the extent permitted by law, you agree to indemnify and hold harmless the Service Provider, its affiliates, officers, directors, employees and agents against claims arising from your breach of these Terms or your intentional misuse of the Application.",
+          "This obligation does not apply to claims resulting from the Service Provider's own negligence or unlawful conduct."
+        ]
+      },
+      {
+        "title": "Governing Law and Jurisdiction",
+        "body": [
+          "These Terms are governed by the laws of the jurisdiction in which the Service Provider is established, excluding conflict of law provisions.",
+          "Nothing in these Terms limits any mandatory consumer rights available under applicable law."
+        ]
+      },
+      {
+        "title": "DSA Compliance (Digital Services Act)",
+        "body": [
+          "Where the Application qualifies as an intermediary service under Regulation (EU) 2022/2065 (Digital Services Act), the Service Provider maintains an appropriate point of contact for users and competent authorities.",
+          "Content moderation decisions will include a statement of reasons where required by law, and users may exercise available appeal or dispute resolution mechanisms."
+        ]
+      },
+      {
+        "title": "Changes to These Terms",
+        "body": [
+          "The Service Provider may update these Terms from time to time.",
+          "Any changes will become effective upon publication together with an updated effective date.",
+          "Previous versions may be made available upon reasonable request where required by law."
+        ]
+      },
+      {
+        "title": "Contact Us",
+        "body": [
+          "If you have any questions or suggestions regarding these Terms, please contact the Service Provider: aprenafe, isegura-, mmarinov, vberdugo, fcela-ga."
+        ]
+      }
+    ]
+  },
+  "privacyTitle": "Privacy Policy",
+  "privacyIntro": "This Privacy Policy applies to the Enuma Fighter web application and related services operated by aprenafe, isegura-, mmarinov, vberdugo and fcela-ga (the \"Service Provider\"). Effective as of 2026-06-05.",
+  "privacySections": [
+    {
+      "title": "Information Collection and Use",
+      "body": [
+        "The Application collects information when you use it. This information may include your device's Internet Protocol (IP) address, the pages you visit, the time spent on those pages and your operating system."
+      ]
+    },
+    {
+      "title": "Cookies and Tracking Technologies",
+      "body": [
+        "The Application or its third-party SDKs may use cookies, SDKs, pixels and similar technologies to provide functionality, analytics and service delivery. Where required by applicable law, the Service Provider will obtain your consent before using non-essential tracking technologies."
+      ]
+    },
+    {
+      "title": "Your Rights",
+      "body": [
+        "You may request access to, correction of or deletion of your personal data held by the Service Provider. To exercise these rights or withdraw consent where processing is based on consent, please contact the Service Provider: aprenafe, isegura-, mmarinov, vberdugo and fcela-ga."
+      ]
+    },
+    {
+      "title": "California Privacy Rights (CCPA/CPRA)",
+      "body": [
+        "If you are a California resident, you have the right to know what personal information is collected, request its deletion, opt out of the sale or sharing of personal information and not be discriminated against for exercising these rights. To exercise your rights, please contact the Service Provider."
+      ]
+    },
+    {
+      "title": "Third-Party Access",
+      "body": [
+        "Only aggregated and anonymized data is periodically transmitted to external services to help the Service Provider improve the Application. The Service Provider may disclose information where required by law, to protect rights or safety, investigate fraud or respond to requests from public authorities, and may share information with trusted service providers bound by this Privacy Policy."
+      ]
+    },
+    {
+      "title": "International Data Transfers",
+      "body": [
+        "The Service Provider or its service providers may transfer personal data to countries outside your country of residence, including countries outside the European Economic Area (EEA). Where required by law, Standard Contractual Clauses, adequacy decisions or other legally recognized safeguards will be used."
+      ]
+    },
+    {
+      "title": "Opt-Out Rights",
+      "body": [
+        "You may stop providing information by discontinuing your use of the website. To request deletion of your personal data or withdraw your consent, please contact the Service Provider."
+      ]
+    },
+    {
+      "title": "Data Retention",
+      "body": [
+        "User-provided data will be retained for the duration of your use of the Application and for an additional 12 months. Automatically collected data will be retained for up to 24 months after collection. Aggregated and anonymized data may be retained indefinitely. Data required to comply with legal obligations will be retained for as long as required by applicable law."
+      ]
+    },
+    {
+      "title": "Children",
+      "body": [
+        "The Application is not intended for children under 16 years of age. The Service Provider does not knowingly collect personally identifiable information from children. If you believe that a child has provided personal information, please contact the Service Provider."
+      ]
+    },
+    {
+      "title": "Security",
+      "body": [
+        "The Service Provider implements physical, electronic and organizational safeguards to protect the information it processes and stores. If a data breach affecting your personal data occurs, you will be notified in accordance with applicable law."
+      ]
+    },
+    {
+      "title": "Changes to this Privacy Policy",
+      "body": [
+        "The Service Provider may update this Privacy Policy from time to time and will notify users of significant changes by publishing the updated version together with its effective date. Previous versions will be available upon request."
+      ]
+    },
+    {
+      "title": "Your Consent",
+      "body": [
+        "Where data processing is based on your consent, you provide that consent through an affirmative action. You may withdraw your consent at any time without affecting the lawfulness of any processing carried out before its withdrawal."
+      ]
+    },
+    {
+      "title": "Contact Us",
+      "body": [
+        "If you have any questions regarding this Privacy Policy or the processing of your personal data, please contact the Service Provider: aprenafe, isegura-, mmarinov, vberdugo and fcela-ga."
+      ]
+    }
+  ]
 }
