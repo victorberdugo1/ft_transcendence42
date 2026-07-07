@@ -43,7 +43,7 @@ static const float FX_Y_OFFSET[FX_TYPE_COUNT] = {
     0.32f,
 };
 
-static const char *FX_SHEET_PATH = "data/fx/fx_sheet.png";
+static const char *FX_SHEET_PATH = "assets/fx/fx_sheet.png";
 
 typedef struct {
     float timer;

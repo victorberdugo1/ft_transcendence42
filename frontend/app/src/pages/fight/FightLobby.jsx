@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 const CHAR_PORTRAITS = {
-  eld: "data/eldwin_portrait.jpg",
-  hil: "data/hilda_portrait.jpg",
-  qui: "data/quimbur_portrait.jpg",
-  gab: "data/gabriel_portrait.jpg",
+  eld: "assets/eldwin_portrait.jpg",
+  hil: "assets/hilda_portrait.jpg",
+  qui: "assets/quimbur_portrait.jpg",
+  gab: "assets/gabriel_portrait.jpg",
 };
 const CHAR_NAMES = { eld: "Eldwin", hil: "Hilda", qui: "Quimbur", gab: "Gabriel" };
 const CHAR_IDS   = ["eld", "hil", "qui", "gab"];

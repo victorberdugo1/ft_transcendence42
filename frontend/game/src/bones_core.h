@@ -2536,7 +2536,7 @@ static inline void CollectHeadsForRendering(const BonesAnimation* animation, Hea
         } else {
             BoneConfig* cfg = FindBoneConfig(boneConfigs, boneConfigCount, "Head");
             if (cfg) { strncpy(head->texturePath, cfg->texturePath, MAX_FILE_PATH_LENGTH - 1); head->size = cfg->size; }
-            else      { strncpy(head->texturePath, "data/textures/hil/Head.png", MAX_FILE_PATH_LENGTH - 1); head->size = 0.25f; }
+            else      { strncpy(head->texturePath, "assets/textures/hil/Head.png", MAX_FILE_PATH_LENGTH - 1); head->size = 0.25f; }
             head->texturePath[MAX_FILE_PATH_LENGTH - 1] = '\0';
         }
         if (activeTexture) {

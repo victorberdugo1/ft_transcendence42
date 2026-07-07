@@ -1,6 +1,6 @@
 # Bone Variant TexturePath
 # Expresiones de cabeza
-Head idle data/textures/gab/head.png
+Head idle assets/textures/gab/head.png
 
 # Puedes añadir variantes de otras partes
 # LWrist idle hil/HandR.png

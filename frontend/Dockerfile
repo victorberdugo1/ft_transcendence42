@@ -14,11 +14,14 @@ RUN git clone --depth 1 --branch 5.0 https://github.com/raysan5/raylib.git && \
 FROM raylib-base AS game-builder
 
 COPY game/src/ ./src/
+COPY game/include/ ./include/
+COPY game/assets/ ./assets/
 
 RUN emcc src/main.c \
     raylib/src/libraylib.a \
     -o game.js \
     -I raylib/src \
+    -I include \
     -I src \
     -DPLATFORM_WEB \
     -Wall \
@@ -31,7 +34,7 @@ RUN emcc src/main.c \
     -s STACK_SIZE=2097152 \
     -s EXPORTED_FUNCTIONS='["_main"]' \
     -s EXPORTED_RUNTIME_METHODS='["ccall","cwrap"]' \
-    --preload-file src/data@data \
+    --preload-file assets@assets \
     -O2
 
 # ── Stage 3: React (solo se reinstala npm si cambia package.json) ─────────────
@@ -47,9 +50,9 @@ RUN npm run build
 FROM nginx:alpine
 
 COPY --from=react-builder /app/dist         /usr/share/nginx/html/
+COPY app/public/game                         /usr/share/nginx/html/game/
 COPY --from=game-builder  /build/game.js    /usr/share/nginx/html/
 COPY --from=game-builder  /build/game.wasm  /usr/share/nginx/html/
 COPY --from=game-builder  /build/game.data  /usr/share/nginx/html/
-COPY js/                                    /usr/share/nginx/html/js/
 
 EXPOSE 80

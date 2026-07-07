@@ -78,7 +78,7 @@ static void PlatTex_Load(int stageId) {
         UnloadTexture(g_platTex[g_platTexStage]);
 
     char path[64];
-    snprintf(path, sizeof(path), "data/textures/plat%d.jpg", stageId);
+    snprintf(path, sizeof(path), "assets/textures/plat%d.jpg", stageId);
     if (FileExists(path)) {
         g_platTex[stageId] = LoadTexture(path);
         SetTextureWrap(g_platTex[stageId], TEXTURE_WRAP_REPEAT);
@@ -114,10 +114,10 @@ static void Skybox_Load(int stageId) {
     }
 
     char imgPath[128];
-    snprintf(imgPath, sizeof(imgPath), "data/textures/skybox%d.jpg", stageId);
+    snprintf(imgPath, sizeof(imgPath), "assets/textures/skybox%d.jpg", stageId);
     if (!FileExists(imgPath)) return;
 
-    g_sky.shader = LoadShader("data/shaders/skybox.vs", "data/shaders/skybox.fs");
+    g_sky.shader = LoadShader("assets/shaders/skybox.vs", "assets/shaders/skybox.fs");
     int envMap = MATERIAL_MAP_CUBEMAP;
     int doGamma = 0, vflipped = 1;
     SetShaderValue(g_sky.shader, GetShaderLocation(g_sky.shader, "environmentMap"), &envMap,   SHADER_UNIFORM_INT);
@@ -193,39 +193,39 @@ static void Skybox_Draw(Camera cam) {
 }
 
 static const char *ANIM_JSON[ANIM_COUNT] = {
-    "data/animations/idle.json",
-    "data/animations/walk.json",
-    "data/animations/jump.json",
-    "data/animations/attack_air.json",
-    "data/animations/attack_combo_1.json",
-    "data/animations/attack_combo_2.json",
-    "data/animations/attack_combo_3.json",
-    "data/animations/attack_crouch.json",
-    "data/animations/dash.json",
-    "data/animations/crouch.json",
-    "data/animations/crouch.json",
-    "data/animations/hurt.json",
-    "data/animations/block.json",
-    "data/animations/attack_dash.json",
-    "data/animations/victory.json",
+    "assets/animations/idle.json",
+    "assets/animations/walk.json",
+    "assets/animations/jump.json",
+    "assets/animations/attack_air.json",
+    "assets/animations/attack_combo_1.json",
+    "assets/animations/attack_combo_2.json",
+    "assets/animations/attack_combo_3.json",
+    "assets/animations/attack_crouch.json",
+    "assets/animations/dash.json",
+    "assets/animations/crouch.json",
+    "assets/animations/crouch.json",
+    "assets/animations/hurt.json",
+    "assets/animations/block.json",
+    "assets/animations/attack_dash.json",
+    "assets/animations/victory.json",
 };
 
 static const char *ANIM_META[ANIM_COUNT] = {
-    "data/animations/idle.anim",
-    "data/animations/walk.anim",
-    "data/animations/jump.anim",
-    "data/animations/attack_air.anim",
-    "data/animations/attack_combo_1.anim",
-    "data/animations/attack_combo_2.anim",
-    "data/animations/attack_combo_3.anim",
-    "data/animations/attack_crouch.anim",
-    "data/animations/dash.anim",
-    "data/animations/crouch.anim",
-    "data/animations/crouch.anim",
-    "data/animations/hurt.anim",
-    "data/animations/block.anim",
-    "data/animations/attack_dash.anim",
-    "data/animations/victory.anim",
+    "assets/animations/idle.anim",
+    "assets/animations/walk.anim",
+    "assets/animations/jump.anim",
+    "assets/animations/attack_air.anim",
+    "assets/animations/attack_combo_1.anim",
+    "assets/animations/attack_combo_2.anim",
+    "assets/animations/attack_combo_3.anim",
+    "assets/animations/attack_crouch.anim",
+    "assets/animations/dash.anim",
+    "assets/animations/crouch.anim",
+    "assets/animations/crouch.anim",
+    "assets/animations/hurt.anim",
+    "assets/animations/block.anim",
+    "assets/animations/attack_dash.anim",
+    "assets/animations/victory.anim",
 };
 
 static const char *ANIM_NAME[ANIM_COUNT] = {
@@ -490,12 +490,12 @@ EM_JS(int, ws_get_player_username, (int playerId, char *buf, int len), {
 typedef struct { const char *charId, *name, *texCfg, *texSets, *animBase, *portrait; } CharDef;
 
 static const CharDef CHARS[5] = {
-    { "eld", "Eldwin",  "data/textures/eld/bone_textures.txt", "data/textures/eld/texture_sets.txt", "data/animations/eld/", "data/eldwin_portrait.jpg"  },
-    { "hil", "Hilda",   "data/textures/hil/bone_textures.txt", "data/textures/hil/texture_sets.txt", "data/animations/hil/", "data/hilda_portrait.jpg"   },
-    { "qui", "Quimbur", "data/textures/qui/bone_textures.txt", "data/textures/qui/texture_sets.txt", "data/animations/qui/", "data/quimbur_portrait.jpg" },
-    { "gab", "Gabriel", "data/textures/gab/bone_textures.txt", "data/textures/gab/texture_sets.txt", "data/animations/gab/", "data/gabriel_portrait.jpg" },
+    { "eld", "Eldwin",  "assets/textures/eld/bone_textures.txt", "assets/textures/eld/texture_sets.txt", "assets/animations/eld/", "assets/eldwin_portrait.jpg"  },
+    { "hil", "Hilda",   "assets/textures/hil/bone_textures.txt", "assets/textures/hil/texture_sets.txt", "assets/animations/hil/", "assets/hilda_portrait.jpg"   },
+    { "qui", "Quimbur", "assets/textures/qui/bone_textures.txt", "assets/textures/qui/texture_sets.txt", "assets/animations/qui/", "assets/quimbur_portrait.jpg" },
+    { "gab", "Gabriel", "assets/textures/gab/bone_textures.txt", "assets/textures/gab/texture_sets.txt", "assets/animations/gab/", "assets/gabriel_portrait.jpg" },
     
-    { "def", "Default", "data/textures/default/bone_textures.txt", "data/textures/default/texture_sets.txt", "data/animations/default/", NULL },
+    { "def", "Default", "assets/textures/default/bone_textures.txt", "assets/textures/default/texture_sets.txt", "assets/animations/default/", NULL },
 };
 #define CHARS_COUNT      5
 #define CHARS_SELECTABLE 4
@@ -503,10 +503,10 @@ static const CharDef CHARS[5] = {
 typedef struct { int id; const char *name; const char *preview; const char *desc; } StageDef;
 
 static const StageDef STAGES[] = {
-    { 0, "Karnamru",  "data/stage_00.jpg", "City frozen in time"  },
-    { 1, "Surya",     "data/stage_01.jpg", "Eternal crystal lake" },
-    { 2, "Vayusvara", "data/stage_02.jpg", "Floating sky ruins"   },
-    { 3, "Daat",      "data/stage_03.jpg", "The hidden abyss"     },
+    { 0, "Karnamru",  "assets/stage_00.jpg", "City frozen in time"  },
+    { 1, "Surya",     "assets/stage_01.jpg", "Eternal crystal lake" },
+    { 2, "Vayusvara", "assets/stage_02.jpg", "Floating sky ruins"   },
+    { 3, "Daat",      "assets/stage_03.jpg", "The hidden abyss"     },
 };
 #define STAGES_COUNT 4
 
@@ -1006,8 +1006,8 @@ static void InitPlayer(Player *p, int id) {
     }
 
     const CharDef *cd   = FindCharDef(p->charId);
-    const char *texCfg  = cd ? cd->texCfg  : "data/textures/default/bone_textures.txt";
-    const char *texSets = cd ? cd->texSets : "data/textures/default/texture_sets.txt";
+    const char *texCfg  = cd ? cd->texCfg  : "assets/textures/default/bone_textures.txt";
+    const char *texSets = cd ? cd->texSets : "assets/textures/default/texture_sets.txt";
 
     p->character = CreateAnimatedCharacter(texCfg, texSets);
 
@@ -1329,16 +1329,16 @@ static void DrawDaatGrid(Camera cam) {
 static void HUD_LoadTextures(void) {
     if (g_hudTexLoaded) return;
     g_hudTexLoaded = true;
-    if (FileExists("data/pbase.png"))
-        g_pbase = LoadTexture("data/pbase.png");
+    if (FileExists("assets/pbase.png"))
+        g_pbase = LoadTexture("assets/pbase.png");
     const char *pfiles[5] = {
-        "data/p00.png", "data/p01.png", "data/p02.png", "data/p03.png", "data/p04.png"
+        "assets/p00.png", "assets/p01.png", "assets/p02.png", "assets/p03.png", "assets/p04.png"
     };
     for (int i = 0; i < 5; i++)
         if (FileExists(pfiles[i]))
             g_portraits[i] = LoadTexture(pfiles[i]);
 
-    const char *fsPath = "data/shaders/outline.fs";
+    const char *fsPath = "assets/shaders/outline.fs";
     if (FileExists(fsPath)) {
         g_shdrOutline     = LoadShader(0, fsPath);
         g_outlineSizeLoc  = GetShaderLocation(g_shdrOutline, "outlineSize");

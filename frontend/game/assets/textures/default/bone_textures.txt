@@ -1,0 +1,39 @@
+# Configuración simple de hilturas por bone
+# Formato: BoneName hiltureIndex Visible Size
+# Path a la hiltura
+# Visible: 1=si, 0=no
+# Size: tamaño del billboard (0.1-1.0)
+
+Nose NULL 0 0.25
+Head assets/textures/enemy/liz00/head.png 1 0.14
+LEye NULL 0 0.20
+REye NULL 0 0.20
+LEar NULL 0 0.15
+REar NULL 0 0.15
+Neck assets/textures/default/neck.png 1 0.15
+LShoulder assets/textures/default/arm.png 1 0.13
+RShoulder assets/textures/default/arm.png 1 0.13
+Chest assets/textures/default/chest.png 1 0.24
+LElbow assets/textures/default/forearm.png 1 0.13
+RElbow assets/textures/default/forearm.png 1 0.13
+LWrist assets/textures/default/hand.png 1 0.1
+RWrist assets/textures/default/hand.png 1 0.1
+Hip assets/textures/default/hip.png 1 0.17
+LHip assets/textures/default/leg.png 1 0.15
+RHip assets/textures/default/leg.png 1 0.15
+LKnee assets/textures/default/shin.png 1 0.13
+RKnee assets/textures/default/shin.png 1 0.13
+LAnkle assets/textures/default/foot.png 1 0.13 
+RAnkle assets/textures/default/foot.png 1 0.13 
+
+# ORNAMENTOS - Nueva
+# @HairBack Head 0.0,-0.01,-0.1 assets/textures/hil/HairBack.png 1 0.20 - stiff
+# @HairTip HairBack 0.0,-0.08,-0.03 assets/textures/hil/HairTip.png 1 0.18 @HairBack medium 
+@TailBase Hip 0.0,-0.05,0.08 assets/textures/default/tail.png 1 0.15 - stiff
+@TailMid TailBase 0.0,-0.01,-0.12 assets/textures/default/tail.png 1 0.14 @TailBase stiff
+@TailLower TailMid 0.0,-0.04,-0.22 assets/textures/default/tailmid.png 1 0.13 @TailMid medium
+@TailUpper TailLower 0.0,0.03,-0.27 assets/textures/default/tailup.png 1 0.125 @TailLower soft
+@TailTip TailUpper 0.0,0.11,-0.32 assets/textures/default/tailtip.png 1 0.12 @TailUpper verysoft
+
+
+

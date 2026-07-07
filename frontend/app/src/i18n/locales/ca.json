@@ -1,0 +1,220 @@
+{
+  "auth": {
+    "title": "Inicia sessio per jugar",
+    "tabLogin": "Login",
+    "tabRegister": "Registre",
+    "privacy": "Politica de privacitat",
+    "terms": "Termes del servei",
+    "email": "Correu",
+    "password": "Contrasenya",
+    "username": "Usuari",
+    "confirmPassword": "Confirmar contrasenya",
+    "emailPlaceholder": "tu@exemple.com",
+    "passwordPlaceholder": "La teva contrasenya",
+    "registerPasswordPlaceholder": "Minim 8 caracters",
+    "confirmPasswordPlaceholder": "Repeteix la contrasenya",
+    "usernamePlaceholder": "Tria un usuari",
+    "signIn": "Entrar",
+    "signingIn": "Entrant...",
+    "createAccount": "Crear compte",
+    "creatingAccount": "Creant compte...",
+    "needAccount": "Necessites un compte?",
+    "createOne": "Crea'n un",
+    "haveAccount": "Ja tens compte?",
+    "switchToSignIn": "Inicia sessio"
+  },
+  "validation": {
+    "emailPasswordRequired": "Correu i contrasenya son obligatoris.",
+    "invalidEmail": "Introdueix un correu valid.",
+    "loginFailed": "Ha fallat el login.",
+    "serverUnreachable": "No s'ha pogut connectar al servidor. Torna-ho a provar.",
+    "allFieldsRequired": "Tots els camps son obligatoris.",
+    "usernameMin": "L'usuari ha de tenir almenys 3 caracters.",
+    "passwordMin": "La contrasenya ha de tenir almenys 8 caracters.",
+    "passwordMismatch": "Les contrasenyes no coincideixen.",
+    "registerFailed": "Ha fallat el registre."
+  },
+  "language": {
+    "label": "Idioma",
+    "ca": "Catala",
+    "es": "Espanyol",
+    "en": "English"
+  },
+  "manual": {
+    "backToLobby": "Tornar al Lobby",
+    "coverEyebrow": "TOM DE COMBAT · CODI OFICIAL",
+    "coverSub": "Temporada 01 · Manual d'instruccions"
+  },
+  "legal": {
+    "back": "Enrere",
+    "appName": "Enuma Fighter",
+    "termsTitle": "Termes del Servei",
+    "termsIntro": "Aquests Termes i Condicions s'apliquen a l'aplicació web Enuma Fighter i als serveis relacionats operats per aprenafe, isegura-, mmarinov, vberdugo i fcela-ga (el \"Proveïdor del Servei\"). En accedir o utilitzar l'Aplicació, acceptes aquests Termes. Vigents des del 2026-06-05.",
+    "termsSections": [
+      {
+        "title": "Llicència d'ús de l'Aplicació",
+        "body": [
+          "El Proveïdor del Servei et concedeix una llicència limitada, no exclusiva, intransferible i revocable per utilitzar l'Aplicació amb finalitats personals o d'ús intern.",
+          "No pots reproduir, distribuir, modificar, crear obres derivades, fer enginyeria inversa, descompilar o desmuntar l'Aplicació, excepte quan la legislació aplicable ho permeti expressament."
+        ]
+      },
+      {
+        "title": "Propietat Intel·lectual",
+        "body": [
+          "El Proveïdor del Servei conserva tots els drets de propietat intel·lectual sobre l'Aplicació, incloent-hi el seu codi font, disseny, marques, noms comercials, logotips i identitat visual.",
+          "Res del que estableixen aquests Termes et concedeix drets de propietat o llicències per utilitzar la propietat intel·lectual del Proveïdor del Servei, llevat d'autorització expressa."
+        ]
+      },
+      {
+        "title": "Finalització",
+        "body": [
+          "El Proveïdor del Servei pot suspendre o cancel·lar el teu accés si incompleixes de manera substancial aquests Termes.",
+          "Sempre que sigui raonablement possible, rebràs un avís per escrit amb catorze (14) dies d'antelació per corregir l'incompliment abans de la cancel·lació.",
+          "La suspensió immediata podrà produir-se quan així ho exigeixi la llei o quan la teva conducta posi en risc la seguretat, la integritat o el funcionament de l'Aplicació."
+        ]
+      },
+      {
+        "title": "Requisits d'edat",
+        "body": [
+          "Has de tenir almenys 16 anys per utilitzar l'Aplicació.",
+          "En accedir a l'Aplicació, declares que estàs legalment autoritzat a utilitzar-la a la teva jurisdicció.",
+          "Si tens menys de 16 anys, el teu pare, mare o tutor legal haurà de revisar i acceptar aquests Termes en el teu nom."
+        ]
+      },
+      {
+        "title": "Contingut generat pels usuaris i ús acceptable",
+        "body": [
+          "Acceptes no publicar, pujar o transmetre contingut il·legal, abusiu, amenaçador, difamatori, discriminatori, enganyós, fraudulent, correu brossa, phishing o qualsevol altre contingut perjudicial.",
+          "No has de vulnerar la privacitat, la propietat intel·lectual ni altres drets legals de tercers.",
+          "El Proveïdor del Servei es reserva el dret d'eliminar contingut que incompleixi aquests Termes, suspendre o cancel·lar els comptes dels infractors reincidents i cooperar amb les autoritats competents quan la llei ho exigeixi.",
+          "En enviar contingut, concedeixes al Proveïdor del Servei una llicència no exclusiva, mundial i lliure de royalties per utilitzar, reproduir, distribuir i mostrar aquest contingut únicament amb la finalitat d'operar, millorar i prestar l'Aplicació.",
+          "Declares i garanteixes que ets titular dels drets necessaris o que disposes de l'autorització corresponent per enviar aquest contingut."
+        ]
+      },
+      {
+        "title": "Limitació de responsabilitat",
+        "body": [
+          "En la màxima mesura permesa per la legislació aplicable, el Proveïdor del Servei no serà responsable dels danys indirectes, incidentals, especials, conseqüencials o punitius derivats de l'ús de l'Aplicació.",
+          "Res del que estableixen aquests Termes exclou o limita la responsabilitat per mort o lesions personals causades per negligència, frau, declaració fraudulenta o qualsevol altra responsabilitat que legalment no es pugui excloure."
+        ]
+      },
+      {
+        "title": "Indemnització",
+        "body": [
+          "En la mesura permesa per la llei, acceptes indemnitzar i mantenir indemne el Proveïdor del Servei, les seves filials, directius, empleats i agents davant de reclamacions derivades de l'incompliment d'aquests Termes o de l'ús indegut intencionat de l'Aplicació.",
+          "Aquesta obligació no serà aplicable a reclamacions derivades de la pròpia negligència o conducta il·lícita del Proveïdor del Servei."
+        ]
+      },
+      {
+        "title": "Llei aplicable i jurisdicció",
+        "body": [
+          "Aquests Termes es regiran per les lleis de la jurisdicció on estigui establert el Proveïdor del Servei, excloent les normes sobre conflicte de lleis.",
+          "Res del que estableixen aquests Termes limita els drets imperatius dels consumidors reconeguts per la legislació aplicable."
+        ]
+      },
+      {
+        "title": "Compliment del Reglament de Serveis Digitals (DSA)",
+        "body": [
+          "Quan l'Aplicació tingui la consideració de servei intermediari d'acord amb el Reglament (UE) 2022/2065 (Digital Services Act), el Proveïdor del Servei mantindrà un punt de contacte adequat per als usuaris i les autoritats competents.",
+          "Les decisions de moderació de contingut inclouran una explicació quan la llei ho exigeixi i els usuaris podran utilitzar els mecanismes de recurs o resolució de conflictes disponibles."
+        ]
+      },
+      {
+        "title": "Canvis en aquests Termes",
+        "body": [
+          "El Proveïdor del Servei podrà actualitzar aquests Termes periòdicament.",
+          "Qualsevol modificació entrarà en vigor un cop publicada juntament amb la data d'entrada en vigor actualitzada.",
+          "Les versions anteriors podran facilitar-se prèvia sol·licitud raonable quan la legislació aplicable així ho exigeixi."
+        ]
+      },
+      {
+        "title": "Contacte",
+        "body": [
+          "Si tens qualsevol dubte o suggeriment sobre aquests Termes, pots posar-te en contacte amb el Proveïdor del Servei: aprenafe, isegura-, mmarinov, vberdugo i fcela-ga."
+        ]
+      }
+    ]
+  },
+  "privacyTitle": "Política de Privacitat",
+  "privacyIntro": "Aquesta Política de Privacitat s'aplica a l'aplicació web Enuma Fighter i als serveis relacionats operats per aprenafe, isegura-, mmarinov, vberdugo i fcela-ga (el \"Proveïdor del Servei\"). Vigent des del 2026-06-05.",
+  "privacySections": [
+    {
+      "title": "Recollida i ús de la informació",
+      "body": [
+        "L'Aplicació recopila informació quan la utilitzes. Aquesta informació pot incloure l'adreça IP del teu dispositiu, les pàgines que visites, el temps que hi passes i el teu sistema operatiu."
+      ]
+    },
+    {
+      "title": "Cookies i tecnologies de seguiment",
+      "body": [
+        "L'Aplicació o els seus SDK de tercers poden utilitzar cookies, SDK, píxels i tecnologies similars per oferir funcionalitats, analítica i la prestació del servei. Quan la legislació aplicable ho exigeixi, el Proveïdor del Servei obtindrà el teu consentiment abans d'utilitzar tecnologies de seguiment no essencials."
+      ]
+    },
+    {
+      "title": "Els teus drets",
+      "body": [
+        "Pots sol·licitar l'accés, la rectificació o la supressió de les teves dades personals conservades pel Proveïdor del Servei. Per exercir aquests drets o retirar el teu consentiment quan el tractament es basi en aquest, posa't en contacte amb el Proveïdor del Servei: aprenafe, isegura-, mmarinov, vberdugo i fcela-ga."
+      ]
+    },
+    {
+      "title": "Drets de privacitat a Califòrnia (CCPA/CPRA)",
+      "body": [
+        "Si resideixes a Califòrnia, tens dret a saber quina informació personal es recopila, sol·licitar-ne l'eliminació, oposar-te a la venda o compartició d'aquesta informació i no patir discriminació per exercir aquests drets. Per exercir-los, posa't en contacte amb el Proveïdor del Servei."
+      ]
+    },
+    {
+      "title": "Accés de tercers",
+      "body": [
+        "Només es transmeten periòdicament dades agregades i anonimitzades a serveis externs per ajudar el Proveïdor del Servei a millorar l'Aplicació. El Proveïdor del Servei pot divulgar informació quan la llei ho exigeixi, per protegir drets o la seguretat, investigar fraus o respondre a sol·licituds de les autoritats, així com compartir-la amb proveïdors de confiança subjectes a aquesta Política de Privacitat."
+      ]
+    },
+    {
+      "title": "Transferències internacionals de dades",
+      "body": [
+        "El Proveïdor del Servei o els seus proveïdors poden transferir dades personals a països fora del teu país de residència, inclosos països fora de l'Espai Econòmic Europeu (EEE). Quan la legislació aplicable ho exigeixi, s'utilitzaran Clàusules Contractuals Tipus, decisions d'adequació o altres garanties legalment reconegudes."
+      ]
+    },
+    {
+      "title": "Dret d'oposició",
+      "body": [
+        "Pots deixar de proporcionar informació deixant d'utilitzar el lloc web. Per sol·licitar l'eliminació de les teves dades personals o retirar el teu consentiment, posa't en contacte amb el Proveïdor del Servei."
+      ]
+    },
+    {
+      "title": "Conservació de les dades",
+      "body": [
+        "Les dades proporcionades per l'usuari es conservaran mentre utilitzis l'Aplicació i durant 12 mesos addicionals. Les dades recopilades automàticament es conservaran fins a 24 mesos després de la seva obtenció. Les dades agregades i anonimitzades es podran conservar indefinidament. Les dades necessàries per complir obligacions legals es conservaran durant el temps exigit per la legislació aplicable."
+      ]
+    },
+    {
+      "title": "Menors d'edat",
+      "body": [
+        "L'Aplicació no està destinada a menors de 16 anys. El Proveïdor del Servei no recopila conscientment informació personal identificable de menors. Si creus que un menor ha proporcionat dades personals, posa't en contacte amb el Proveïdor del Servei."
+      ]
+    },
+    {
+      "title": "Seguretat",
+      "body": [
+        "El Proveïdor del Servei aplica mesures físiques, electròniques i organitzatives per protegir la informació que processa i emmagatzema. En cas d'una violació de seguretat que afecti les teves dades personals, seràs informat d'acord amb la legislació aplicable."
+      ]
+    },
+    {
+      "title": "Canvis en aquesta Política",
+      "body": [
+        "El Proveïdor del Servei pot actualitzar periòdicament aquesta Política de Privacitat i notificarà els canvis rellevants publicant la versió actualitzada juntament amb la seva data d'entrada en vigor. Les versions anteriors estaran disponibles prèvia sol·licitud."
+      ]
+    },
+    {
+      "title": "El teu consentiment",
+      "body": [
+        "Quan el tractament de dades es basi en el teu consentiment, aquest es donarà mitjançant una acció afirmativa. Pots retirar el teu consentiment en qualsevol moment sense afectar la licitud del tractament realitzat abans de la seva retirada."
+      ]
+    },
+    {
+      "title": "Contacte",
+      "body": [
+        "Si tens qualsevol dubte sobre aquesta Política de Privacitat o sobre el tractament de les teves dades personals, pots posar-te en contacte amb el Proveïdor del Servei: aprenafe, isegura-, mmarinov, vberdugo i fcela-ga."
+      ]
+    }
+  ]
+}

@@ -106,11 +106,11 @@ const CHARACTER_DEFS = {
 };
 
 const CHARACTER_ASSETS = {
-    def: { texCfg: 'data/textures/default/bone_textures.txt', texSets: 'data/textures/default/texture_sets.txt', animBase: 'data/animations/default/', portrait: null },
-    eld: { texCfg: 'data/textures/eld/bone_textures.txt', texSets: 'data/textures/eld/texture_sets.txt', animBase: 'data/animations/eld/', portrait: 'data/eldwin_portrait.jpg'  },
-    hil: { texCfg: 'data/textures/hil/bone_textures.txt', texSets: 'data/textures/hil/texture_sets.txt', animBase: 'data/animations/hil/', portrait: 'data/hilda_portrait.jpg'   },
-    qui: { texCfg: 'data/textures/qui/bone_textures.txt', texSets: 'data/textures/qui/texture_sets.txt', animBase: 'data/animations/qui/', portrait: 'data/quimbur_portrait.jpg' },
-    gab: { texCfg: 'data/textures/gab/bone_textures.txt', texSets: 'data/textures/gab/texture_sets.txt', animBase: 'data/animations/gab/', portrait: 'data/gabriel_portrait.jpg' },
+    def: { texCfg: 'assets/textures/default/bone_textures.txt', texSets: 'assets/textures/default/texture_sets.txt', animBase: 'assets/animations/default/', portrait: null },
+    eld: { texCfg: 'assets/textures/eld/bone_textures.txt', texSets: 'assets/textures/eld/texture_sets.txt', animBase: 'assets/animations/eld/', portrait: 'assets/eldwin_portrait.jpg'  },
+    hil: { texCfg: 'assets/textures/hil/bone_textures.txt', texSets: 'assets/textures/hil/texture_sets.txt', animBase: 'assets/animations/hil/', portrait: 'assets/hilda_portrait.jpg'   },
+    qui: { texCfg: 'assets/textures/qui/bone_textures.txt', texSets: 'assets/textures/qui/texture_sets.txt', animBase: 'assets/animations/qui/', portrait: 'assets/quimbur_portrait.jpg' },
+    gab: { texCfg: 'assets/textures/gab/bone_textures.txt', texSets: 'assets/textures/gab/texture_sets.txt', animBase: 'assets/animations/gab/', portrait: 'assets/gabriel_portrait.jpg' },
 };
 
 // CHAR_IDS: solo los seleccionables por humanos — 'def' es exclusivo de bots de torneo

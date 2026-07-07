@@ -1,0 +1,13 @@
+# Bone Variant TexturePath
+# Expresiones de cabeza
+Head idle assets/textures/eld/head.png
+Head blink assets/textures/eld/head.png
+Head talk_open assets/textures/eld/head.png
+Head talk_closed assets/textures/eld/head.png
+Head happy assets/textures/eld/head.png
+Head sad assets/textures/eld/head.png
+Head angry assets/textures/eld/head.png
+
+# Puedes añadir variantes de otras partes
+# LWrist idle hil/HandR.png
+# LWrist fist hil/HandR_Fist.png

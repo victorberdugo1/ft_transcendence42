@@ -1,5 +1,6 @@
-import "./manual.css";
+import { useTranslation } from "react-i18next";
 import logoMiniImage from "../../../assets/logomini.png";
+import "./manual.css";
 
 // ── Manual ────────────────────────────────────────────────────────────────────
 // In-game manual page. Unified with the rest of the app: same dark glass /
@@ -354,13 +355,15 @@ const SECTIONS = [
 ];
 
 export default function Manual({ onBack }) {
+  const { t } = useTranslation();
+
   return (
     <div className="mn-page">
       {/* ── Sticky topbar: logo + back button, always visible ── */}
       <div className="mn-topbar">
         <img src={logoMiniImage} alt="Enuma Fighter" className="mn-topbar-logo" />
         <button type="button" className="mn-back-btn" onClick={onBack}>
-          ← Back to Lobby
+          ← {t("manual.backToLobby")}
         </button>
       </div>
 
@@ -380,12 +383,12 @@ export default function Manual({ onBack }) {
 
         {/* ── Cover ── */}
         <header className="mn-cover">
-          <div className="mn-cover-eyebrow">TOME OF COMBAT · OFFICIAL CODEX</div>
+          <div className="mn-cover-eyebrow">{t("manual.coverEyebrow")}</div>
           <h1 className="mn-cover-title">ENUMA<br />FIGHTER</h1>
           <div className="mn-cover-divider" aria-hidden="true">
             <span>✦</span><span>✦</span><span>✦</span>
           </div>
-          <p className="mn-cover-sub">Season 01 · Instruction Manual</p>
+          <p className="mn-cover-sub">{t("manual.coverSub")}</p>
         </header>
 
         {/* ── Body ── */}
