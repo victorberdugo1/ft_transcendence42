@@ -50,9 +50,9 @@ RUN npm run build
 FROM nginx:alpine
 
 COPY --from=react-builder /app/dist         /usr/share/nginx/html/
+COPY app/public/game                         /usr/share/nginx/html/game/
 COPY --from=game-builder  /build/game.js    /usr/share/nginx/html/
 COPY --from=game-builder  /build/game.wasm  /usr/share/nginx/html/
 COPY --from=game-builder  /build/game.data  /usr/share/nginx/html/
-COPY js/                                    /usr/share/nginx/html/js/
 
 EXPOSE 80
