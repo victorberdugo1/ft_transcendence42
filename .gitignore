@@ -9,6 +9,7 @@ venv/
 
 # Build output de Emscripten (se genera con docker build)
 frontend/dist/
+frontend/app/dist/
 *.wasm
 game.js
 game.data
