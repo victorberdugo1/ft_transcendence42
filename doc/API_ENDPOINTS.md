@@ -921,7 +921,7 @@ Modes: `brawl` `1v1` `tournament`. `tournamentId` and `round` are present (and n
 
 ### Game — `Game.jsx`
 
-Opens the WebSocket at `wss://localhost:8443/ws` and keeps it alive. Game state is handled by `ws-client.js`, which writes to `window._gameState` — no manual state processing needed here.
+Opens the WebSocket at `wss://localhost:8443/ws` and keeps it alive. Game state is handled by `app/public/game/ws-client.js`, which writes to `window._gameState` — no manual state processing needed here.
 
 First message from server after connecting:
 ```json
@@ -1009,7 +1009,7 @@ useEffect(() => {
 
 ## Files
 **Backend:** `auth.js` `index.js` `ws/handler.js` `game/session.js` `game/physics.js` `game/ai.js`
-**Frontend/Bridge:** `ws-client.js` `main.c` Dockerfiles
+**Frontend/Bridge:** `app/public/game/ws-client.js` `main.c` Dockerfiles
 
 ---
 
@@ -1245,6 +1245,6 @@ Otherwise the server broadcasts `player_eliminated` as normal.
 
 ---
 
-## Frontend / Bridge — `ws-client.js`
+## Frontend / Bridge — `app/public/game/ws-client.js`
 
 Bridge between the WebSocket and Raylib/WASM. Writes game state to `window._gameState` at 60 Hz for `main.c` to read. The connection is opened by mmarinov from `Game.jsx`.

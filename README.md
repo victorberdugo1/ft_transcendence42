@@ -176,7 +176,7 @@ nginx :443  (HTTPS / TLS termination)
 │   │   └── src/
 │   │       ├── bones_core.h
 │   │       └── main.c             ← Raylib game source                    (vberdugo)
-│   └── js/
+│   └── app/public/game/
 │       └── ws-client.js            ← WebSocket ↔ WASM bridge              (vberdugo)
 └── nginx/
     ├── Dockerfile                  ← Generates self-signed HTTPS cert      (isegura-)
@@ -267,7 +267,7 @@ The mandatory part is the shared foundation every team member built and owns col
 | Home + Game + Notifications pages | `Home.jsx`, `Game.jsx`, `Notifications.jsx` | mmarinov |
 | Game engine + physics + AI | `main.c`, `physics.js`, `session.js`, `game/ai.js` | vberdugo |
 | Auth system + WebSocket server | `auth.js`, `ws/handler.js`, `index.js` | vberdugo |
-| WS↔WASM bridge + Docker setup | `ws-client.js`, `docker-compose.yml`, Dockerfiles | vberdugo |
+| WS↔WASM bridge + Docker setup | `app/public/game/ws-client.js`, `docker-compose.yml`, Dockerfiles | vberdugo |
 
 ---
 
