@@ -167,13 +167,15 @@ nginx :443  (HTTPS / TLS termination)
 │   │       ├── Register.jsx        ← Register form                         (isegura-)
 │   │       ├── Terms.jsx           ← Terms of Service                      (isegura-)
 │   │       └── Tournament.jsx      ← Tournament bracket UI                 (isegura-)
-│   ├── game/src/
-│   │   ├── bones_core.h
-│   │   ├── main.c                  ← Raylib game source                    (vberdugo)
-│   │   ├── raylib.h
-│   │   ├── raymath.h
-│   │   ├── rlgl.h
-│   │   └── data/                   ← Animations, portraits, textures, VFX
+│   ├── game/
+│   │   ├── assets/                ← Animations, portraits, textures, shaders, FX
+│   │   ├── include/
+│   │   │   ├── raylib.h
+│   │   │   ├── raymath.h
+│   │   │   └── rlgl.h
+│   │   └── src/
+│   │       ├── bones_core.h
+│   │       └── main.c             ← Raylib game source                    (vberdugo)
 │   └── js/
 │       └── ws-client.js            ← WebSocket ↔ WASM bridge              (vberdugo)
 └── nginx/
