@@ -13,13 +13,16 @@ all: up ## Alias for 'up' (default target)
 up: ## Start containers in detached mode
 	@$(ENV_CHECK) && docker compose up -d
 
-dev-assets: ## Build/extract game.js, game.wasm, game.data into frontend/dist for Vite dev
-	@mkdir -p frontend/dist
+dev-assets: ## Build/extract game.js, game.wasm, game.data into frontend/dist and frontend/app/public for Vite dev
+	@mkdir -p frontend/dist frontend/app/public
 	@docker build -f frontend/Dockerfile --target game-builder -t $(GAME_BUILDER_IMAGE) frontend
 	@cid=$$(docker create $(GAME_BUILDER_IMAGE)); \
 		docker cp $$cid:/build/game.js frontend/dist/game.js; \
 		docker cp $$cid:/build/game.wasm frontend/dist/game.wasm; \
 		docker cp $$cid:/build/game.data frontend/dist/game.data; \
+		docker cp $$cid:/build/game.js frontend/app/public/game.js; \
+		docker cp $$cid:/build/game.wasm frontend/app/public/game.wasm; \
+		docker cp $$cid:/build/game.data frontend/app/public/game.data; \
 		docker rm $$cid >/dev/null
 
 dev: dev-assets ## Start dev stack from docker-compose.dev.yml (hot-reload, foreground)

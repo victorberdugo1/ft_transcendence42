@@ -20,7 +20,7 @@ services:
       - app-network
     restart: unless-stopped
 
-  # ── frontend (WASM: C/C++/Rust) ─────────────────────────────────────
+  # ── frontend (React/Vite + WASM game) ─────────────────────────────────────
   # Vite dev server con recarga en vivo para React/JS/CSS.
   # API y WS se enrutan al backend mediante proxy en vite.config.js.
   frontend:
@@ -32,8 +32,7 @@ services:
     volumes:
       - ./frontend/app:/app
       - /app/node_modules
-      - ./frontend/js:/app/public/js:ro
-      - ./frontend/dist:/app/public
+      - ./frontend/app/public:/app/public:ro
     environment:
       CHOKIDAR_USEPOLLING: "true"
       WATCHPACK_POLLING: "true"
