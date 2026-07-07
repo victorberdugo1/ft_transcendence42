@@ -1,0 +1,48 @@
+{
+  "auth": {
+    "title": "Inicia sesion para jugar",
+    "tabLogin": "Login",
+    "tabRegister": "Registro",
+    "privacy": "Politica de privacidad",
+    "terms": "Terminos del servicio",
+    "email": "Correo",
+    "password": "Contrasena",
+    "username": "Usuario",
+    "confirmPassword": "Confirmar contrasena",
+    "emailPlaceholder": "tu@ejemplo.com",
+    "passwordPlaceholder": "Tu contrasena",
+    "registerPasswordPlaceholder": "Minimo 8 caracteres",
+    "confirmPasswordPlaceholder": "Repite tu contrasena",
+    "usernamePlaceholder": "Elige un usuario",
+    "signIn": "Entrar",
+    "signingIn": "Entrando...",
+    "createAccount": "Crear cuenta",
+    "creatingAccount": "Creando cuenta...",
+    "needAccount": "Necesitas una cuenta?",
+    "createOne": "Crear una",
+    "haveAccount": "Ya tienes cuenta?",
+    "switchToSignIn": "Inicia sesion"
+  },
+  "validation": {
+    "emailPasswordRequired": "Correo y contrasena son obligatorios.",
+    "invalidEmail": "Ingresa un correo valido.",
+    "loginFailed": "Fallo el login.",
+    "serverUnreachable": "No se pudo conectar al servidor. Intenta de nuevo.",
+    "allFieldsRequired": "Todos los campos son obligatorios.",
+    "usernameMin": "El usuario debe tener al menos 3 caracteres.",
+    "passwordMin": "La contrasena debe tener al menos 8 caracteres.",
+    "passwordMismatch": "Las contrasenas no coinciden.",
+    "registerFailed": "Fallo el registro."
+  },
+  "language": {
+    "label": "Idioma",
+    "ca": "Catala",
+    "es": "Espanol",
+    "en": "English"
+  },
+  "manual": {
+    "backToLobby": "Volver al Lobby",
+    "coverEyebrow": "TOMO DE COMBATE · CODICE OFICIAL",
+    "coverSub": "Temporada 01 · Manual de instrucciones"
+  }
+}

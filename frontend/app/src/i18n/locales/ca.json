@@ -1,0 +1,48 @@
+{
+  "auth": {
+    "title": "Inicia sessio per jugar",
+    "tabLogin": "Login",
+    "tabRegister": "Registre",
+    "privacy": "Politica de privacitat",
+    "terms": "Termes del servei",
+    "email": "Correu",
+    "password": "Contrasenya",
+    "username": "Usuari",
+    "confirmPassword": "Confirmar contrasenya",
+    "emailPlaceholder": "tu@exemple.com",
+    "passwordPlaceholder": "La teva contrasenya",
+    "registerPasswordPlaceholder": "Minim 8 caracters",
+    "confirmPasswordPlaceholder": "Repeteix la contrasenya",
+    "usernamePlaceholder": "Tria un usuari",
+    "signIn": "Entrar",
+    "signingIn": "Entrant...",
+    "createAccount": "Crear compte",
+    "creatingAccount": "Creant compte...",
+    "needAccount": "Necessites un compte?",
+    "createOne": "Crea'n un",
+    "haveAccount": "Ja tens compte?",
+    "switchToSignIn": "Inicia sessio"
+  },
+  "validation": {
+    "emailPasswordRequired": "Correu i contrasenya son obligatoris.",
+    "invalidEmail": "Introdueix un correu valid.",
+    "loginFailed": "Ha fallat el login.",
+    "serverUnreachable": "No s'ha pogut connectar al servidor. Torna-ho a provar.",
+    "allFieldsRequired": "Tots els camps son obligatoris.",
+    "usernameMin": "L'usuari ha de tenir almenys 3 caracters.",
+    "passwordMin": "La contrasenya ha de tenir almenys 8 caracters.",
+    "passwordMismatch": "Les contrasenyes no coincideixen.",
+    "registerFailed": "Ha fallat el registre."
+  },
+  "language": {
+    "label": "Idioma",
+    "ca": "Catala",
+    "es": "Espanyol",
+    "en": "English"
+  },
+  "manual": {
+    "backToLobby": "Tornar al Lobby",
+    "coverEyebrow": "TOM DE COMBAT · CODI OFICIAL",
+    "coverSub": "Temporada 01 · Manual d'instruccions"
+  }
+}

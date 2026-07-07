@@ -1,0 +1,48 @@
+{
+  "auth": {
+    "title": "Sign in to play",
+    "tabLogin": "Login",
+    "tabRegister": "Register",
+    "privacy": "Privacy Policy",
+    "terms": "Terms of Service",
+    "email": "Email",
+    "password": "Password",
+    "username": "Username",
+    "confirmPassword": "Confirm password",
+    "emailPlaceholder": "you@example.com",
+    "passwordPlaceholder": "Your password",
+    "registerPasswordPlaceholder": "At least 8 characters",
+    "confirmPasswordPlaceholder": "Repeat your password",
+    "usernamePlaceholder": "Choose a username",
+    "signIn": "Sign in",
+    "signingIn": "Signing in...",
+    "createAccount": "Create account",
+    "creatingAccount": "Creating account...",
+    "needAccount": "Need an account?",
+    "createOne": "Create one",
+    "haveAccount": "Already have an account?",
+    "switchToSignIn": "Sign in"
+  },
+  "validation": {
+    "emailPasswordRequired": "Email and password are required.",
+    "invalidEmail": "Please enter a valid email address.",
+    "loginFailed": "Login failed.",
+    "serverUnreachable": "Could not reach the server. Please try again.",
+    "allFieldsRequired": "All fields are required.",
+    "usernameMin": "Username must be at least 3 characters long.",
+    "passwordMin": "Password must be at least 8 characters long.",
+    "passwordMismatch": "Passwords do not match.",
+    "registerFailed": "Register failed."
+  },
+  "language": {
+    "label": "Language",
+    "ca": "Catalan",
+    "es": "Spanish",
+    "en": "English"
+  },
+  "manual": {
+    "backToLobby": "Back to Lobby",
+    "coverEyebrow": "TOME OF COMBAT · OFFICIAL CODEX",
+    "coverSub": "Season 01 · Instruction Manual"
+  }
+}
