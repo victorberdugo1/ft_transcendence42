@@ -11,6 +11,8 @@ export default function Register({ onLogin, onSwitchToLogin }) {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   async function handleSubmit(event) {
     event.preventDefault();
@@ -108,28 +110,48 @@ export default function Register({ onLogin, onSwitchToLogin }) {
       <label className="auth-label" htmlFor="register-password">
         Password
       </label>
-      <input
-        id="register-password"
-        className="auth-input"
-        type="password"
-        value={password}
-        onChange={(event) => setPassword(event.target.value)}
-        autoComplete="new-password"
-        placeholder="At least 8 characters"
-      />
+      <div className="password-input-wrapper">
+        <input
+          id="register-password"
+          className="auth-input"
+          type={showPassword ? "text" : "password"}
+          value={password}
+          onChange={(event) => setPassword(event.target.value)}
+          autoComplete="new-password"
+          placeholder="At least 8 characters"
+        />
+        <button
+          type="button"
+          className="password-toggle"
+          onClick={() => setShowPassword(!showPassword)}
+          tabIndex="-1"
+        >
+          {showPassword ? "👁️" : "👁️‍🗨️"}
+        </button>
+      </div>
 
       <label className="auth-label" htmlFor="register-confirm-password">
         Confirm password
       </label>
-      <input
-        id="register-confirm-password"
-        className="auth-input"
-        type="password"
-        value={confirmPassword}
-        onChange={(event) => setConfirmPassword(event.target.value)}
-        autoComplete="new-password"
-        placeholder="Repeat your password"
-      />
+      <div className="password-input-wrapper">
+        <input
+          id="register-confirm-password"
+          className="auth-input"
+          type={showConfirmPassword ? "text" : "password"}
+          value={confirmPassword}
+          onChange={(event) => setConfirmPassword(event.target.value)}
+          autoComplete="new-password"
+          placeholder="Repeat your password"
+        />
+        <button
+          type="button"
+          className="password-toggle"
+          onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+          tabIndex="-1"
+        >
+          {showConfirmPassword ? "👁️" : "👁️‍🗨️"}
+        </button>
+      </div>
 
       {error ? <p className="auth-error">{error}</p> : null}
 

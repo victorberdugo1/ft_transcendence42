@@ -9,6 +9,7 @@ export default function Login({ onLogin, onSwitchToRegister }) {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   async function handleSubmit(event) {
     event.preventDefault();
@@ -76,15 +77,25 @@ export default function Login({ onLogin, onSwitchToRegister }) {
       <label className="auth-label" htmlFor="login-password">
         Password
       </label>
-      <input
-        id="login-password"
-        className="auth-input"
-        type="password"
-        value={password}
-        onChange={(event) => setPassword(event.target.value)}
-        autoComplete="current-password"
-        placeholder="Your password"
-      />
+      <div className="password-input-wrapper">
+        <input
+          id="login-password"
+          className="auth-input"
+          type={showPassword ? "text" : "password"}
+          value={password}
+          onChange={(event) => setPassword(event.target.value)}
+          autoComplete="current-password"
+          placeholder="Your password"
+        />
+        <button
+          type="button"
+          className="password-toggle"
+          onClick={() => setShowPassword(!showPassword)}
+          tabIndex="-1"
+        >
+          {showPassword ? "👁️" : "👁️‍🗨️"}
+        </button>
+      </div>
 
       {error ? <p className="auth-error">{error}</p> : null}
 
