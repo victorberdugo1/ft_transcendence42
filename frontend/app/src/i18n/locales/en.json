@@ -38,7 +38,8 @@
     "label": "Language",
     "ca": "Catalan",
     "es": "Spanish",
-    "en": "English"
+    "en": "English",
+    "ru": "Русский"
   },
   "manual": {
     "backToLobby": "Back to lobby",
@@ -267,6 +268,103 @@
         "label": "Manual",
         "kicker": "Codex"
       }
+    }
+  },
+  "profile": {
+    "kicker": "Profile",
+    "player": "Player",
+    "loading": {
+      "title": "Loading profile...",
+      "text": "Pulling your latest arena record."
+    },
+    "error": {
+      "title": "Could not load profile"
+    },
+    "errors": {
+      "sessionExpired": "Session expired. Please sign in again.",
+      "loadFailed": "Profile could not be loaded.",
+      "avatarSaveFailed": "Avatar could not be saved."
+    },
+    "actions": {
+      "retry": "Retry",
+      "backToLobby": "Back to lobby"
+    },
+    "header": {
+      "kicker": "Fighter data",
+      "title": "Player profile"
+    },
+    "tabs": {
+      "aria": "Profile sections",
+      "overview": "Overview",
+      "history": "History"
+    },
+    "stats": {
+      "experience": "Experience",
+      "xpProgress": "XP progress {{percent}} percent",
+      "wins": "Wins",
+      "losses": "Losses",
+      "draws": "Draws",
+      "matches": "Matches",
+      "winRate": "Win rate",
+      "xp": "XP",
+      "level": "Level"
+    },
+    "sections": {
+      "globalStats": "Global stats",
+      "bestCharacter": "Best character",
+      "characterStats": "Character stats"
+    },
+    "characters": {
+      "bestBadge": "Best character",
+      "unknownCharacter": "Character"
+    },
+    "history": {
+      "kicker": "Match archive",
+      "recentMatches": "Recent matches",
+      "opponent": "Opponent",
+      "vs": "vs",
+      "unknownPlayer": "Unknown player",
+      "you": "You",
+      "rival": "Rival",
+      "unknownDate": "Unknown date",
+      "gameTypes": {
+        "unknown": "Unknown",
+        "brawler": "Brawler",
+        "tournament": "Tournament"
+      },
+      "results": {
+        "win": "WIN",
+        "loss": "LOSS",
+        "draw": "DRAW",
+        "unknown": "UNKNOWN"
+      }
+    },
+    "avatar": {
+      "alt": "Profile avatar",
+      "change": "Change avatar",
+      "identity": "Player identity",
+      "choose": "Choose avatar",
+      "closeSelector": "Close avatar selector",
+      "selected": "Selected",
+      "cancel": "Cancel",
+      "saving": "Saving...",
+      "save": "Save avatar",
+      "options": {
+        "logo": "Logo",
+        "miniLogo": "Mini logo"
+      }
+    },
+    "empty": {
+      "bestCharacterTitle": "No best character yet",
+      "bestCharacterText": "Play matches to discover your best character",
+      "characterStatsTitle": "No character stats yet",
+      "characterStatsText": "New matches with character tracking will appear here.",
+      "matchHistoryTitle": "No match history yet",
+      "matchHistoryText": "Play human matches to build your history"
+    },
+    "common": {
+      "unknown": "Unknown",
+      "notAvailable": "n/a"
     }
   },
   "legal": {

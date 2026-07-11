@@ -38,7 +38,8 @@
     "label": "Idioma",
     "ca": "Catala",
     "es": "Espanyol",
-    "en": "English"
+    "en": "English",
+    "ru": "Русский"
   },
   "manual": {
     "backToLobby": "Tornar al lobby",
@@ -267,6 +268,103 @@
         "label": "Manual",
         "kicker": "Codex"
       }
+    }
+  },
+  "profile": {
+    "kicker": "Perfil",
+    "player": "Jugador",
+    "loading": {
+      "title": "Carregant perfil...",
+      "text": "Recuperant el teu ultim registre a l'arena."
+    },
+    "error": {
+      "title": "No s'ha pogut carregar el perfil"
+    },
+    "errors": {
+      "sessionExpired": "Sessio expirada. Inicia sessio de nou.",
+      "loadFailed": "No s'ha pogut carregar el perfil.",
+      "avatarSaveFailed": "No s'ha pogut desar l'avatar."
+    },
+    "actions": {
+      "retry": "Torna-ho a provar",
+      "backToLobby": "Tornar al lobby"
+    },
+    "header": {
+      "kicker": "Dades del lluitador",
+      "title": "Perfil del jugador"
+    },
+    "tabs": {
+      "aria": "Seccions del perfil",
+      "overview": "Resum",
+      "history": "Historial"
+    },
+    "stats": {
+      "experience": "Experiencia",
+      "xpProgress": "Progres d'XP {{percent}} percent",
+      "wins": "Victories",
+      "losses": "Derrotes",
+      "draws": "Empats",
+      "matches": "Partides",
+      "winRate": "Ratio de victoria",
+      "xp": "XP",
+      "level": "Nivell"
+    },
+    "sections": {
+      "globalStats": "Estadistiques globals",
+      "bestCharacter": "Millor personatge",
+      "characterStats": "Estadistiques per personatge"
+    },
+    "characters": {
+      "bestBadge": "Millor personatge",
+      "unknownCharacter": "Personatge"
+    },
+    "history": {
+      "kicker": "Arxiu de combats",
+      "recentMatches": "Partides recents",
+      "opponent": "Oponent",
+      "vs": "vs",
+      "unknownPlayer": "Jugador desconegut",
+      "you": "Tu",
+      "rival": "Rival",
+      "unknownDate": "Data desconeguda",
+      "gameTypes": {
+        "unknown": "Desconegut",
+        "brawler": "Brawler",
+        "tournament": "Torneig"
+      },
+      "results": {
+        "win": "VICTORIA",
+        "loss": "DERROTA",
+        "draw": "EMPAT",
+        "unknown": "DESCONEGUT"
+      }
+    },
+    "avatar": {
+      "alt": "Avatar de perfil",
+      "change": "Canviar avatar",
+      "identity": "Identitat del jugador",
+      "choose": "Triar avatar",
+      "closeSelector": "Tancar selector d'avatar",
+      "selected": "Seleccionat",
+      "cancel": "Cancelar",
+      "saving": "Desant...",
+      "save": "Desar avatar",
+      "options": {
+        "logo": "Logo",
+        "miniLogo": "Mini logo"
+      }
+    },
+    "empty": {
+      "bestCharacterTitle": "Encara no hi ha millor personatge",
+      "bestCharacterText": "Juga partides per descobrir el teu millor personatge",
+      "characterStatsTitle": "Encara no hi ha estadistiques per personatge",
+      "characterStatsText": "Les noves partides amb seguiment per personatge apareixeran aqui.",
+      "matchHistoryTitle": "Encara no hi ha historial",
+      "matchHistoryText": "Juga partides contra persones per construir el teu historial"
+    },
+    "common": {
+      "unknown": "Desconegut",
+      "notAvailable": "n/d"
     }
   },
   "legal": {

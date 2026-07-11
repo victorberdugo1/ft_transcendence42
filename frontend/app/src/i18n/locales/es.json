@@ -38,7 +38,8 @@
     "label": "Idioma",
     "ca": "Catala",
     "es": "Espanol",
-    "en": "English"
+    "en": "English",
+    "ru": "Русский"
   },
   "manual": {
     "backToLobby": "Volver al lobby",
@@ -267,6 +268,103 @@
         "label": "Manual",
         "kicker": "Codex"
       }
+    }
+  },
+  "profile": {
+    "kicker": "Perfil",
+    "player": "Jugador",
+    "loading": {
+      "title": "Cargando perfil...",
+      "text": "Recuperando tu ultimo registro en la arena."
+    },
+    "error": {
+      "title": "No se pudo cargar el perfil"
+    },
+    "errors": {
+      "sessionExpired": "Sesion expirada. Inicia sesion de nuevo.",
+      "loadFailed": "No se pudo cargar el perfil.",
+      "avatarSaveFailed": "No se pudo guardar el avatar."
+    },
+    "actions": {
+      "retry": "Reintentar",
+      "backToLobby": "Volver al lobby"
+    },
+    "header": {
+      "kicker": "Datos del luchador",
+      "title": "Perfil del jugador"
+    },
+    "tabs": {
+      "aria": "Secciones del perfil",
+      "overview": "Resumen",
+      "history": "Historial"
+    },
+    "stats": {
+      "experience": "Experiencia",
+      "xpProgress": "Progreso de XP {{percent}} por ciento",
+      "wins": "Victorias",
+      "losses": "Derrotas",
+      "draws": "Empates",
+      "matches": "Partidas",
+      "winRate": "Ratio de victoria",
+      "xp": "XP",
+      "level": "Nivel"
+    },
+    "sections": {
+      "globalStats": "Estadisticas globales",
+      "bestCharacter": "Mejor personaje",
+      "characterStats": "Estadisticas por personaje"
+    },
+    "characters": {
+      "bestBadge": "Mejor personaje",
+      "unknownCharacter": "Personaje"
+    },
+    "history": {
+      "kicker": "Archivo de combates",
+      "recentMatches": "Partidas recientes",
+      "opponent": "Oponente",
+      "vs": "vs",
+      "unknownPlayer": "Jugador desconocido",
+      "you": "Tu",
+      "rival": "Rival",
+      "unknownDate": "Fecha desconocida",
+      "gameTypes": {
+        "unknown": "Desconocido",
+        "brawler": "Brawler",
+        "tournament": "Torneo"
+      },
+      "results": {
+        "win": "VICTORIA",
+        "loss": "DERROTA",
+        "draw": "EMPATE",
+        "unknown": "DESCONOCIDO"
+      }
+    },
+    "avatar": {
+      "alt": "Avatar de perfil",
+      "change": "Cambiar avatar",
+      "identity": "Identidad del jugador",
+      "choose": "Elegir avatar",
+      "closeSelector": "Cerrar selector de avatar",
+      "selected": "Seleccionado",
+      "cancel": "Cancelar",
+      "saving": "Guardando...",
+      "save": "Guardar avatar",
+      "options": {
+        "logo": "Logo",
+        "miniLogo": "Mini logo"
+      }
+    },
+    "empty": {
+      "bestCharacterTitle": "Aun no hay mejor personaje",
+      "bestCharacterText": "Juega partidas para descubrir tu mejor personaje",
+      "characterStatsTitle": "Aun no hay estadisticas por personaje",
+      "characterStatsText": "Las nuevas partidas con seguimiento por personaje apareceran aqui.",
+      "matchHistoryTitle": "Aun no hay historial",
+      "matchHistoryText": "Juega partidas contra personas para construir tu historial"
+    },
+    "common": {
+      "unknown": "Desconocido",
+      "notAvailable": "n/d"
     }
   },
   "legal": {
