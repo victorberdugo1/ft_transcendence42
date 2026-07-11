@@ -270,6 +270,95 @@
       }
     }
   },
+  "fight": {
+    "header": {
+      "title": "Fight Lobby"
+    },
+    "actions": {
+      "back": "← Go back",
+      "logout": "Log out"
+    },
+    "legal": {
+      "privacy": "Privacy Policy",
+      "terms": "Terms of Service"
+    },
+    "status": {
+      "waiting": "Waiting…",
+      "availableIn": "Available in {{seconds}}s…",
+      "serverRelease": "⏳ Waiting for the server to release your previous match…"
+    },
+    "userCard": {
+      "defaultInitials": "P",
+      "playerFallback": "Player",
+      "avatarAlt": "{{playerName}} avatar",
+      "stats": {
+        "winsShort": "W",
+        "lossesShort": "L",
+        "levelShort": "Lv"
+      }
+    },
+    "modes": {
+      "versus": {
+        "tab": "Versus",
+        "description": "Play a live 1v1 against another connected player. Once you enter, matchmaking will close automatically when a second player arrives.",
+        "cta": "Find match"
+      },
+      "training": {
+        "tab": "vs AI",
+        "description": "Train against CPU opponents. Choose between 1 and 4 enemies and select a stage.",
+        "enemiesLabel": "Enemies · tap to toggle",
+        "stageLabel": "Stage",
+        "enemiesSelected": "{{count}} enemies",
+        "cta": "Start training vs {{enemyLabel}}"
+      },
+      "tournament": {
+        "tab": "Tournament",
+        "description": "Join the tournament waiting room. Up to 8 players can enter and anyone can launch the bracket once it is ready. Eliminated players continue as spectators.",
+        "joinCta": "Join tournament room",
+        "spectateCta": "Tournament in progress · spectate instead",
+        "leaveCta": "← Leave room"
+      },
+      "spectate": {
+        "tab": "Spectate",
+        "description": "Watch any active session live. The list refreshes every 3 seconds.",
+        "cta": "Watch"
+      }
+    },
+    "tournament": {
+      "waitingLine": "🏟️ {{playerCount}}/{{maxPlayers}} waiting{{suffix}}",
+      "inProgressSuffix": "· tournament in progress",
+      "roomStatus": "Waiting room · {{playerCount}}/{{maxPlayers}}{{suffix}}",
+      "startedSuffix": "· tournament has started",
+      "playerFallback": "Player {{clientId}}",
+      "youMarker": "← you",
+      "botLabel": "Bot (CPU)",
+      "autofill": "auto-fill",
+      "needPlayersTitle": "Need at least 2 players to start",
+      "starting": "Starting…",
+      "waitingPlayers": "Waiting for players…",
+      "startWithBots": "Start tournament ({{playerCount}} players + {{botCount}} bots)",
+      "startPlayersOnly": "Start tournament ({{playerCount}} players)",
+      "errors": {
+        "alreadyStarted": "The tournament has already started. You can spectate it instead.",
+        "roomFull": "The room is full (8 players max).",
+        "notAuthenticated": "You must be logged in to join.",
+        "notInRoom": "You are not in the room.",
+        "notConnected": "Not connected to the server yet. Please wait a moment."
+      }
+    },
+    "spectate": {
+      "loading": "Loading sessions…",
+      "empty": "No active sessions right now. Check back soon.",
+      "playerCount": "{{count}} players",
+      "spectators": "👁 {{count}}",
+      "tournamentTag": "Tournament #{{tournamentId}}",
+      "modeLabels": {
+        "oneVsOne": "1v1",
+        "brawl": "Brawl",
+        "tournament": "Tournament"
+      }
+    }
+  },
   "profile": {
     "kicker": "Profile",
     "player": "Player",

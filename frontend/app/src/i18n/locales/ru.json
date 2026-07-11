@@ -270,6 +270,95 @@
       }
     }
   },
+  "fight": {
+    "header": {
+      "title": "Лобби боя"
+    },
+    "actions": {
+      "back": "← Назад",
+      "logout": "Выйти"
+    },
+    "legal": {
+      "privacy": "Политика конфиденциальности",
+      "terms": "Условия сервиса"
+    },
+    "status": {
+      "waiting": "Ожидание…",
+      "availableIn": "Доступно через {{seconds}} с…",
+      "serverRelease": "⏳ Ждём, пока сервер освободит твой предыдущий матч…"
+    },
+    "userCard": {
+      "defaultInitials": "И",
+      "playerFallback": "Игрок",
+      "avatarAlt": "Аватар игрока {{playerName}}",
+      "stats": {
+        "winsShort": "П",
+        "lossesShort": "Пор",
+        "levelShort": "Ур"
+      }
+    },
+    "modes": {
+      "versus": {
+        "tab": "Дуэль",
+        "description": "Играй в живой 1v1 против другого подключённого игрока. После входа матчмейкинг закроется автоматически, как только появится второй соперник.",
+        "cta": "Найти матч"
+      },
+      "training": {
+        "tab": "vs ИИ",
+        "description": "Тренируйся против CPU-соперников. Выбери от 1 до 4 врагов и арену.",
+        "enemiesLabel": "Соперники · нажми для выбора",
+        "stageLabel": "Арена",
+        "enemiesSelected": "{{count}} противника",
+        "cta": "Начать тренировку против {{enemyLabel}}"
+      },
+      "tournament": {
+        "tab": "Турнир",
+        "description": "Войди в комнату ожидания турнира. До 8 игроков могут присоединиться, и любой участник может запустить сетку, когда всё готово. Вылетевшие продолжают как зрители.",
+        "joinCta": "Войти в комнату турнира",
+        "spectateCta": "Турнир уже идёт · перейти в зрители",
+        "leaveCta": "← Покинуть комнату"
+      },
+      "spectate": {
+        "tab": "Зритель",
+        "description": "Смотри любую активную сессию вживую. Список обновляется каждые 3 секунды.",
+        "cta": "Смотреть"
+      }
+    },
+    "tournament": {
+      "waitingLine": "🏟️ {{playerCount}}/{{maxPlayers}} в ожидании{{suffix}}",
+      "inProgressSuffix": "· турнир идёт",
+      "roomStatus": "Комната ожидания · {{playerCount}}/{{maxPlayers}}{{suffix}}",
+      "startedSuffix": "· турнир уже начался",
+      "playerFallback": "Игрок {{clientId}}",
+      "youMarker": "← ты",
+      "botLabel": "Бот (CPU)",
+      "autofill": "автозаполнение",
+      "needPlayersTitle": "Нужно минимум 2 игрока для старта",
+      "starting": "Запуск…",
+      "waitingPlayers": "Ждём игроков…",
+      "startWithBots": "Запустить турнир ({{playerCount}} игроков + {{botCount}} ботов)",
+      "startPlayersOnly": "Запустить турнир ({{playerCount}} игроков)",
+      "errors": {
+        "alreadyStarted": "Турнир уже начался. Можно подключиться как зритель.",
+        "roomFull": "Комната заполнена (максимум 8 игроков).",
+        "notAuthenticated": "Чтобы присоединиться, нужно войти в систему.",
+        "notInRoom": "Ты не находишься в комнате.",
+        "notConnected": "Соединение с сервером ещё не установлено. Подожди немного."
+      }
+    },
+    "spectate": {
+      "loading": "Загрузка сессий…",
+      "empty": "Сейчас нет активных сессий. Загляни позже.",
+      "playerCount": "Игроков: {{count}}",
+      "spectators": "👁 {{count}}",
+      "tournamentTag": "Турнир #{{tournamentId}}",
+      "modeLabels": {
+        "oneVsOne": "1v1",
+        "brawl": "Brawl",
+        "tournament": "Турнир"
+      }
+    }
+  },
   "profile": {
     "kicker": "Профиль",
     "player": "Игрок",

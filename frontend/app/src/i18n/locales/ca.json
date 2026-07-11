@@ -270,6 +270,95 @@
       }
     }
   },
+  "fight": {
+    "header": {
+      "title": "Fight Lobby"
+    },
+    "actions": {
+      "back": "← Tornar",
+      "logout": "Tancar sessio"
+    },
+    "legal": {
+      "privacy": "Politica de privacitat",
+      "terms": "Termes del servei"
+    },
+    "status": {
+      "waiting": "Esperant…",
+      "availableIn": "Disponible en {{seconds}} s…",
+      "serverRelease": "⏳ Esperant que el servidor alliberi la teva partida anterior…"
+    },
+    "userCard": {
+      "defaultInitials": "J",
+      "playerFallback": "Jugador",
+      "avatarAlt": "Avatar de {{playerName}}",
+      "stats": {
+        "winsShort": "V",
+        "lossesShort": "D",
+        "levelShort": "Nv"
+      }
+    },
+    "modes": {
+      "versus": {
+        "tab": "Versus",
+        "description": "Juga un 1v1 en directe contra un altre jugador connectat. Quan entris, l'emparellament es tancara automaticament quan arribi un segon rival.",
+        "cta": "Buscar partida"
+      },
+      "training": {
+        "tab": "vs IA",
+        "description": "Entrena contra oponents CPU. Tria entre 1 i 4 enemics i selecciona l'escenari.",
+        "enemiesLabel": "Enemics · toca per activar",
+        "stageLabel": "Escenari",
+        "enemiesSelected": "{{count}} enemics",
+        "cta": "Iniciar entrenament contra {{enemyLabel}}"
+      },
+      "tournament": {
+        "tab": "Torneig",
+        "description": "Entra a la sala d'espera del torneig. S'hi poden unir fins a 8 jugadors i qualsevol pot iniciar el bracket quan estigui llest. Els eliminats continuen com a espectadors.",
+        "joinCta": "Unir-se a la sala del torneig",
+        "spectateCta": "Torneig en curs · passa a espectador",
+        "leaveCta": "← Sortir de la sala"
+      },
+      "spectate": {
+        "tab": "Espectar",
+        "description": "Mira qualsevol sessio activa en directe. La llista s'actualitza cada 3 segons.",
+        "cta": "Veure"
+      }
+    },
+    "tournament": {
+      "waitingLine": "🏟️ {{playerCount}}/{{maxPlayers}} en espera{{suffix}}",
+      "inProgressSuffix": "· torneig en curs",
+      "roomStatus": "Sala d'espera · {{playerCount}}/{{maxPlayers}}{{suffix}}",
+      "startedSuffix": "· el torneig ja ha començat",
+      "playerFallback": "Jugador {{clientId}}",
+      "youMarker": "← tu",
+      "botLabel": "Bot (CPU)",
+      "autofill": "emplenat automatic",
+      "needPlayersTitle": "Calen almenys 2 jugadors per començar",
+      "starting": "Iniciant…",
+      "waitingPlayers": "Esperant jugadors…",
+      "startWithBots": "Iniciar torneig ({{playerCount}} jugadors + {{botCount}} bots)",
+      "startPlayersOnly": "Iniciar torneig ({{playerCount}} jugadors)",
+      "errors": {
+        "alreadyStarted": "El torneig ja ha començat. Hi pots entrar com a espectador.",
+        "roomFull": "La sala es plena (maxim 8 jugadors).",
+        "notAuthenticated": "Has d'iniciar sessio per unir-t'hi.",
+        "notInRoom": "No ets dins de la sala.",
+        "notConnected": "Encara no hi ha connexio amb el servidor. Espera un moment."
+      }
+    },
+    "spectate": {
+      "loading": "Carregant sessions…",
+      "empty": "No hi ha sessions actives ara mateix. Torna-ho a comprovar aviat.",
+      "playerCount": "{{count}} jugadors",
+      "spectators": "👁 {{count}}",
+      "tournamentTag": "Torneig #{{tournamentId}}",
+      "modeLabels": {
+        "oneVsOne": "1v1",
+        "brawl": "Brawl",
+        "tournament": "Torneig"
+      }
+    }
+  },
   "profile": {
     "kicker": "Perfil",
     "player": "Jugador",

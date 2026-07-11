@@ -270,6 +270,95 @@
       }
     }
   },
+  "fight": {
+    "header": {
+      "title": "Fight Lobby"
+    },
+    "actions": {
+      "back": "← Volver",
+      "logout": "Cerrar sesion"
+    },
+    "legal": {
+      "privacy": "Politica de privacidad",
+      "terms": "Terminos del servicio"
+    },
+    "status": {
+      "waiting": "Esperando…",
+      "availableIn": "Disponible en {{seconds}} s…",
+      "serverRelease": "⏳ Esperando a que el servidor libere tu partida anterior…"
+    },
+    "userCard": {
+      "defaultInitials": "J",
+      "playerFallback": "Jugador",
+      "avatarAlt": "Avatar de {{playerName}}",
+      "stats": {
+        "winsShort": "V",
+        "lossesShort": "D",
+        "levelShort": "Nv"
+      }
+    },
+    "modes": {
+      "versus": {
+        "tab": "Versus",
+        "description": "Juega un 1v1 en directo contra otro jugador conectado. Cuando entres, el emparejamiento se cerrara automaticamente al llegar un segundo rival.",
+        "cta": "Buscar partida"
+      },
+      "training": {
+        "tab": "vs IA",
+        "description": "Entrena contra oponentes CPU. Elige entre 1 y 4 enemigos y selecciona el escenario.",
+        "enemiesLabel": "Enemigos · toca para activar",
+        "stageLabel": "Escenario",
+        "enemiesSelected": "{{count}} enemigos",
+        "cta": "Iniciar entrenamiento contra {{enemyLabel}}"
+      },
+      "tournament": {
+        "tab": "Torneo",
+        "description": "Entra en la sala de espera del torneo. Pueden unirse hasta 8 jugadores y cualquiera puede lanzar el bracket cuando este listo. Los eliminados siguen como espectadores.",
+        "joinCta": "Unirse a la sala del torneo",
+        "spectateCta": "Torneo en curso · pasar a espectador",
+        "leaveCta": "← Salir de la sala"
+      },
+      "spectate": {
+        "tab": "Espectar",
+        "description": "Mira cualquier sesion activa en directo. La lista se actualiza cada 3 segundos.",
+        "cta": "Ver"
+      }
+    },
+    "tournament": {
+      "waitingLine": "🏟️ {{playerCount}}/{{maxPlayers}} en espera{{suffix}}",
+      "inProgressSuffix": "· torneo en curso",
+      "roomStatus": "Sala de espera · {{playerCount}}/{{maxPlayers}}{{suffix}}",
+      "startedSuffix": "· el torneo ya ha empezado",
+      "playerFallback": "Jugador {{clientId}}",
+      "youMarker": "← tu",
+      "botLabel": "Bot (CPU)",
+      "autofill": "relleno automatico",
+      "needPlayersTitle": "Se necesitan al menos 2 jugadores para empezar",
+      "starting": "Iniciando…",
+      "waitingPlayers": "Esperando jugadores…",
+      "startWithBots": "Iniciar torneo ({{playerCount}} jugadores + {{botCount}} bots)",
+      "startPlayersOnly": "Iniciar torneo ({{playerCount}} jugadores)",
+      "errors": {
+        "alreadyStarted": "El torneo ya ha empezado. Puedes entrar como espectador.",
+        "roomFull": "La sala esta llena (maximo 8 jugadores).",
+        "notAuthenticated": "Debes iniciar sesion para unirte.",
+        "notInRoom": "No estas dentro de la sala.",
+        "notConnected": "Todavia no hay conexion con el servidor. Espera un momento."
+      }
+    },
+    "spectate": {
+      "loading": "Cargando sesiones…",
+      "empty": "No hay sesiones activas ahora mismo. Vuelve a comprobarlo en breve.",
+      "playerCount": "{{count}} jugadores",
+      "spectators": "👁 {{count}}",
+      "tournamentTag": "Torneo #{{tournamentId}}",
+      "modeLabels": {
+        "oneVsOne": "1v1",
+        "brawl": "Brawl",
+        "tournament": "Torneo"
+      }
+    }
+  },
   "profile": {
     "kicker": "Perfil",
     "player": "Jugador",
