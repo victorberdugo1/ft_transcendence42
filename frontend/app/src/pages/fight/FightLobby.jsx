@@ -719,23 +719,30 @@ export default function FightLobby({
           ))}
         </div>
 
-        {/* Grace-period notice: all game buttons are locked until the server
-            releases the previous session (up to 5s after pressing Back) */}
-        {graceActive && (
-          <p className="auth-error" style={{ textAlign: "center", marginBottom: "0.5rem" }}>
-            {t("fight.status.serverRelease")}
+        <div className="lobby-mode-stack">
+          {/* Grace-period notice: all game buttons are locked until the server
+              releases the previous session (up to 5s after pressing Back) */}
+          {graceActive ? (
+            <p className="auth-error fight-lobby-inline-error">
+              {t("fight.status.serverRelease")}
+            </p>
+          ) : null}
+
+          {/* Mode content */}
+          <div className="lobby-mode-panel">
+            {activeMode === "versus"     && <ModeVersus     onEnterGame={handleEnterGame} matchCooldown={matchCooldown} graceActive={graceActive} />}
+            {activeMode === "training"   && <ModeAI         onEnterGame={handleEnterGame} matchCooldown={matchCooldown} graceActive={graceActive} />}
+            {activeMode === "tournament" && <ModeTournament  onEnterGame={handleEnterGame} matchCooldown={matchCooldown} graceActive={graceActive} />}
+            {activeMode === "spectate"   && <ModeSpectator  onEnterGame={handleEnterGame} />}
+          </div>
+
+          <p
+            className={sessionError ? "auth-error lobby-session-error" : "auth-error lobby-session-error lobby-session-error-empty"}
+            aria-live="polite"
+          >
+            {sessionError || "\u00A0"}
           </p>
-        )}
-
-        {/* Mode content */}
-        <div className="lobby-mode-panel">
-          {activeMode === "versus"     && <ModeVersus     onEnterGame={handleEnterGame} matchCooldown={matchCooldown} graceActive={graceActive} />}
-          {activeMode === "training"   && <ModeAI         onEnterGame={handleEnterGame} matchCooldown={matchCooldown} graceActive={graceActive} />}
-          {activeMode === "tournament" && <ModeTournament  onEnterGame={handleEnterGame} matchCooldown={matchCooldown} graceActive={graceActive} />}
-          {activeMode === "spectate"   && <ModeSpectator  onEnterGame={handleEnterGame} />}
         </div>
-
-        {sessionError && <p className="auth-error">{sessionError}</p>}
 
         <div className="legal-footer">
           <button type="button" className="auth-link" onClick={onPrivacy}>{t("fight.legal.privacy")}</button>
