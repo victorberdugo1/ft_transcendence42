@@ -3284,6 +3284,39 @@
 
 /* ── Manual tile: above logo (z-index 14), clicks always work ── */
 .lobby-page .lobby-tile-manual {
+  --tile-edge: #7ed7ff;
+  --tile-glow: rgba(84, 202, 255, 0.28);
+  --tile-pattern:
+    linear-gradient(
+      90deg,
+      transparent 0 18%,
+      rgba(255, 255, 255, 0.16) 18% 18.24%,
+      transparent 18.24% 100%
+    ),
+    linear-gradient(
+      145deg,
+      transparent 0 51%,
+      rgba(157, 226, 255, 0.18) 51% 51.24%,
+      transparent 51.24% 100%
+    ),
+    repeating-linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0.05) 0 1px,
+      transparent 1px 16px
+    );
+  --tile-core:
+    radial-gradient(
+      circle at 26% 18%,
+      rgba(234, 248, 255, 0.76) 0%,
+      rgba(141, 226, 255, 0.42) 18%,
+      transparent 42%
+    ),
+    radial-gradient(
+      circle at 76% 72%,
+      rgba(121, 191, 255, 0.2),
+      transparent 34%
+    ),
+    linear-gradient(145deg, #d5dde6 0%, #7f8d9d 28%, #364656 62%, #101721 100%);
   z-index: 15 !important;
   pointer-events: auto !important;
 }
@@ -3292,4 +3325,45 @@
   z-index: 2;
   mix-blend-mode: normal;
   transform: translateX(2.5rem);
+}
+
+.lobby-page .lobby-tile-logout {
+  --tile-edge: #ff5c64;
+  --tile-glow: rgba(255, 68, 86, 0.34);
+  --tile-pattern:
+    linear-gradient(
+      102deg,
+      transparent 0 36%,
+      rgba(255, 255, 255, 0.15) 36% 36.28%,
+      transparent 36.28% 100%
+    ),
+    linear-gradient(
+      0deg,
+      rgba(255, 255, 255, 0.05) 0 2px,
+      transparent 2px 100%
+    ),
+    radial-gradient(
+      circle at 80% 18%,
+      rgba(255, 171, 171, 0.12),
+      transparent 8rem
+    );
+  --tile-core:
+    radial-gradient(
+      circle at 20% 18%,
+      rgba(255, 222, 222, 0.4) 0%,
+      rgba(255, 120, 120, 0.18) 20%,
+      transparent 40%
+    ),
+    radial-gradient(
+      circle at 72% 74%,
+      rgba(255, 71, 71, 0.16),
+      transparent 30%
+    ),
+    linear-gradient(145deg, #585d67 0%, #2b3038 26%, #1a1118 62%, #09070b 100%);
+}
+
+.lobby-page .lobby-tile-logout .lobby-tile-label,
+.lobby-page .lobby-tile-logout span {
+  color: #fff3f4;
+  text-shadow: 0 0 18px rgba(255, 92, 100, 0.18);
 }
