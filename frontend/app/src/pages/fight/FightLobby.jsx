@@ -1,4 +1,5 @@
 import LanguageSelector from "@src/components/LanguageSelector.jsx";
+import PageBackButton from "@src/components/ui/PageBackButton.jsx";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -685,16 +686,14 @@ export default function FightLobby({
         <div className="fight-lobby-toolbar">
           <div className="fight-lobby-toolbar-start">
             {!sssLocked ? (
-              <button
-                type="button"
-                className="fight-lobby-back-button"
+              <PageBackButton
                 onClick={handleBack}
                 disabled={graceActive}
                 title={graceActive ? t("fight.status.serverRelease") : undefined}
                 style={{ position: "static", top: "auto", right: "auto" }}
               >
                 {t("fight.actions.back")}
-              </button>
+              </PageBackButton>
             ) : (
               <div className="fight-lobby-back-spacer" aria-hidden="true" />
             )}
