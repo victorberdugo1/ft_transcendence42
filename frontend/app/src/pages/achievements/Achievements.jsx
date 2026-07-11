@@ -1,4 +1,5 @@
 import LanguageSelector from "@src/components/LanguageSelector.jsx";
+import PageBackButton from "@src/components/ui/PageBackButton.jsx";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import "./achievements.css";
@@ -221,7 +222,9 @@ export default function Achievements({ user, onBack }) {
           </div>
           <div className="ach-header-actions">
             <LanguageSelector variant="manual" compact />
-            <button type="button" className="ach-back" onClick={onBack}>{t("achievementsPage.backToLobby")}</button>
+            <PageBackButton onClick={onBack}>
+              {t("achievementsPage.backToLobby")}
+            </PageBackButton>
           </div>
         </header>
 
