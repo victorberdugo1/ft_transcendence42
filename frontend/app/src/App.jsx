@@ -20,6 +20,8 @@ import "@src/pages/manual/manual.css";
 import Manual from "@src/pages/manual/Manual.jsx";
 import "@src/pages/profile/profile.css";
 import Profile from "@src/pages/profile/Profile.jsx";
+import "@src/pages/social/social.css";
+import SocialHub from "@src/pages/social/SocialHub.jsx";
 import { cleanupMatchState } from "@src/utils/cleanupMatchState.js";
 import { useCallback, useEffect, useRef, useState } from "react";
 
@@ -34,7 +36,7 @@ function normalizeUser(rawUser) {
   };
 }
 
-function teardownGameRuntimeForAuth() {
+function teardownGameRuntime() {
   const glfw = window.GLFW;
   if (glfw) {
     if (typeof glfw.onKeydown === "function") {
@@ -79,6 +81,7 @@ export default function App() {
   const [legalBackPage, setLegalBackPage] = useState("auth");
   const [gameMode, setGameMode] = useState("versus");
   const [gameOpts, setGameOpts] = useState({});
+  const [socialInitialTab, setSocialInitialTab] = useState("global");
   // Ref espejo de gameOpts — permite que el efecto de GameShell lea los opts
   // actuales sin necesitar gameOpts como dependencia (evita doble disparo).
   const gameOptsRef = useRef({});
@@ -151,7 +154,10 @@ export default function App() {
       await fetch("/api/logout", { method: "POST", credentials: "include" });
     } catch (_) {}
 
-    teardownGameRuntimeForAuth();
+    teardownGameRuntime();
+  useEffect(() => {
+    if (page !== "game") teardownGameRuntime();
+  }, [page]);
 
     setUser(null);
     setAuthStatus("guest");
@@ -304,8 +310,22 @@ export default function App() {
             onPlay={() => setPage("fightLobby")}
             onProfile={() => setPage("profile")}
             onAchievements={() => setPage("achievements")}
+            onSocial={() => {
+              setSocialInitialTab("global");
+              setPage("social");
+            }}
             onManual={() => setPage("manual")}
             onLogout={handleLogout}
+          />
+        </div>
+      )}
+
+      {page === "social" && (
+        <div style={{ position: "fixed", inset: 0, zIndex: 10, overflow: "auto" }}>
+          <SocialHub
+            user={user}
+            initialTab={socialInitialTab}
+            onBack={() => setPage("lobby")}
           />
         </div>
       )}
