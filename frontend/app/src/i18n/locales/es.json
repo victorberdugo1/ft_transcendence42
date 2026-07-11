@@ -311,7 +311,10 @@
       "catalog": "Catalogo",
       "catalogCount": "{{count}} entradas visibles",
       "progressWins": "{{current}} de {{total}} victorias",
+      "progressStreak": "{{current}} de {{total}} victorias seguidas",
+      "progressBinary": "{{current}} de {{total}} objetivo",
       "notEarnedYet": "Aun no desbloqueado",
+      "genericHint": "Desbloquea este objetivo durante una partida real.",
       "allUnlockedTitle": "Coleccion completada",
       "allUnlockedText": "Ya tienes todos los logros disponibles en esta temporada."
     },
@@ -325,6 +328,46 @@
         "name": "Veterano",
         "description": "Demuestra consistencia competitiva acumulando una base real de victorias.",
         "hint": "Alcanza {{goal}} victorias para desbloquearlo."
+      },
+      "hot_streak": {
+        "name": "En racha",
+        "description": "Encadena tres victorias seguidas y deja claro que el lobby es tuyo.",
+        "hint": "Consigue una racha de {{goal}} victorias para desbloquearlo."
+      },
+      "combo_master": {
+        "name": "Maestro del combo",
+        "description": "Conecta un combo completo en una partida que termines ganando.",
+        "hint": "Gana una partida despues de completar un combo entero."
+      },
+      "untouchable": {
+        "name": "Intocable",
+        "description": "Gana sin recibir dano y abandona la arena impecable.",
+        "hint": "Gana una partida sin recibir dano."
+      },
+      "clean_sweep": {
+        "name": "Barrida perfecta",
+        "description": "Cierra el combate conservando tus tres stocks.",
+        "hint": "Gana con tus 3 stocks iniciales intactos."
+      },
+      "speedrunner": {
+        "name": "Velocista",
+        "description": "Resuelve la pelea antes de que el publico termine de sentarse.",
+        "hint": "Gana en 45 segundos o menos."
+      },
+      "bracket_breaker": {
+        "name": "Rompe brackets",
+        "description": "Derriba a tu primer rival dentro del cuadro oficial del torneo.",
+        "hint": "Gana un combate de torneo."
+      },
+      "tournament_champion": {
+        "name": "Campeon del torneo",
+        "description": "Sobrevive a todo el bracket y sal con el titulo.",
+        "hint": "Gana un torneo completo."
+      },
+      "social": {
+        "name": "Sociable",
+        "description": "Abre tu red social del juego y asegura tu primera amistad.",
+        "hint": "Acepta o consigue tu primera amistad."
       }
     }
   },

@@ -311,7 +311,10 @@
       "catalog": "Catalog",
       "catalogCount": "{{count}} visible entries",
       "progressWins": "{{current}} of {{total}} wins",
+      "progressStreak": "{{current}} of {{total}} streak wins",
+      "progressBinary": "{{current}} of {{total}} objective",
       "notEarnedYet": "Not earned yet",
+      "genericHint": "Unlock this objective during live play.",
       "allUnlockedTitle": "Collection complete",
       "allUnlockedText": "You already own every achievement currently available this season."
     },
@@ -325,6 +328,46 @@
         "name": "Veteran",
         "description": "Show competitive consistency by building a real bank of victories.",
         "hint": "Reach {{goal}} wins to unlock it."
+      },
+      "hot_streak": {
+        "name": "Hot streak",
+        "description": "Chain three wins in a row and prove the lobby is yours for the moment.",
+        "hint": "Reach a {{goal}}-win streak to unlock it."
+      },
+      "combo_master": {
+        "name": "Combo master",
+        "description": "Land a full combo sequence in a match you finish on top.",
+        "hint": "Finish a match after completing a full combo."
+      },
+      "untouchable": {
+        "name": "Untouchable",
+        "description": "Win without taking damage and leave the arena spotless.",
+        "hint": "Win a match without receiving damage."
+      },
+      "clean_sweep": {
+        "name": "Clean sweep",
+        "description": "Close the set while keeping all three stocks alive.",
+        "hint": "Win with your 3 starting stocks intact."
+      },
+      "speedrunner": {
+        "name": "Speedrunner",
+        "description": "End the fight before the crowd even settles in.",
+        "hint": "Win in 45 seconds or less."
+      },
+      "bracket_breaker": {
+        "name": "Bracket breaker",
+        "description": "Take down your first tournament opponent on the official bracket.",
+        "hint": "Win a tournament match."
+      },
+      "tournament_champion": {
+        "name": "Tournament champion",
+        "description": "Survive the full bracket and leave with the title.",
+        "hint": "Win an entire tournament."
+      },
+      "social": {
+        "name": "Social",
+        "description": "Open your crew sheet and secure your first friendship link.",
+        "hint": "Accept or earn your first friendship."
       }
     }
   },

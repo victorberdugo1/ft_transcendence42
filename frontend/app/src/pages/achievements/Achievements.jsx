@@ -3,10 +3,18 @@ import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import "./achievements.css";
 
-const ACHIEVEMENT_ORDER = [
-  { key: "first_win", goal: 1, accent: "gold" },
-  { key: "veteran", goal: 10, accent: "cyan" },
-];
+const ACHIEVEMENT_META = {
+  first_win: { order: 1, goal: 1, accent: "gold", progressMetric: "wins" },
+  veteran: { order: 2, goal: 10, accent: "cyan", progressMetric: "wins" },
+  hot_streak: { order: 3, goal: 3, accent: "pink", progressMetric: "bestStreak" },
+  combo_master: { order: 4, goal: 1, accent: "gold", progressMetric: "binary" },
+  untouchable: { order: 5, goal: 1, accent: "green", progressMetric: "binary" },
+  clean_sweep: { order: 6, goal: 1, accent: "cyan", progressMetric: "binary" },
+  speedrunner: { order: 7, goal: 1, accent: "pink", progressMetric: "binary" },
+  bracket_breaker: { order: 8, goal: 1, accent: "cyan", progressMetric: "binary" },
+  tournament_champion: { order: 9, goal: 1, accent: "gold", progressMetric: "binary" },
+  social: { order: 10, goal: 1, accent: "green", progressMetric: "binary" },
+};
 
 function safeNumber(value, fallback = 0) {
   const parsed = Number(value);
@@ -34,13 +42,31 @@ function deriveCatalog(achievements, stats, t, language) {
   );
   const wins = safeNumber(stats?.wins);
 
-  return ACHIEVEMENT_ORDER.map((definition, index) => {
-    const unlocked = unlockedByKey.get(definition.key);
-    const progressCurrent = clamp(wins, 0, definition.goal);
+  const bestStreak = safeNumber(stats?.best_streak ?? stats?.bestStreak);
+  const keys = Array.from(new Set([
+    ...Object.keys(ACHIEVEMENT_META),
+    ...unlockedByKey.keys(),
+  ])).sort((left, right) => {
+    const leftOrder = ACHIEVEMENT_META[left]?.order ?? 999;
+    const rightOrder = ACHIEVEMENT_META[right]?.order ?? 999;
+    return leftOrder - rightOrder || left.localeCompare(right);
+  });
+
+  return keys.map((key, index) => {
+    const definition = ACHIEVEMENT_META[key] ?? { goal: 1, accent: "cyan", progressMetric: "binary" };
+    const unlocked = unlockedByKey.get(key);
+    const progressBase = definition.progressMetric === "wins"
+      ? wins
+      : definition.progressMetric === "bestStreak"
+        ? bestStreak
+        : unlocked
+          ? 1
+          : 0;
+    const progressCurrent = clamp(progressBase, 0, definition.goal);
     const progressPercent = clamp((progressCurrent / definition.goal) * 100, 0, 100);
 
     return {
-      key: definition.key,
+      key,
       accent: definition.accent,
       ordinal: String(index + 1).padStart(2, "0"),
       unlocked: Boolean(unlocked),
@@ -48,15 +74,25 @@ function deriveCatalog(achievements, stats, t, language) {
       progressCurrent,
       progressPercent,
       earnedAt: unlocked?.earned_at || null,
-      name: t(`achievementsPage.definitions.${definition.key}.name`, { defaultValue: unlocked?.name || definition.key }),
-      description: t(`achievementsPage.definitions.${definition.key}.description`, {
+      name: t(`achievementsPage.definitions.${key}.name`, { defaultValue: unlocked?.name || key }),
+      description: t(`achievementsPage.definitions.${key}.description`, {
         defaultValue: unlocked?.description || "",
       }),
-      hint: t(`achievementsPage.definitions.${definition.key}.hint`, { goal: definition.goal }),
-      progressLabel: t("achievementsPage.labels.progressWins", {
+      hint: t(`achievementsPage.definitions.${key}.hint`, {
+        goal: definition.goal,
+        defaultValue: t("achievementsPage.labels.genericHint"),
+      }),
+      progressLabel: t(
+        definition.progressMetric === "bestStreak"
+          ? "achievementsPage.labels.progressStreak"
+          : definition.progressMetric === "binary"
+            ? "achievementsPage.labels.progressBinary"
+            : "achievementsPage.labels.progressWins",
+        {
         current: progressCurrent,
         total: definition.goal,
-      }),
+        }
+      ),
       earnedLabel: formatDate(unlocked?.earned_at, language, t),
     };
   });
@@ -70,6 +106,7 @@ function AchievementCard({ achievement, active, onSelect, t }) {
       onClick={() => onSelect(achievement.key)}
       aria-pressed={active}
     >
+      <span className="ach-card-accent" aria-hidden="true" />
       <div className="ach-card-topline">
         <span className="ach-card-ordinal">{achievement.ordinal}</span>
         <span className={achievement.unlocked ? "ach-card-state ach-card-state-unlocked" : "ach-card-state ach-card-state-locked"}>
@@ -221,6 +258,7 @@ export default function Achievements({ user, onBack }) {
           <div className="ach-layout">
             <aside className="ach-spotlight">
               <div className={`ach-spotlight-card ach-spotlight-${featured.accent}`}>
+                <span className="ach-spotlight-emblem" aria-hidden="true">//</span>
                 <div className="ach-spotlight-topline">
                   <span>{t("achievementsPage.labels.featured")}</span>
                   <strong>{featured.ordinal}</strong>

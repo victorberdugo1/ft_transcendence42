@@ -4,17 +4,24 @@
   --ach-bg: #06080d;
   --ach-panel: rgba(11, 15, 24, 0.78);
   --ach-panel-strong: rgba(18, 24, 37, 0.92);
+  --ach-panel-solid: rgba(13, 18, 28, 0.97);
   --ach-line: rgba(255, 255, 255, 0.1);
+  --ach-line-strong: rgba(255, 255, 255, 0.18);
   --ach-text: #f8f5ed;
   --ach-muted: rgba(248, 245, 237, 0.68);
+  --ach-muted-strong: rgba(248, 245, 237, 0.82);
   --ach-cyan: #60dbff;
   --ach-gold: #ffe36e;
   --ach-pink: #ff6db8;
   --ach-green: #6bf3b0;
+  height: 100dvh;
   min-height: 100dvh;
+  max-height: 100dvh;
   width: 100vw;
   overflow-x: hidden;
   overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
   color: var(--ach-text);
   background:
     radial-gradient(
@@ -34,6 +41,21 @@
     ),
     linear-gradient(140deg, #04060a 0%, #0d1119 45%, #07090e 100%);
   font-family: "Barlow", sans-serif;
+  scrollbar-color: rgba(96, 219, 255, 0.42) rgba(255, 255, 255, 0.05);
+}
+
+.ach-page::-webkit-scrollbar {
+  width: 10px;
+}
+
+.ach-page::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.ach-page::-webkit-scrollbar-thumb {
+  border: 2px solid rgba(4, 6, 10, 0.92);
+  border-radius: 999px;
+  background: rgba(96, 219, 255, 0.46);
 }
 
 .ach-page::before,
@@ -78,7 +100,7 @@
   z-index: 1;
   width: min(1280px, calc(100vw - 40px));
   margin: 0 auto;
-  padding: 28px 0 40px;
+  padding: 32px 0 48px;
   animation: achEnter 320ms ease both;
 }
 
@@ -108,7 +130,7 @@
     ),
     var(--ach-panel);
   box-shadow:
-    0 24px 60px rgba(0, 0, 0, 0.36),
+    0 26px 70px rgba(0, 0, 0, 0.42),
     inset 0 1px 0 rgba(255, 255, 255, 0.06);
   backdrop-filter: blur(16px);
 }
@@ -121,9 +143,12 @@
   align-items: center;
   justify-content: space-between;
   gap: 18px;
-  padding: 16px 18px;
-  margin-bottom: 22px;
+  padding: 18px 22px;
+  margin-bottom: 24px;
   border-left: 5px solid var(--ach-cyan);
+  box-shadow:
+    0 24px 54px rgba(0, 0, 0, 0.34),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
 
 .ach-kicker,
@@ -154,6 +179,7 @@
 
 .ach-header h1 {
   font-size: clamp(2rem, 4.4vw, 3.5rem);
+  text-shadow: 0 10px 28px rgba(0, 0, 0, 0.34);
 }
 
 .ach-header-actions {
@@ -253,15 +279,22 @@
 .ach-back {
   min-height: 42px;
   padding: 0 16px;
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  background:
+    linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.08),
+      rgba(255, 255, 255, 0.02)
+    ),
+    rgba(255, 255, 255, 0.04);
   color: var(--ach-text);
   cursor: pointer;
   clip-path: polygon(10px 0, 100% 0, calc(100% - 10px) 100%, 0 100%);
   transition:
     transform 180ms ease,
     background 180ms ease,
-    border-color 180ms ease;
+    border-color 180ms ease,
+    box-shadow 180ms ease;
 }
 
 .ach-back:hover,
@@ -269,14 +302,17 @@
   background: rgba(96, 219, 255, 0.12);
   border-color: rgba(96, 219, 255, 0.3);
   transform: translateY(-1px);
+  box-shadow: 0 16px 30px rgba(0, 0, 0, 0.26);
   outline: none;
 }
 
 .ach-hero {
+  position: relative;
+  overflow: hidden;
   display: grid;
   grid-template-columns: minmax(0, 1.3fr) minmax(320px, 0.95fr);
   gap: 22px;
-  padding: 28px;
+  padding: 32px;
   margin-bottom: 24px;
   clip-path: polygon(
     0 0,
@@ -286,6 +322,44 @@
     42px 100%,
     0 calc(100% - 34px)
   );
+}
+
+.ach-hero::before,
+.ach-hero::after {
+  content: "";
+  position: absolute;
+  pointer-events: none;
+}
+
+.ach-hero::before {
+  inset: 0;
+  background:
+    linear-gradient(110deg, rgba(96, 219, 255, 0.1), transparent 28%),
+    radial-gradient(
+      circle at 82% 26%,
+      rgba(255, 227, 110, 0.18),
+      transparent 26%
+    );
+  opacity: 0.9;
+}
+
+.ach-hero::after {
+  right: -10%;
+  bottom: -26%;
+  width: 360px;
+  height: 360px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 50%;
+  box-shadow:
+    0 0 0 24px rgba(255, 255, 255, 0.02),
+    0 0 0 54px rgba(255, 255, 255, 0.015);
+  opacity: 0.7;
+}
+
+.ach-hero-copy,
+.ach-hero-stats {
+  position: relative;
+  z-index: 1;
 }
 
 .ach-hero-chip {
@@ -298,11 +372,11 @@
 }
 
 .ach-hero-copy p {
-  margin: 14px 0 0;
+  margin: 16px 0 0;
   max-width: 44rem;
-  font-size: 1.05rem;
+  font-size: 1.08rem;
   line-height: 1.7;
-  color: rgba(255, 255, 255, 0.88);
+  color: rgba(255, 255, 255, 0.9);
 }
 
 .ach-hero-stats {
@@ -312,10 +386,29 @@
 }
 
 .ach-stat {
-  padding: 18px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  background: rgba(255, 255, 255, 0.04);
+  position: relative;
+  overflow: hidden;
+  padding: 20px 18px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background:
+    linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.08),
+      rgba(255, 255, 255, 0.03)
+    ),
+    rgba(255, 255, 255, 0.04);
   clip-path: polygon(0 0, calc(100% - 16px) 0, 100% 16px, 100% 100%, 0 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.ach-stat::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto auto 0;
+  width: 100%;
+  height: 2px;
+  background: linear-gradient(90deg, currentColor, transparent 70%);
+  opacity: 0.45;
 }
 
 .ach-stat strong {
@@ -347,7 +440,7 @@
 }
 
 .ach-state-card {
-  padding: 28px;
+  padding: 30px;
 }
 
 .ach-state-card p {
@@ -361,7 +454,7 @@
 .ach-layout {
   display: grid;
   grid-template-columns: minmax(320px, 380px) minmax(0, 1fr);
-  gap: 22px;
+  gap: 24px;
 }
 
 .ach-spotlight {
@@ -375,12 +468,13 @@
 .ach-spotlight-card,
 .ach-next-card,
 .ach-main {
-  padding: 20px;
+  padding: 24px;
 }
 
 .ach-spotlight-card {
   position: relative;
   overflow: hidden;
+  min-height: 350px;
 }
 
 .ach-spotlight-card::before {
@@ -389,6 +483,22 @@
   inset: 0;
   pointer-events: none;
   opacity: 0.85;
+}
+
+.ach-spotlight-card::after {
+  content: "";
+  position: absolute;
+  inset: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  clip-path: polygon(
+    0 0,
+    calc(100% - 22px) 0,
+    100% 22px,
+    100% 100%,
+    22px 100%,
+    0 calc(100% - 22px)
+  );
+  pointer-events: none;
 }
 
 .ach-spotlight-gold::before {
@@ -417,6 +527,17 @@
   gap: 10px;
 }
 
+.ach-spotlight-emblem {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  font-family: "Orbitron", sans-serif;
+  font-size: 2rem;
+  line-height: 1;
+  letter-spacing: -0.08em;
+  color: rgba(255, 255, 255, 0.12);
+}
+
 .ach-spotlight-topline span,
 .ach-card-ordinal {
   color: var(--ach-muted);
@@ -436,6 +557,11 @@
   line-height: 1.7;
 }
 
+.ach-spotlight-card h2 {
+  max-width: 14ch;
+  font-size: clamp(1.8rem, 2.4vw, 2.7rem);
+}
+
 .ach-spotlight-progress,
 .ach-card-progress {
   margin-top: 18px;
@@ -447,6 +573,7 @@
   border-radius: 999px;
   overflow: hidden;
   background: rgba(255, 255, 255, 0.08);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04);
 }
 
 .ach-spotlight-bar span,
@@ -458,7 +585,7 @@
 }
 
 .ach-spotlight-meta {
-  margin-top: 10px;
+  margin-top: 14px;
   align-items: flex-start;
 }
 
@@ -477,6 +604,13 @@
 
 .ach-next-card {
   border-left: 4px solid rgba(255, 227, 110, 0.5);
+  background:
+    linear-gradient(
+      180deg,
+      rgba(255, 227, 110, 0.08),
+      rgba(255, 255, 255, 0.02)
+    ),
+    var(--ach-panel-solid);
 }
 
 .ach-next-label,
@@ -486,10 +620,19 @@
 
 .ach-main {
   min-width: 0;
+  background:
+    linear-gradient(180deg, rgba(96, 219, 255, 0.05), transparent 22%),
+    var(--ach-panel);
 }
 
 .ach-toolbar {
-  margin-bottom: 18px;
+  margin-bottom: 22px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.ach-toolbar-copy strong {
+  font-size: 0.94rem;
 }
 
 .ach-filters {
@@ -502,38 +645,51 @@
   min-height: 38px;
   padding: 0 14px;
   border: 1px solid rgba(255, 255, 255, 0.12);
-  background: rgba(255, 255, 255, 0.04);
+  background:
+    linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.08),
+      rgba(255, 255, 255, 0.02)
+    ),
+    rgba(255, 255, 255, 0.04);
   color: var(--ach-muted);
   cursor: pointer;
+  clip-path: polygon(8px 0, 100% 0, calc(100% - 8px) 100%, 0 100%);
   transition:
     border-color 160ms ease,
     color 160ms ease,
-    background 160ms ease;
+    background 160ms ease,
+    transform 160ms ease;
 }
 
 .ach-filter:hover,
 .ach-filter:focus-visible {
   color: var(--ach-text);
   border-color: rgba(96, 219, 255, 0.28);
+  transform: translateY(-1px);
   outline: none;
 }
 
 .ach-filter-active {
   color: #071018;
   border-color: rgba(255, 227, 110, 0.42);
-  background: var(--ach-gold);
+  background: linear-gradient(180deg, #fff1a3, var(--ach-gold));
+  box-shadow: 0 8px 22px rgba(255, 227, 110, 0.16);
 }
 
 .ach-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 16px;
+  gap: 18px;
 }
 
 .ach-card {
+  position: relative;
+  overflow: hidden;
   text-align: left;
-  padding: 18px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  min-height: 230px;
+  padding: 22px 20px 20px;
+  border: 1px solid rgba(255, 255, 255, 0.11);
   background:
     linear-gradient(
       150deg,
@@ -543,6 +699,14 @@
     var(--ach-panel-strong);
   color: var(--ach-text);
   cursor: pointer;
+  clip-path: polygon(
+    0 0,
+    calc(100% - 18px) 0,
+    100% 18px,
+    100% 100%,
+    18px 100%,
+    0 calc(100% - 18px)
+  );
   transition:
     transform 180ms ease,
     border-color 180ms ease,
@@ -550,11 +714,32 @@
     background 180ms ease;
 }
 
+.ach-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.03),
+    transparent 44%
+  );
+  pointer-events: none;
+}
+
+.ach-card-accent {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 3px;
+  opacity: 0.9;
+}
+
 .ach-card:hover,
 .ach-card:focus-visible {
-  transform: translateY(-2px);
+  transform: translateY(-4px);
   border-color: rgba(255, 255, 255, 0.22);
-  box-shadow: 0 22px 44px rgba(0, 0, 0, 0.28);
+  box-shadow: 0 26px 52px rgba(0, 0, 0, 0.34);
   outline: none;
 }
 
@@ -562,7 +747,7 @@
   border-color: rgba(255, 227, 110, 0.44);
   box-shadow:
     0 0 0 1px rgba(255, 227, 110, 0.12),
-    0 24px 48px rgba(0, 0, 0, 0.32);
+    0 26px 54px rgba(0, 0, 0, 0.36);
 }
 
 .ach-card h3 {
@@ -574,8 +759,9 @@
 
 .ach-card p {
   margin: 0;
-  color: rgba(255, 255, 255, 0.84);
+  color: rgba(255, 255, 255, 0.88);
   line-height: 1.6;
+  overflow-wrap: anywhere;
 }
 
 .ach-card-state {
@@ -583,6 +769,7 @@
   font-size: 0.74rem;
   letter-spacing: 0.12em;
   text-transform: uppercase;
+  border: 1px solid transparent;
 }
 
 .ach-card-state-unlocked {
@@ -591,23 +778,57 @@
 }
 
 .ach-card-state-locked {
-  color: var(--ach-muted);
+  color: var(--ach-muted-strong);
   background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.08);
 }
 
 .ach-card-progress strong {
   display: block;
-  margin-top: 8px;
-  color: var(--ach-muted);
+  margin-top: 10px;
+  color: var(--ach-muted-strong);
   font-size: 0.86rem;
+}
+
+.ach-card-gold .ach-card-accent {
+  background: linear-gradient(90deg, rgba(255, 240, 178, 0.1), var(--ach-gold));
 }
 
 .ach-card-gold .ach-card-progressbar span {
   background: linear-gradient(90deg, #fff0b2, var(--ach-gold));
 }
 
+.ach-card-gold:hover,
+.ach-card-gold.ach-card-active {
+  border-color: rgba(255, 227, 110, 0.34);
+}
+
+.ach-card-cyan .ach-card-accent {
+  background: linear-gradient(90deg, rgba(215, 249, 255, 0.1), var(--ach-cyan));
+}
+
 .ach-card-cyan .ach-card-progressbar span {
   background: linear-gradient(90deg, #d7f9ff, var(--ach-cyan));
+}
+
+.ach-card-pink .ach-card-accent {
+  background: linear-gradient(90deg, rgba(255, 206, 230, 0.1), var(--ach-pink));
+}
+
+.ach-card-pink .ach-card-progressbar span {
+  background: linear-gradient(90deg, #ffd5eb, var(--ach-pink));
+}
+
+.ach-card-green .ach-card-accent {
+  background: linear-gradient(
+    90deg,
+    rgba(218, 255, 237, 0.1),
+    var(--ach-green)
+  );
+}
+
+.ach-card-green .ach-card-progressbar span {
+  background: linear-gradient(90deg, #d9ffe8, var(--ach-green));
 }
 
 @media (max-width: 1024px) {
@@ -616,8 +837,25 @@
     grid-template-columns: 1fr;
   }
 
+  .ach-shell {
+    width: min(100vw - 32px, 1280px);
+  }
+
   .ach-spotlight {
     position: static;
+  }
+
+  .ach-hero {
+    clip-path: none;
+    padding: 26px;
+  }
+
+  .ach-hero-copy p {
+    max-width: none;
+  }
+
+  .ach-grid {
+    grid-template-columns: 1fr;
   }
 }
 
@@ -630,16 +868,30 @@
   .ach-header {
     flex-direction: column;
     align-items: stretch;
+    padding: 14px;
   }
 
   .ach-header-actions {
     width: 100%;
-    justify-content: space-between;
+    flex-direction: column;
+    align-items: stretch;
   }
 
   .ach-header-actions .langsel-menu {
     left: 0;
     right: auto;
+  }
+
+  .ach-header-actions .langsel,
+  .ach-header-actions .langsel-manual,
+  .ach-back {
+    width: 100%;
+  }
+
+  .ach-header-actions .langsel-manual .langsel-trigger,
+  .ach-back {
+    width: 100%;
+    justify-content: center;
   }
 
   .ach-hero,
@@ -650,13 +902,128 @@
     padding: 18px;
   }
 
+  .ach-spotlight-card {
+    min-height: auto;
+  }
+
+  .ach-hero {
+    gap: 18px;
+    margin-bottom: 18px;
+  }
+
+  .ach-hero h2 {
+    font-size: clamp(1.8rem, 9vw, 2.8rem);
+  }
+
+  .ach-hero-copy p {
+    font-size: 0.96rem;
+    line-height: 1.6;
+  }
+
   .ach-hero-stats,
   .ach-grid {
     grid-template-columns: 1fr;
   }
 
+  .ach-stat {
+    padding: 16px;
+  }
+
   .ach-toolbar {
     flex-direction: column;
     align-items: stretch;
+    gap: 14px;
+  }
+
+  .ach-toolbar-copy {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .ach-filters {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .ach-filter {
+    min-width: 0;
+    padding: 0 10px;
+    font-size: 0.78rem;
+  }
+
+  .ach-spotlight-topline,
+  .ach-spotlight-meta,
+  .ach-card-topline {
+    align-items: flex-start;
+  }
+
+  .ach-spotlight-meta {
+    flex-direction: column;
+  }
+
+  .ach-card {
+    padding: 16px;
+    min-height: 0;
+  }
+
+  .ach-card h3 {
+    font-size: 0.96rem;
+    line-height: 1.2;
+  }
+
+  .ach-card-state {
+    font-size: 0.68rem;
+  }
+}
+
+@media (max-width: 520px) {
+  .ach-shell {
+    width: calc(100vw - 16px);
+    padding: 12px 0 20px;
+  }
+
+  .ach-header,
+  .ach-hero,
+  .ach-main,
+  .ach-state-card,
+  .ach-spotlight-card,
+  .ach-next-card {
+    padding: 14px;
+  }
+
+  .ach-spotlight-emblem {
+    top: 12px;
+    right: 12px;
+    font-size: 1.5rem;
+  }
+
+  .ach-kicker,
+  .ach-hero-chip,
+  .ach-next-label,
+  .ach-toolbar-copy span {
+    letter-spacing: 0.12em;
+    font-size: 0.68rem;
+  }
+
+  .ach-header h1 {
+    font-size: clamp(1.65rem, 10vw, 2.2rem);
+  }
+
+  .ach-hero h2 {
+    font-size: clamp(1.55rem, 10vw, 2.2rem);
+  }
+
+  .ach-hero-stats {
+    gap: 10px;
+  }
+
+  .ach-filters {
+    grid-template-columns: 1fr;
+  }
+
+  .ach-spotlight-card,
+  .ach-next-card,
+  .ach-main {
+    clip-path: none;
   }
 }
