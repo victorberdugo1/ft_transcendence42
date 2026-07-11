@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Bebas+Neue&family=Orbitron:wght@600;700;800&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap");
 
 .mn-page {
   --mn-bg: #040507;
@@ -12,6 +12,10 @@
   --mn-gold: #f4c76a;
   --mn-red: #ff4b3e;
   --mn-green: #55efb0;
+  --page-scrollbar-color: rgba(39, 219, 255, 0.4) rgba(255, 255, 255, 0.05);
+  --page-scrollbar-track: rgba(255, 255, 255, 0.04);
+  --page-scrollbar-thumb-border: rgba(4, 5, 7, 0.92);
+  --page-scrollbar-thumb-bg: rgba(39, 219, 255, 0.5);
 
   height: 100dvh;
   min-height: 100dvh;
@@ -40,21 +44,6 @@
     ),
     linear-gradient(135deg, #030408 0%, #11131b 42%, #05070c 100%);
   font-family: "Barlow", sans-serif;
-  scrollbar-color: rgba(39, 219, 255, 0.4) rgba(255, 255, 255, 0.05);
-}
-
-.mn-page::-webkit-scrollbar {
-  width: 10px;
-}
-
-.mn-page::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.04);
-}
-
-.mn-page::-webkit-scrollbar-thumb {
-  border: 2px solid rgba(4, 5, 7, 0.92);
-  border-radius: 999px;
-  background: rgba(39, 219, 255, 0.5);
 }
 
 .mn-page::before,
@@ -860,37 +849,6 @@
   text-align: center;
 }
 
-.mn-back-btn {
-  min-height: 42px;
-  padding: 0 16px;
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  background:
-    linear-gradient(
-      135deg,
-      rgba(39, 219, 255, 0.16),
-      rgba(255, 255, 255, 0.04)
-    ),
-    rgba(255, 255, 255, 0.08);
-  color: #fff;
-  font-family: "Orbitron", sans-serif;
-  font-size: 0.78rem;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  cursor: pointer;
-  transition:
-    transform 150ms ease,
-    border-color 150ms ease,
-    box-shadow 150ms ease;
-}
-
-.mn-back-btn:hover,
-.mn-back-btn:focus-visible {
-  transform: translateY(-2px);
-  border-color: rgba(39, 219, 255, 0.34);
-  box-shadow: 0 0 24px rgba(39, 219, 255, 0.14);
-  outline: none;
-}
-
 @media (max-width: 980px) {
   .mn-hero,
   .mn-layout {
@@ -935,7 +893,7 @@
   }
 
   .mn-language-trigger,
-  .mn-back-btn {
+  .mn-topbar-actions .page-back-btn {
     width: 100%;
   }
 
