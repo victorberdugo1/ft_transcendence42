@@ -3,7 +3,7 @@ import ModeAI from "@src/components/game/ModeAI.jsx";
 import ModeSpectator from "@src/components/game/ModeSpectator.jsx";
 import ModeTournament from "@src/components/game/ModeTournament.jsx";
 import ModeVersus from "@src/components/game/ModeVersus.jsx";
-import { DEFAULT_AVATAR_URL } from "@src/components/game/gameConstants.js";
+import { DEFAULT_AVATAR_URL, MODES } from "@src/components/game/gameConstants.js";
 import PageBackButton from "@src/components/ui/PageBackButton.jsx";
 import { apiFetchJson } from "@src/utils/http.js";
 import { useCallback, useEffect, useState } from "react";
