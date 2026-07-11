@@ -156,7 +156,7 @@ export default function App() {
 
   async function handleLogout() {
     try {
-      await fetch("/api/logout", { method: "POST", credentials: "include" });
+      await apiFetchJson("/api/logout", { method: "POST" });
     } catch (_) {}
 
     teardownGameRuntime();

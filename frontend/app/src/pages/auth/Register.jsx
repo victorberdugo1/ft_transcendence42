@@ -1,3 +1,4 @@
+import { apiFetchJson } from "@src/utils/http.js";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -51,23 +52,16 @@ export default function Register({ onLogin, onSwitchToLogin }) {
     setLoading(true);
 
     try {
-      const response = await fetch("/api/register", {
+      const data = await apiFetchJson("/api/register", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        // The backend also creates the session on register.
-        credentials: "include",
-        body: JSON.stringify({
+        body: {
           username: normalizedUsername,
           email: normalizedEmail,
           password,
-        }),
+        },
       });
 
-      const data = await response.json();
-
-      if (!response.ok) {
+      if (!data) {
         setError(data.error || t("validation.registerFailed"));
         return;
       }

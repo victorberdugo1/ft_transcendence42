@@ -1,17 +1,38 @@
 export async function apiFetchJson(url, options = {}) {
-  const headers = options.body
-    ? { "Content-Type": "application/json", ...(options.headers || {}) }
-    : options.headers;
+  const method = options.method || "GET";
+  const body = options.body ? (typeof options.body === "string" ? options.body : JSON.stringify(options.body)) : null;
 
-  const response = await fetch(url, {
+  const headers = {
+    ...(body && { "Content-Type": "application/json" }),
+    ...(options.headers || {}),
+  };
+
+  const fetchOptions = {
+    method,
     credentials: "include",
-    ...options,
     headers,
-  });
+  };
 
-  const data = await response.json().catch(() => ({}));
-  if (!response.ok) {
-    throw new Error(data.error || `HTTP ${response.status}`);
+  if (body) {
+    fetchOptions.body = body;
   }
-  return data;
+
+  const response = await fetch(url, fetchOptions);
+
+  let payload = null;
+  try {
+    payload = await response.json();
+  } catch {
+    payload = null;
+  }
+
+  if (!response.ok) {
+    throw {
+      status: response.status,
+      message: payload?.error || payload?.message || `HTTP ${response.status}`,
+      data: payload,
+    };
+  }
+
+  return payload;
 }
