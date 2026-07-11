@@ -7,6 +7,7 @@ import gabrielPortrait from "@src/assets/characters/gabriel_portrait.jpg";
 import hildaPortrait from "@src/assets/characters/hilda_portrait.jpg";
 import quimburPortrait from "@src/assets/characters/quimbur_portrait.jpg";
 import LanguageSelector from "@src/components/LanguageSelector.jsx";
+import PageBackButton from "@src/components/ui/PageBackButton.jsx";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import logo from "../../../assets/logo.png";
@@ -442,7 +443,9 @@ export default function Profile({ onBack }) {
           <span className="profile-kicker">{t("profile.kicker")}</span>
           <h1>{t("profile.loading.title")}</h1>
           <p>{t("profile.loading.text")}</p>
-          <button type="button" className="profile-secondary-button" onClick={onBack}>{t("profile.actions.backToLobby")}</button>
+          <PageBackButton onClick={onBack}>
+            {t("profile.actions.backToLobby")}
+          </PageBackButton>
         </section>
       </main>
     );
@@ -457,7 +460,9 @@ export default function Profile({ onBack }) {
           <p>{error?.startsWith("profile.") ? t(error) : error}</p>
           <div className="profile-actions">
             <button type="button" className="profile-primary-button" onClick={() => setReloadKey(k => k + 1)}>{t("profile.actions.retry")}</button>
-            <button type="button" className="profile-secondary-button" onClick={onBack}>{t("profile.actions.backToLobby")}</button>
+            <PageBackButton onClick={onBack}>
+              {t("profile.actions.backToLobby")}
+            </PageBackButton>
           </div>
         </section>
       </main>
@@ -474,7 +479,9 @@ export default function Profile({ onBack }) {
           </div>
           <div className="profile-header-controls">
             <LanguageSelector variant="manual" compact />
-            <button type="button" className="profile-secondary-button" onClick={onBack}>{t("profile.actions.backToLobby")}</button>
+            <PageBackButton onClick={onBack}>
+              {t("profile.actions.backToLobby")}
+            </PageBackButton>
           </div>
         </header>
 
