@@ -3,6 +3,7 @@ import ProfileEmptyState from "@src/components/profile/ProfileEmptyState.jsx";
 import ProfileMatchHistoryCard from "@src/components/profile/ProfileMatchHistoryCard.jsx";
 import ProfileStatTile from "@src/components/profile/ProfileStatTile.jsx";
 import { CHARACTER_AVATARS, CHARACTER_VISUALS } from "@src/components/profile/profileVisuals.js";
+import AvatarComponent from "@src/components/ui/Avatar.jsx";
 import PageBackButton from "@src/components/ui/PageBackButton.jsx";
 import PageHeader from "@src/components/ui/PageHeader.jsx";
 import RequestStateCard from "@src/components/ui/RequestStateCard.jsx";
@@ -83,20 +84,7 @@ function normalizeProfile(profile) {
 }
 
 function Avatar({ src, label, className = "", t }) {
-  const [failed, setFailed] = useState(false);
-
-  useEffect(() => {
-    setFailed(false);
-  }, [src]);
-
-  if (src && !failed) {
-    return <img className={`profile-avatar ${className}`} src={src} alt={label || t("profile.avatar.alt")} onError={() => setFailed(true)} />;
-  }
-  return (
-    <div className={`profile-avatar profile-avatar-fallback ${className}`} aria-label={label || t("profile.avatar.alt")}>
-      {initials(label)}
-    </div>
-  );
+  return <AvatarComponent src={src} label={label} className={`profile-avatar ${className}`} size="medium" t={t} />;
 }
 
 function AvatarPicker({ currentAvatar, selectedAvatar, saving, error, avatarOptions, onSelect, onClose, onSave, t }) {
