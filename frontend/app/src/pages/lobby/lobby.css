@@ -1027,12 +1027,22 @@
   font-family: "Arial Black", Impact, sans-serif;
   text-transform: uppercase;
   clip-path: polygon(14px 0, 100% 0, calc(100% - 14px) 100%, 0 100%);
+  transition:
+    transform 0.18s ease,
+    border-color 0.18s ease,
+    background 0.18s ease,
+    color 0.18s ease,
+    box-shadow 0.18s ease;
 }
 
 .fight-lobby-overlay .lobby-mode-tab:hover {
   background:
     linear-gradient(145deg, rgba(255, 255, 255, 0.16), transparent 42%),
     rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.26);
+  color: #ffffff;
+  transform: translateY(-2px);
+  box-shadow: 0 12px 22px rgba(0, 0, 0, 0.24);
 }
 
 .fight-lobby-overlay .lobby-mode-tab-active {
@@ -1044,17 +1054,80 @@
 }
 
 .fight-lobby-overlay .lobby-mode-panel {
-  min-height: 220px;
+  min-height: 430px;
+  display: flex;
+  flex-direction: column;
   border-radius: 0;
   border: 1px solid rgba(255, 255, 255, 0.13);
   border-left: 7px solid #ff302f;
   background:
     linear-gradient(115deg, rgba(255, 255, 255, 0.09), transparent 28%),
     rgba(255, 255, 255, 0.045);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+}
+
+.fight-lobby-overlay .lobby-mode-body {
+  flex: 1 1 auto;
+  min-height: 100%;
+  gap: 20px;
+  justify-content: flex-start;
+}
+
+.fight-lobby-overlay .lobby-mode-body > .auth-submit,
+.fight-lobby-overlay .lobby-mode-body > .lobby-play {
+  margin-top: auto;
+}
+
+.fight-lobby-overlay .lobby-mode-body > .lobby-watch-lobby {
+  margin-top: 10px;
 }
 
 .fight-lobby-overlay .lobby-mode-desc {
-  color: rgba(255, 250, 242, 0.82);
+  color: rgba(255, 255, 255, 0.96);
+  font-size: 1rem;
+  line-height: 1.7;
+  text-wrap: balance;
+}
+
+.fight-lobby-overlay .lobby-section-label,
+.fight-lobby-overlay .lobby-loading,
+.fight-lobby-overlay .lobby-session-players,
+.fight-lobby-overlay .lobby-session-specs,
+.fight-lobby-overlay .lobby-email,
+.fight-lobby-overlay .lobby-logout-link {
+  color: rgba(255, 255, 255, 0.88);
+}
+
+.fight-lobby-overlay .lobby-loading {
+  font-size: 0.94rem;
+}
+
+.fight-lobby-overlay .lobby-sessions {
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: 214px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.fight-lobby-overlay .lobby-sessions::-webkit-scrollbar {
+  width: 8px;
+}
+
+.fight-lobby-overlay .lobby-sessions::-webkit-scrollbar-thumb {
+  background: rgba(255, 223, 50, 0.28);
+}
+
+.fight-lobby-overlay .lobby-user,
+.fight-lobby-overlay .lobby-session-row,
+.fight-lobby-overlay .lobby-char-btn,
+.fight-lobby-overlay .lobby-stage-btn {
+  transition:
+    transform 0.18s ease,
+    border-color 0.18s ease,
+    background 0.18s ease,
+    box-shadow 0.18s ease;
 }
 
 .fight-lobby-overlay .auth-submit,
@@ -1067,6 +1140,19 @@
   font-family: "Arial Black", Impact, sans-serif;
   text-transform: uppercase;
   clip-path: polygon(16px 0, 100% 0, calc(100% - 16px) 100%, 0 100%);
+  transition:
+    transform 0.18s ease,
+    filter 0.18s ease,
+    box-shadow 0.18s ease,
+    opacity 0.18s ease;
+}
+
+.fight-lobby-overlay .auth-submit:hover,
+.fight-lobby-overlay .lobby-play:hover,
+.fight-lobby-overlay .lobby-watch-btn:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.05);
+  box-shadow: 0 16px 28px rgba(0, 0, 0, 0.28);
 }
 
 .fight-lobby-overlay .lobby-watch-btn {
@@ -1075,7 +1161,15 @@
     rgba(255, 255, 255, 0.14),
     rgba(255, 255, 255, 0.04)
   );
-  color: #ffdf32;
+  color: #ffffff;
+}
+
+.fight-lobby-overlay .lobby-watch-btn:hover {
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.22),
+    rgba(255, 223, 50, 0.12)
+  );
 }
 
 .fight-lobby-overlay .lobby-char-btn,
@@ -1083,6 +1177,16 @@
 .fight-lobby-overlay .lobby-session-row {
   border-radius: 0;
   background: rgba(0, 0, 0, 0.26);
+  color: #ffffff;
+}
+
+.fight-lobby-overlay .lobby-char-btn:hover,
+.fight-lobby-overlay .lobby-stage-btn:hover,
+.fight-lobby-overlay .lobby-session-row:hover {
+  border-color: rgba(255, 223, 50, 0.4);
+  background: rgba(255, 255, 255, 0.09);
+  transform: translateY(-2px);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.2);
 }
 
 .fight-lobby-overlay .lobby-char-btn img {
@@ -1093,6 +1197,7 @@
 .fight-lobby-overlay .lobby-stage-active {
   background: rgba(255, 223, 50, 0.16);
   border-color: rgba(255, 223, 50, 0.72);
+  color: #ffffff;
 }
 
 @media (max-width: 640px) {
@@ -1117,6 +1222,14 @@
 
   .fight-lobby-overlay .lobby-mode-tabs {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .fight-lobby-overlay .lobby-mode-panel {
+    min-height: 360px;
+  }
+
+  .fight-lobby-overlay .lobby-sessions {
+    max-height: 180px;
   }
 }
 
