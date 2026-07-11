@@ -119,8 +119,22 @@
 .lobby-card {
   display: grid;
   gap: 20px;
-  max-height: 92vh;
-  overflow-y: auto;
+  max-height: none;
+  overflow: hidden;
+}
+
+.lobby-mode-stack {
+  display: grid;
+  gap: 10px;
+}
+
+.lobby-session-error {
+  margin: 0;
+  min-height: 1.2em;
+}
+
+.lobby-session-error-empty {
+  visibility: hidden;
 }
 
 .lobby-user {
@@ -237,17 +251,23 @@
 }
 
 .lobby-mode-panel {
-  min-height: 160px;
+  height: clamp(300px, 52vh, 500px);
   padding: 18px;
   border-radius: 16px;
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid rgba(236, 213, 175, 0.1);
+  overflow: hidden;
 }
 
 .lobby-mode-body {
   display: flex;
   flex-direction: column;
   gap: 16px;
+  height: 100%;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
 }
 
 .lobby-mode-desc {
@@ -259,6 +279,7 @@
 .lobby-play {
   font-size: 1rem;
   letter-spacing: 0.03em;
+  margin-top: auto;
 }
 
 .lobby-char-pick {
@@ -524,6 +545,14 @@
 }
 
 @media (max-width: 540px) {
+  .lobby-mode-stack {
+    gap: 8px;
+  }
+
+  .lobby-mode-panel {
+    height: clamp(260px, 58vh, 420px);
+  }
+
   .lobby-mode-tabs {
     grid-template-columns: repeat(2, 1fr);
   }
