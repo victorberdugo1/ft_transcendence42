@@ -624,18 +624,21 @@ export default function FightLobby({
     let cancelled = false;
     async function load() {
       try {
-        const meRes = await fetch("/api/me", { credentials: "include" });
-        if (!meRes.ok) { onLogout(); return; }
+        await apiFetchJson("/api/me");
 
         if (user.id) {
-          const statsRes = await fetch(`/api/users/${user.id}/stats`, { credentials: "include" });
-          if (!cancelled && statsRes.ok) {
-            const d = await statsRes.json();
-            setStats(d.stats ?? d ?? null);
+          try {
+            const d = await apiFetchJson(`/api/users/${user.id}/stats`);
+            if (!cancelled) {
+              setStats(d.stats ?? d ?? null);
+            }
+          } catch (e) {
+            console.error("[fight-lobby] stats load error:", e);
           }
         }
       } catch (e) {
         console.error("[fight-lobby] load error:", e);
+        onLogout();
       }
     }
     load();

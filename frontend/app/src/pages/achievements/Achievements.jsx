@@ -1,6 +1,7 @@
 import PageHeader from "@src/components/ui/PageHeader.jsx";
 import RequestStateCard from "@src/components/ui/RequestStateCard.jsx";
 import { useApiRequest } from "@src/hooks/useApiRequest.js";
+import { apiFetchJson } from "@src/utils/http.js";
 import { safeNumber } from "@src/utils/number.js";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -142,25 +143,16 @@ export default function Achievements({ user, onBack }) {
   const loadAchievementsData = useCallback(async () => {
     if (!user?.id) return { achievements: [], stats: null };
 
-    const [achievementsRes, statsRes] = await Promise.all([
-      fetch(`/api/users/${user.id}/achievements`, { credentials: "include" }),
-      fetch(`/api/users/${user.id}/stats`, { credentials: "include" }),
-    ]);
-
-    if (!achievementsRes.ok || !statsRes.ok) {
-      throw new Error(t("achievementsPage.errors.loadFailed"));
-    }
-
     const [achievementsData, statsData] = await Promise.all([
-      achievementsRes.json(),
-      statsRes.json(),
+      apiFetchJson(`/api/users/${user.id}/achievements`),
+      apiFetchJson(`/api/users/${user.id}/stats`),
     ]);
 
     return {
       achievements: Array.isArray(achievementsData.achievements) ? achievementsData.achievements : [],
-      stats: statsData.stats ?? statsData ?? null,
+      stats: statsData?.stats ?? null,
     };
-  }, [t, user?.id]);
+  }, [user?.id]);
 
   const achievementsRequest = useApiRequest(
     loadAchievementsData,

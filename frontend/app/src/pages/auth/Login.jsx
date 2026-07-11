@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { apiFetchJson } from "@src/utils/http.js";
 
 function isValidEmail(email) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
@@ -32,22 +33,15 @@ export default function Login({ onLogin, onSwitchToRegister }) {
     setLoading(true);
 
     try {
-      const response = await fetch("/api/login", {
+      const data = await apiFetchJson("/api/login", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        // This lets the browser store and send the session cookie.
-        credentials: "include",
-        body: JSON.stringify({
+        body: {
           email: normalizedEmail,
           password,
-        }),
+        },
       });
 
-      const data = await response.json();
-
-      if (!response.ok) {
+      if (!data) {
         setError(data.error || t("validation.loginFailed"));
         return;
       }

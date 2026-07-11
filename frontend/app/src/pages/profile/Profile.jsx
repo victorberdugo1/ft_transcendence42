@@ -7,6 +7,7 @@ import PageBackButton from "@src/components/ui/PageBackButton.jsx";
 import PageHeader from "@src/components/ui/PageHeader.jsx";
 import RequestStateCard from "@src/components/ui/RequestStateCard.jsx";
 import { useApiRequest } from "@src/hooks/useApiRequest.js";
+import { apiFetchJson } from "@src/utils/http.js";
 import { safeNumber } from "@src/utils/number.js";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -159,15 +160,15 @@ export default function Profile({ onBack }) {
   const [avatarError, setAvatarError] = useState("");
 
   const loadProfile = useCallback(async () => {
-    const res = await fetch("/api/profile/me", { credentials: "include" });
-    if (!res.ok) {
+    try {
+      return await apiFetchJson("/api/profile/me");
+    } catch (err) {
       throw new Error(
-        res.status === 401
+        err.status === 401
           ? PROFILE_ERROR_KEYS.sessionExpired
-          : PROFILE_ERROR_KEYS.loadFailed
+          : err.message || PROFILE_ERROR_KEYS.loadFailed
       );
     }
-    return res.json();
   }, []);
 
   const profileRequest = useApiRequest(
@@ -229,14 +230,10 @@ export default function Profile({ onBack }) {
     setAvatarSaving(true);
     setAvatarError("");
     try {
-      const res = await fetch("/api/profile/avatar", {
+      const data = await apiFetchJson("/api/profile/avatar", {
         method: "PATCH",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ avatar: selectedAvatar }),
+        body: { avatar: selectedAvatar },
       });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data.error || PROFILE_ERROR_KEYS.avatarSaveFailed);
       profileRequest.setData(current => current ? {
         ...current,
         user: { ...current.user, avatar: data.avatar },
