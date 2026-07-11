@@ -256,6 +256,10 @@
         "label": "Logros",
         "kicker": "Rewards"
       },
+      "social": {
+        "label": "Social",
+        "kicker": "Red"
+      },
       "chat": {
         "label": "Chat",
         "kicker": "Social"
@@ -268,6 +272,110 @@
         "label": "Manual",
         "kicker": "Codex"
       }
+    }
+  },
+  "socialHub": {
+    "kicker": "Red operativa",
+    "title": "Hub social",
+    "subtitle": "Coordina partidas, responde solicitudes y mantente conectado con la actividad en vivo de {{playerName}}.",
+    "backToLobby": "← Volver al lobby",
+    "summary": {
+      "onlineFriends": "Amigos online",
+      "unread": "No leidos",
+      "pending": "Solicitudes"
+    },
+    "tabs": {
+      "label": "Secciones sociales",
+      "global": "Global",
+      "direct": "Privados",
+      "friends": "Amigos",
+      "requests": "Solicitudes"
+    },
+    "sideTitles": {
+      "global": "Canales activos",
+      "direct": "Conversaciones recientes",
+      "friends": "Crew conectada",
+      "requests": "Solicitudes entrantes"
+    },
+    "mainKickers": {
+      "channel": "Canal global",
+      "direct": "Linea privada",
+      "friend": "Contacto",
+      "request": "Solicitud",
+      "empty": "Panel"
+    },
+    "presence": {
+      "online": "Online",
+      "offline": "Offline",
+      "in_lobby": "En lobby",
+      "in_match": "En combate",
+      "in_tournament_room": "En torneo",
+      "spectating": "Espectando"
+    },
+    "channelKicker": "Lobby",
+    "requestKicker": "Pendiente",
+    "friendMeta": "Disponible para coordinar",
+    "you": "Tu",
+    "noMessagesYet": "Sin mensajes aun",
+    "loadingThread": "Cargando conversacion...",
+    "emptyThread": "Todavia no hay mensajes en este hilo.",
+    "emptySidebar": "No hay elementos disponibles en esta seccion.",
+    "composerLabel": "Canal de salida",
+    "messagesCount": "{{count}} mensajes en este hilo",
+    "messagePlaceholder": "Escribe un mensaje tactico, una invitacion o una respuesta rapida...",
+    "send": "Enviar",
+    "sending": "Enviando...",
+    "threadState": {
+      "live": "Actividad en vivo",
+      "private": "Canal privado",
+      "channelHint": "Se comparte con todos los jugadores conectados al lobby.",
+      "directHint": "Solo lo veis tu y el contacto seleccionado."
+    },
+    "context": {
+      "global": "Canal abierto para coordinar, saludar y mover actividad dentro del lobby general.",
+      "direct": "Linea persistente con {{playerName}} para coordinar partidas, respuestas rapidas y seguimiento.",
+      "friend": "Consulta el estado de {{playerName}} y abre una accion directa sobre este contacto.",
+      "request": "Gestiona la solicitud pendiente de {{playerName}} sin salir del hub social."
+    },
+    "friendCardKicker": "Jugador aliado",
+    "friendDescription": "{{playerName}} forma parte de tu red social activa. Desde aqui puedes abrir chat directo o limpiar la relacion si ya no la necesitas.",
+    "requestDescription": "{{playerName}} quiere entrar en tu red social. Acepta para abrir DM persistente y sincronizar presencia en tiempo real.",
+    "empty": {
+      "title": "Selecciona un canal o contacto para empezar",
+      "description": "Usa las pestañas para saltar entre el canal global, privados, amigos y solicitudes pendientes."
+    },
+    "actions": {
+      "openChat": "Abrir chat",
+      "removeFriend": "Eliminar amigo",
+      "working": "Procesando...",
+      "accept": "Aceptar",
+      "dismiss": "Descartar",
+      "message": "Mensaje",
+      "addFriend": "Agregar"
+    },
+    "discovery": {
+      "title": "Descubrir jugadores",
+      "label": "Buscar por nombre",
+      "placeholder": "Ej. quimbur",
+      "searching": "Buscando perfiles...",
+      "noResults": "No se encontraron jugadores para esta busqueda.",
+      "outgoing": "Solicitud enviada",
+      "incoming": "Te ha enviado solicitud"
+    },
+    "overview": {
+      "title": "Vista rapida",
+      "channels": "Canales",
+      "direct": "Chats directos",
+      "friends": "Amigos"
+    },
+    "errors": {
+      "loadHub": "No se pudo cargar el hub social.",
+      "loadThread": "No se pudo cargar la conversacion seleccionada.",
+      "sendMessage": "No se pudo enviar el mensaje.",
+      "acceptRequest": "No se pudo aceptar la solicitud.",
+      "dismissRequest": "No se pudo descartar la solicitud.",
+      "sendRequest": "No se pudo enviar la solicitud de amistad.",
+      "removeFriend": "No se pudo eliminar la amistad."
     }
   },
   "achievementsPage": {
