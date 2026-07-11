@@ -1,6 +1,8 @@
-import LanguageSelector from "@src/components/LanguageSelector.jsx";
-import PageBackButton from "@src/components/ui/PageBackButton.jsx";
-import { useEffect, useMemo, useState } from "react";
+import PageHeader from "@src/components/ui/PageHeader.jsx";
+import RequestStateCard from "@src/components/ui/RequestStateCard.jsx";
+import { useApiRequest } from "@src/hooks/useApiRequest.js";
+import { safeNumber } from "@src/utils/number.js";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import "./achievements.css";
 
@@ -16,11 +18,6 @@ const ACHIEVEMENT_META = {
   tournament_champion: { order: 9, goal: 1, accent: "gold", progressMetric: "binary" },
   social: { order: 10, goal: 1, accent: "green", progressMetric: "binary" },
 };
-
-function safeNumber(value, fallback = 0) {
-  const parsed = Number(value);
-  return Number.isFinite(parsed) ? parsed : fallback;
-}
 
 function clamp(value, min, max) {
   return Math.min(max, Math.max(min, value));
@@ -139,53 +136,44 @@ function SummaryStat({ value, label, accent = "cyan" }) {
 
 export default function Achievements({ user, onBack }) {
   const { t, i18n } = useTranslation();
-  const [status, setStatus] = useState("loading");
-  const [error, setError] = useState("");
-  const [achievements, setAchievements] = useState([]);
-  const [stats, setStats] = useState(null);
   const [filter, setFilter] = useState("all");
   const [selectedKey, setSelectedKey] = useState("first_win");
 
-  useEffect(() => {
-    let cancelled = false;
+  const loadAchievementsData = useCallback(async () => {
+    if (!user?.id) return { achievements: [], stats: null };
 
-    async function load() {
-      setStatus("loading");
-      setError("");
+    const [achievementsRes, statsRes] = await Promise.all([
+      fetch(`/api/users/${user.id}/achievements`, { credentials: "include" }),
+      fetch(`/api/users/${user.id}/stats`, { credentials: "include" }),
+    ]);
 
-      try {
-        const [achievementsRes, statsRes] = await Promise.all([
-          fetch(`/api/users/${user.id}/achievements`, { credentials: "include" }),
-          fetch(`/api/users/${user.id}/stats`, { credentials: "include" }),
-        ]);
-
-        if (!achievementsRes.ok || !statsRes.ok) {
-          throw new Error(t("achievementsPage.errors.loadFailed"));
-        }
-
-        const [achievementsData, statsData] = await Promise.all([
-          achievementsRes.json(),
-          statsRes.json(),
-        ]);
-
-        if (cancelled) return;
-
-        setAchievements(Array.isArray(achievementsData.achievements) ? achievementsData.achievements : []);
-        setStats(statsData.stats ?? statsData ?? null);
-        setStatus("ready");
-      } catch (loadError) {
-        if (cancelled) return;
-        setError(loadError.message || t("achievementsPage.errors.loadFailed"));
-        setStatus("error");
-      }
+    if (!achievementsRes.ok || !statsRes.ok) {
+      throw new Error(t("achievementsPage.errors.loadFailed"));
     }
 
-    if (user?.id) load();
+    const [achievementsData, statsData] = await Promise.all([
+      achievementsRes.json(),
+      statsRes.json(),
+    ]);
 
-    return () => {
-      cancelled = true;
+    return {
+      achievements: Array.isArray(achievementsData.achievements) ? achievementsData.achievements : [],
+      stats: statsData.stats ?? statsData ?? null,
     };
   }, [t, user?.id]);
+
+  const achievementsRequest = useApiRequest(
+    loadAchievementsData,
+    [loadAchievementsData],
+    { defaultError: t("achievementsPage.errors.loadFailed") }
+  );
+
+  const status = achievementsRequest.status === "success"
+    ? "ready"
+    : achievementsRequest.status;
+  const error = achievementsRequest.error;
+  const achievements = achievementsRequest.data?.achievements ?? [];
+  const stats = achievementsRequest.data?.stats ?? null;
 
   const catalog = useMemo(
     () => deriveCatalog(achievements, stats, t, i18n.resolvedLanguage || i18n.language || "en"),
@@ -215,18 +203,15 @@ export default function Achievements({ user, onBack }) {
   return (
     <div className="ach-page">
       <div className="ach-shell">
-        <header className="ach-header">
-          <div>
-            <span className="ach-kicker">{t("achievementsPage.kicker")}</span>
-            <h1>{t("achievementsPage.title")}</h1>
-          </div>
-          <div className="ach-header-actions">
-            <LanguageSelector variant="manual" compact />
-            <PageBackButton onClick={onBack}>
-              {t("achievementsPage.backToLobby")}
-            </PageBackButton>
-          </div>
-        </header>
+        <PageHeader
+          className="ach-header"
+          kickerClassName="ach-kicker"
+          actionsClassName="ach-header-actions"
+          kicker={t("achievementsPage.kicker")}
+          title={t("achievementsPage.title")}
+          onBack={onBack}
+          backLabel={t("achievementsPage.backToLobby")}
+        />
 
         <section className="ach-hero">
           <div className="ach-hero-copy">
@@ -244,17 +229,19 @@ export default function Achievements({ user, onBack }) {
         </section>
 
         {status === "loading" ? (
-          <section className="ach-state-card">
-            <h2>{t("achievementsPage.loading.title")}</h2>
-            <p>{t("achievementsPage.loading.text")}</p>
-          </section>
+          <RequestStateCard
+            className="ach-state-card"
+            title={t("achievementsPage.loading.title")}
+            message={t("achievementsPage.loading.text")}
+          />
         ) : null}
 
         {status === "error" ? (
-          <section className="ach-state-card ach-state-card-error">
-            <h2>{t("achievementsPage.error.title")}</h2>
-            <p>{error || t("achievementsPage.errors.loadFailed")}</p>
-          </section>
+          <RequestStateCard
+            className="ach-state-card ach-state-card-error"
+            title={t("achievementsPage.error.title")}
+            message={error || t("achievementsPage.errors.loadFailed")}
+          />
         ) : null}
 
         {status === "ready" && featured ? (
