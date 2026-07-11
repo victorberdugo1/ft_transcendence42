@@ -256,6 +256,10 @@
         "label": "Assoliments",
         "kicker": "Rewards"
       },
+      "social": {
+        "label": "Social",
+        "kicker": "Xarxa"
+      },
       "chat": {
         "label": "Xat",
         "kicker": "Social"
@@ -268,6 +272,110 @@
         "label": "Manual",
         "kicker": "Codex"
       }
+    }
+  },
+  "socialHub": {
+    "kicker": "Xarxa operativa",
+    "title": "Hub social",
+    "subtitle": "Coordina partides, respon sollicituds i mante't connectat amb l'activitat social en viu de {{playerName}}.",
+    "backToLobby": "← Tornar al lobby",
+    "summary": {
+      "onlineFriends": "Amistats online",
+      "unread": "No llegits",
+      "pending": "Sollicituds"
+    },
+    "tabs": {
+      "label": "Seccions socials",
+      "global": "Global",
+      "direct": "Privats",
+      "friends": "Amistats",
+      "requests": "Sollicituds"
+    },
+    "sideTitles": {
+      "global": "Canals actius",
+      "direct": "Converses recents",
+      "friends": "Crew connectada",
+      "requests": "Sollicituds entrants"
+    },
+    "mainKickers": {
+      "channel": "Canal global",
+      "direct": "Linia privada",
+      "friend": "Contacte",
+      "request": "Sollicitud",
+      "empty": "Panell"
+    },
+    "presence": {
+      "online": "Online",
+      "offline": "Offline",
+      "in_lobby": "Al lobby",
+      "in_match": "En combat",
+      "in_tournament_room": "En torneig",
+      "spectating": "Espectant"
+    },
+    "channelKicker": "Lobby",
+    "requestKicker": "Pendent",
+    "friendMeta": "Disponible per coordinar",
+    "you": "Tu",
+    "noMessagesYet": "Encara sense missatges",
+    "loadingThread": "Carregant conversa...",
+    "emptyThread": "Encara no hi ha missatges en aquest fil.",
+    "emptySidebar": "No hi ha elements disponibles en aquesta seccio.",
+    "composerLabel": "Canal de sortida",
+    "messagesCount": "{{count}} missatges en aquest fil",
+    "messagePlaceholder": "Escriu un missatge tactic, una invitacio o una resposta rapida...",
+    "send": "Enviar",
+    "sending": "Enviant...",
+    "threadState": {
+      "live": "Activitat en viu",
+      "private": "Canal privat",
+      "channelHint": "Es comparteix amb tots els jugadors connectats al lobby.",
+      "directHint": "Nomes el veieu tu i el contacte seleccionat."
+    },
+    "context": {
+      "global": "Canal obert per coordinar, saludar i moure activitat dins del lobby principal.",
+      "direct": "Linia persistent amb {{playerName}} per coordinar partides, respostes rapides i seguiment.",
+      "friend": "Consulta l'estat actual de {{playerName}} i llança una accio directa sobre aquest contacte.",
+      "request": "Gestiona la sollicitud pendent de {{playerName}} sense sortir del hub social."
+    },
+    "friendCardKicker": "Jugador aliat",
+    "friendDescription": "{{playerName}} forma part de la teva xarxa social activa. Des d'aqui pots obrir un xat directe o netejar la relacio si ja no et cal.",
+    "requestDescription": "{{playerName}} vol entrar a la teva xarxa social. Accepta per obrir DM persistent i sincronitzar presencia en temps real.",
+    "empty": {
+      "title": "Selecciona un canal o contacte per començar",
+      "description": "Fes servir les pestanyes per saltar entre el canal global, privats, amistats i sollicituds pendents."
+    },
+    "actions": {
+      "openChat": "Obrir xat",
+      "removeFriend": "Eliminar amistat",
+      "working": "Processant...",
+      "accept": "Acceptar",
+      "dismiss": "Descartar",
+      "message": "Missatge",
+      "addFriend": "Afegir"
+    },
+    "discovery": {
+      "title": "Descobrir jugadors",
+      "label": "Buscar per nom",
+      "placeholder": "Ex. quimbur",
+      "searching": "Buscant perfils...",
+      "noResults": "No s'han trobat jugadors per aquesta cerca.",
+      "outgoing": "Sollicitud enviada",
+      "incoming": "T'ha enviat sollicitud"
+    },
+    "overview": {
+      "title": "Vista rapida",
+      "channels": "Canals",
+      "direct": "Xats directes",
+      "friends": "Amistats"
+    },
+    "errors": {
+      "loadHub": "No s'ha pogut carregar el hub social.",
+      "loadThread": "No s'ha pogut carregar la conversa seleccionada.",
+      "sendMessage": "No s'ha pogut enviar el missatge.",
+      "acceptRequest": "No s'ha pogut acceptar la sollicitud.",
+      "dismissRequest": "No s'ha pogut descartar la sollicitud.",
+      "sendRequest": "No s'ha pogut enviar la sollicitud d'amistat.",
+      "removeFriend": "No s'ha pogut eliminar l'amistat."
     }
   },
   "achievementsPage": {

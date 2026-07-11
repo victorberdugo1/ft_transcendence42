@@ -256,6 +256,10 @@
         "label": "Achievements",
         "kicker": "Rewards"
       },
+      "social": {
+        "label": "Social",
+        "kicker": "Network"
+      },
       "chat": {
         "label": "Chat",
         "kicker": "Social"
@@ -268,6 +272,110 @@
         "label": "Manual",
         "kicker": "Codex"
       }
+    }
+  },
+  "socialHub": {
+    "kicker": "Operational network",
+    "title": "Social hub",
+    "subtitle": "Coordinate matches, answer requests, and stay aligned with {{playerName}}'s live social activity.",
+    "backToLobby": "← Back to lobby",
+    "summary": {
+      "onlineFriends": "Friends online",
+      "unread": "Unread",
+      "pending": "Requests"
+    },
+    "tabs": {
+      "label": "Social sections",
+      "global": "Global",
+      "direct": "Direct",
+      "friends": "Friends",
+      "requests": "Requests"
+    },
+    "sideTitles": {
+      "global": "Active channels",
+      "direct": "Recent conversations",
+      "friends": "Connected crew",
+      "requests": "Incoming requests"
+    },
+    "mainKickers": {
+      "channel": "Global channel",
+      "direct": "Private line",
+      "friend": "Contact",
+      "request": "Request",
+      "empty": "Panel"
+    },
+    "presence": {
+      "online": "Online",
+      "offline": "Offline",
+      "in_lobby": "In lobby",
+      "in_match": "In match",
+      "in_tournament_room": "In tournament",
+      "spectating": "Spectating"
+    },
+    "channelKicker": "Lobby",
+    "requestKicker": "Pending",
+    "friendMeta": "Ready to coordinate",
+    "you": "You",
+    "noMessagesYet": "No messages yet",
+    "loadingThread": "Loading conversation...",
+    "emptyThread": "No messages have landed in this thread yet.",
+    "emptySidebar": "Nothing is available in this section yet.",
+    "composerLabel": "Outgoing channel",
+    "messagesCount": "{{count}} messages in this thread",
+    "messagePlaceholder": "Write a tactical note, an invite, or a fast response...",
+    "send": "Send",
+    "sending": "Sending...",
+    "threadState": {
+      "live": "Live activity",
+      "private": "Private line",
+      "channelHint": "Shared with every player connected to the lobby channel.",
+      "directHint": "Visible only to you and the selected contact."
+    },
+    "context": {
+      "global": "Open channel for coordinating, greeting, and moving activity inside the main lobby.",
+      "direct": "Persistent line with {{playerName}} for match coordination, quick replies, and follow-up.",
+      "friend": "Review {{playerName}}'s current state and launch a direct action on this contact.",
+      "request": "Handle {{playerName}}'s pending request without leaving the social hub."
+    },
+    "friendCardKicker": "Allied player",
+    "friendDescription": "{{playerName}} is part of your active social network. From here you can open a direct chat or clear the relationship if it is no longer needed.",
+    "requestDescription": "{{playerName}} wants into your social network. Accept to unlock persistent DM and live presence sync.",
+    "empty": {
+      "title": "Select a channel or contact to get started",
+      "description": "Use the tabs to jump between the global channel, direct lines, friends, and pending requests."
+    },
+    "actions": {
+      "openChat": "Open chat",
+      "removeFriend": "Remove friend",
+      "working": "Working...",
+      "accept": "Accept",
+      "dismiss": "Dismiss",
+      "message": "Message",
+      "addFriend": "Add friend"
+    },
+    "discovery": {
+      "title": "Discover players",
+      "label": "Search by username",
+      "placeholder": "e.g. quimbur",
+      "searching": "Searching profiles...",
+      "noResults": "No players matched that search.",
+      "outgoing": "Request sent",
+      "incoming": "Sent you a request"
+    },
+    "overview": {
+      "title": "Quick overview",
+      "channels": "Channels",
+      "direct": "Direct chats",
+      "friends": "Friends"
+    },
+    "errors": {
+      "loadHub": "The social hub could not be loaded.",
+      "loadThread": "The selected conversation could not be loaded.",
+      "sendMessage": "The message could not be sent.",
+      "acceptRequest": "The request could not be accepted.",
+      "dismissRequest": "The request could not be dismissed.",
+      "sendRequest": "The friend request could not be sent.",
+      "removeFriend": "The friendship could not be removed."
     }
   },
   "achievementsPage": {
