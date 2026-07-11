@@ -1,11 +1,8 @@
-import eldwinAvatar from "@src/assets/avatars/p00.png";
-import hildaAvatar from "@src/assets/avatars/p01.png";
-import quimburAvatar from "@src/assets/avatars/p02.png";
-import gabrielAvatar from "@src/assets/avatars/p03.png";
-import eldwinPortrait from "@src/assets/characters/eldwin_portrait.jpg";
-import gabrielPortrait from "@src/assets/characters/gabriel_portrait.jpg";
-import hildaPortrait from "@src/assets/characters/hilda_portrait.jpg";
-import quimburPortrait from "@src/assets/characters/quimbur_portrait.jpg";
+import ProfileCharacterCard from "@src/components/profile/ProfileCharacterCard.jsx";
+import ProfileEmptyState from "@src/components/profile/ProfileEmptyState.jsx";
+import ProfileMatchHistoryCard from "@src/components/profile/ProfileMatchHistoryCard.jsx";
+import ProfileStatTile from "@src/components/profile/ProfileStatTile.jsx";
+import { CHARACTER_AVATARS, CHARACTER_VISUALS } from "@src/components/profile/profileVisuals.js";
 import PageBackButton from "@src/components/ui/PageBackButton.jsx";
 import PageHeader from "@src/components/ui/PageHeader.jsx";
 import RequestStateCard from "@src/components/ui/RequestStateCard.jsx";
@@ -22,33 +19,6 @@ const PROFILE_ERROR_KEYS = {
   avatarSaveFailed: "profile.errors.avatarSaveFailed",
 };
 
-function formatPercent(value) {
-  const n = safeNumber(value);
-  return `${Number(n.toFixed(2))}%`;
-}
-
-function formatDate(value, formatter, t) {
-  if (!value) return t("profile.history.unknownDate");
-  const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? t("profile.history.unknownDate") : formatter.format(date);
-}
-
-function formatGameType(value, t) {
-  const type = String(value || "").trim().toLowerCase();
-  if (!type) return t("profile.history.gameTypes.unknown");
-  if (type === "brawler") return t("profile.history.gameTypes.brawler");
-  if (type === "tournament") return t("profile.history.gameTypes.tournament");
-  return type.charAt(0).toUpperCase() + type.slice(1);
-}
-
-function formatResult(value, t) {
-  const result = String(value || "").trim().toLowerCase();
-  if (result === "win") return t("profile.history.results.win");
-  if (result === "loss") return t("profile.history.results.loss");
-  if (result === "draw") return t("profile.history.results.draw");
-  return t("profile.history.results.unknown");
-}
-
 function initials(value) {
   const text = String(value || "").trim();
   if (!text) return "?";
@@ -56,18 +26,6 @@ function initials(value) {
 }
 
 const XP_PER_WIN = 100;
-const CHARACTER_VISUALS = {
-  eld: { name: "Eldwin", portrait: eldwinPortrait },
-  hil: { name: "Hilda", portrait: hildaPortrait },
-  qui: { name: "Quimbur", portrait: quimburPortrait },
-  gab: { name: "Gabriel", portrait: gabrielPortrait },
-};
-const CHARACTER_AVATARS = {
-  eld: eldwinAvatar,
-  hil: hildaAvatar,
-  qui: quimburAvatar,
-  gab: gabrielAvatar,
-};
 function getAvatarOptions(t) {
   return [
     ...Object.entries(CHARACTER_VISUALS).map(([charId, visual]) => ({
@@ -79,18 +37,6 @@ function getAvatarOptions(t) {
     { id: "logo:main", label: t("profile.avatar.options.logo"), type: "logo", src: logo },
     { id: "logo:mini", label: t("profile.avatar.options.miniLogo"), type: "logo", src: logomini },
   ];
-}
-
-function getCharacterId(character) {
-  return String(character?.charId || "").trim().toLowerCase();
-}
-
-function getCharacterVisual(character) {
-  const charId = getCharacterId(character);
-  const visual = CHARACTER_VISUALS[charId];
-  if (visual) return { charId, name: visual.name, src: visual.portrait };
-  if (character?.preview) return { charId, name: character?.name || charId || "Character", src: character.preview };
-  return null;
 }
 
 function getAvatarVisual(avatarId, optionsById) {
@@ -203,125 +149,6 @@ function AvatarPicker({ currentAvatar, selectedAvatar, saving, error, avatarOpti
   );
 }
 
-function CharacterPreview({ character, t }) {
-  const [failed, setFailed] = useState(false);
-  const visual = getCharacterVisual(character);
-  const label = visual?.name || character?.name || character?.charId || t("profile.characters.unknownCharacter");
-  if (visual?.src && !failed) {
-    return (
-      <div className="profile-character-preview profile-character-portrait-card">
-        <div className="profile-character-portrait-frame">
-          <img src={visual.src} alt={label} onError={() => setFailed(true)} />
-        </div>
-        <span>{label}</span>
-      </div>
-    );
-  }
-  return (
-    <div className="profile-character-preview profile-character-fallback" aria-label={label}>
-      {initials(character?.charId || label)}
-    </div>
-  );
-}
-
-function StatTile({ label, value }) {
-  const variant = label.toLowerCase().replace(/\s+/g, "-");
-  return (
-    <div className={`profile-stat-tile profile-stat-${variant}`}>
-      <span>{label}</span>
-      <strong>{value}</strong>
-    </div>
-  );
-}
-
-function CharacterCard({ character, featured = false, t }) {
-  const totalMatches = safeNumber(character?.totalMatches);
-  const visual = getCharacterVisual(character);
-  const displayName = character?.name || visual?.name || t("profile.common.unknown");
-  return (
-    <article className={featured ? "profile-character-card profile-character-card-featured" : "profile-character-card"}>
-      <CharacterPreview character={character} t={t} />
-      <div className="profile-character-body">
-        <div className="profile-character-heading">
-          <div>
-            {featured ? <span className="profile-character-badge">{t("profile.characters.bestBadge")}</span> : null}
-            <h3>{displayName}</h3>
-          </div>
-          <span>{character?.charId || t("profile.common.notAvailable")}</span>
-        </div>
-        <div className="profile-character-stats">
-          <StatTile label={t("profile.stats.wins")} value={safeNumber(character?.wins)} />
-          <StatTile label={t("profile.stats.losses")} value={safeNumber(character?.losses)} />
-          <StatTile label={t("profile.stats.draws")} value={safeNumber(character?.draws)} />
-          <StatTile label={t("profile.stats.matches")} value={totalMatches} />
-          <StatTile label={t("profile.stats.winRate")} value={formatPercent(character?.winRate)} />
-        </div>
-      </div>
-    </article>
-  );
-}
-
-function HistoryFighter({ participant, label, t }) {
-  const charId = getCharacterId(participant);
-  const avatar = CHARACTER_AVATARS[charId] ?? null;
-  const characterName = participant?.characterName || t("profile.common.unknown");
-
-  return (
-    <div className="profile-history-fighter">
-      {avatar ? (
-        <span className="profile-history-fighter-frame">
-          <img src={avatar} alt="" />
-        </span>
-      ) : (
-        <span className="profile-history-fighter-frame profile-history-fighter-fallback" aria-hidden="true">
-          {initials(characterName)}
-        </span>
-      )}
-      <span>
-        <small>{label}</small>
-        <strong>{characterName}</strong>
-      </span>
-    </div>
-  );
-}
-
-function MatchHistoryCard({ match, t, dateFormatter }) {
-  const result = ["win", "loss", "draw"].includes(match?.result) ? match.result : "unknown";
-  const score = match?.score?.raw || `${safeNumber(match?.score?.player)} - ${safeNumber(match?.score?.opponent)}`;
-
-  return (
-    <article className={`profile-history-card profile-history-card-${result}`}>
-      <div className="profile-history-result">
-        <span>{formatResult(result, t)}</span>
-        <strong>{score}</strong>
-      </div>
-
-      <div className="profile-history-matchup">
-        <span className="profile-history-opponent-label">{t("profile.history.opponent")}</span>
-        <h3>{t("profile.history.vs")} {match?.opponent?.username || t("profile.history.unknownPlayer")}</h3>
-        <div className="profile-history-fighters">
-          <HistoryFighter participant={match?.player} label={t("profile.history.you")} t={t} />
-          <span className="profile-history-versus">VS</span>
-          <HistoryFighter participant={match?.opponentPlayer} label={t("profile.history.rival")} t={t} />
-        </div>
-      </div>
-
-      <footer className="profile-history-meta">
-        <span>{formatGameType(match?.gameType, t)}</span>
-        <time dateTime={match?.playedAt || undefined}>{formatDate(match?.playedAt, dateFormatter, t)}</time>
-      </footer>
-    </article>
-  );
-}
-
-function EmptyState({ title, text }) {
-  return (
-    <div className="profile-empty">
-      <strong>{title}</strong>
-      <span>{text}</span>
-    </div>
-  );
-}
 
 export default function Profile({ onBack }) {
   const { t, i18n } = useTranslation();
@@ -542,13 +369,13 @@ export default function Profile({ onBack }) {
                   <h2>{t("profile.sections.globalStats")}</h2>
                 </div>
                 <div className="profile-stats-grid">
-                  <StatTile label={t("profile.stats.wins")} value={safeNumber(stats.wins)} />
-                  <StatTile label={t("profile.stats.losses")} value={safeNumber(stats.losses)} />
-                  <StatTile label={t("profile.stats.draws")} value={safeNumber(stats.draws)} />
-                  <StatTile label={t("profile.stats.matches")} value={safeNumber(stats.totalMatches)} />
-                  <StatTile label={t("profile.stats.winRate")} value={formatPercent(stats.winRate)} />
-                  <StatTile label={t("profile.stats.xp")} value={xp} />
-                  <StatTile label={t("profile.stats.level")} value={level} />
+                  <ProfileStatTile label={t("profile.stats.wins")} value={safeNumber(stats.wins)} />
+                  <ProfileStatTile label={t("profile.stats.losses")} value={safeNumber(stats.losses)} />
+                  <ProfileStatTile label={t("profile.stats.draws")} value={safeNumber(stats.draws)} />
+                  <ProfileStatTile label={t("profile.stats.matches")} value={safeNumber(stats.totalMatches)} />
+                  <ProfileStatTile label={t("profile.stats.winRate")} value={`${Number(safeNumber(stats.winRate).toFixed(2))}%`} />
+                  <ProfileStatTile label={t("profile.stats.xp")} value={xp} />
+                  <ProfileStatTile label={t("profile.stats.level")} value={level} />
                 </div>
               </section>
 
@@ -557,8 +384,8 @@ export default function Profile({ onBack }) {
                   <h2>{t("profile.sections.bestCharacter")}</h2>
                 </div>
                 {safeProfile.bestCharacter
-                  ? <CharacterCard character={safeProfile.bestCharacter} featured t={t} />
-                  : <EmptyState title={t("profile.empty.bestCharacterTitle")} text={t("profile.empty.bestCharacterText")} />}
+                  ? <ProfileCharacterCard character={safeProfile.bestCharacter} featured t={t} />
+                  : <ProfileEmptyState title={t("profile.empty.bestCharacterTitle")} text={t("profile.empty.bestCharacterText")} />}
               </section>
 
               <section className="profile-overview-block">
@@ -568,11 +395,11 @@ export default function Profile({ onBack }) {
               {characters.length ? (
                 <div className="profile-character-grid">
                   {characters.map((character) => (
-                    <CharacterCard key={character.charId || character.name} character={character} t={t} />
+                    <ProfileCharacterCard key={character.charId || character.name} character={character} t={t} />
                   ))}
                 </div>
               ) : (
-                <EmptyState title={t("profile.empty.characterStatsTitle")} text={t("profile.empty.characterStatsText")} />
+                <ProfileEmptyState title={t("profile.empty.characterStatsTitle")} text={t("profile.empty.characterStatsText")} />
               )}
               </section>
             </section>
@@ -590,10 +417,10 @@ export default function Profile({ onBack }) {
 
             {matchHistory.length ? (
               <div className="profile-history-list">
-                {matchHistory.map(match => <MatchHistoryCard key={match.id} match={match} t={t} dateFormatter={dateFormatter} />)}
+                {matchHistory.map(match => <ProfileMatchHistoryCard key={match.id} match={match} t={t} dateFormatter={dateFormatter} />)}
               </div>
             ) : (
-              <EmptyState title={t("profile.empty.matchHistoryTitle")} text={t("profile.empty.matchHistoryText")} />
+              <ProfileEmptyState title={t("profile.empty.matchHistoryTitle")} text={t("profile.empty.matchHistoryText")} />
             )}
           </section>
         )}
