@@ -1,4 +1,5 @@
 import LanguageSelector from "@src/components/LanguageSelector.jsx";
+import PageBackButton from "@src/components/ui/PageBackButton.jsx";
 import { useRef } from "react";
 import { useTranslation } from "react-i18next";
 import logoMiniImage from "../../../assets/logomini.png";
@@ -82,9 +83,9 @@ export default function Manual({ onBack }) {
         </div>
         <div className="mn-topbar-actions">
           <LanguageSelector variant="manual" compact />
-          <button type="button" className="mn-back-btn" onClick={onBack}>
+          <PageBackButton onClick={onBack}>
             ← {manual.backToLobby}
-          </button>
+          </PageBackButton>
         </div>
       </div>
 
