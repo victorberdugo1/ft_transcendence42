@@ -41,9 +41,191 @@
     "en": "English"
   },
   "manual": {
-    "backToLobby": "Tornar al Lobby",
-    "coverEyebrow": "TOM DE COMBAT · CODI OFICIAL",
-    "coverSub": "Temporada 01 · Manual d'instruccions"
+    "backToLobby": "Tornar al lobby",
+    "hero": {
+      "eyebrow": "Operacions // Manual de combat",
+      "title": "Manual tàctic de combat",
+      "subtitle": "Tot l'essencial per entrar a l'escenari amb criteri i sense improvisar.",
+      "description": "El ritme del joc depèn del control de l'espai, de la lectura del rival i de l'ús intel·ligent del dash. Aquesta pàgina resumeix el que importa amb una presentació neta i coherent amb la resta del joc."
+    },
+    "quickFacts": [
+      {
+        "value": "3",
+        "label": "vides per combat"
+      },
+      {
+        "value": "2",
+        "label": "salts per vida"
+      },
+      {
+        "value": "1.65x",
+        "label": "empenta del dash attack"
+      },
+      {
+        "value": "0 HP",
+        "label": "sense barra, només voltatge"
+      }
+    ],
+    "tocLabel": "En aquesta pàgina",
+    "sections": {
+      "objective": {
+        "num": "I",
+        "title": "Objectiu",
+        "paragraphs": [
+          "El teu objectiu és expulsar el rival de l'escenari. Cada jugador comença amb 3 vides; quan perd la tercera, la partida s'acaba.",
+          "Aquí no hi ha barra de vida. Cada cop rebut augmenta el voltatge que envolta el teu retrat. Com més puja l'arc, més lluny surts disparat amb el següent impacte. Amb voltatge baix encara controles; en vermell, gairebé qualsevol error costa una vida."
+        ]
+      },
+      "arena": {
+        "num": "II",
+        "title": "Arena",
+        "intro": [
+          "Tots els mapes tenen una plataforma principal i, segons l'escenari, plataformes flotants que obren rutes extres, resets i extensions de combo."
+        ],
+        "stageBadge": "Dissenys d'escenari",
+        "boundaryLabels": {
+          "left": "Buit",
+          "right": "Buit",
+          "bottom": "Abisme"
+        },
+        "stageNames": [
+          "Karnamru",
+          "Surya",
+          "Vayusvara",
+          "Daat"
+        ],
+        "outro": [
+          "Les línies vermelles marquen els límits del buit. Si els travesses pels costats o per sota, perds una vida. Les plataformes flotants es poden travessar des de sota, així que serveixen tant per escapar com per preparar trampes."
+        ]
+      },
+      "controls": {
+        "num": "III",
+        "title": "Controls",
+        "helper": "Aquestes són les entrades bàsiques del sistema. Domina-les primer; la resta del joc surt d'aquí.",
+        "or": "o",
+        "dashNote": "doble toc",
+        "items": {
+          "move": "Moure's",
+          "jump": "Saltar",
+          "attackBlock": "Atacar / bloquejar",
+          "dash": "Dash",
+          "crouch": "Ajupir-se"
+        }
+      },
+      "attacks": {
+        "num": "IV",
+        "title": "Atacs",
+        "intro": "Una pulsació de SPACE llança un cop. Si tornes a prémer just després de connectar, encadenes fins a tres impactes. Si deixes massa temps entre ells, la cadena es reinicia.",
+        "moves": [
+          {
+            "input": "SPACE",
+            "name": "Atac normal",
+            "description": "Cop base a terra. Encadena fins a 3 impactes si repeteixes l'entrada amb el ritme correcte després de cada connexió."
+          },
+          {
+            "input": "SPACE a l'aire",
+            "name": "Atac aeri",
+            "description": "Cop mentre ets suspès. Trenca la cadena actual, però és molt útil per tallar salts o rematar recuperacions."
+          },
+          {
+            "input": "↓ + SPACE",
+            "name": "Atac ajupit",
+            "description": "Impacte baix per castigar rivals arran de terra o defenses baixes. També talla la ruta de combo actual."
+          },
+          {
+            "input": "→→ i després SPACE",
+            "name": "Dash attack",
+            "description": "L'eina més explosiva del kit. Té més abast, aplica 1.65x de knockback i només es pot fer una vegada per dash."
+          }
+        ],
+        "combo": {
+          "label": "Combo",
+          "hits": [
+            "Cop 1",
+            "Cop 2",
+            "Cop 3"
+          ],
+          "note": "torna a prémer just en contactar per mantenir la cadena"
+        },
+        "outro": "Cada cop de combo també eleva la pressió de l'intercanvi. A mesura que tots dos jugadors acumulen voltatge, una seqüència neta passa de pressió lleu a amenaça real d'expulsió."
+      },
+      "dash": {
+        "num": "V",
+        "title": "Dash",
+        "paragraphs": [
+          "El dash s'activa amb doble toc lateral. És una ràfega curta i ràpida amb molt pes tàctic perquè cancel·la el knockback en el mateix instant en què s'inicia.",
+          "Això el converteix en el teu millor recurs defensiu quan t'estan arrossegant i en una de les millors eines per recuperar spacing abans de forçar el següent intercanvi."
+        ],
+        "bullets": [
+          "Necessita una petita recàrrega entre usos.",
+          "No pots bloquejar immediatament quan s'acaba; hi ha una finestra curta de vulnerabilitat.",
+          "Si ataques just en sortir del dash, la mobilitat es converteix en el cop més fort del joc."
+        ]
+      },
+      "block": {
+        "num": "VI",
+        "title": "Bloqueig",
+        "paragraphs": [
+          "Mantén SPACE un instant per entrar en guàrdia. El bloqueig redueix molt la distància del llançament i frena la pujada del voltatge.",
+          "No deixa el personatge congelat. Encara et mous lentament, així que et pots recol·locar mentre aguantes pressió."
+        ],
+        "bullets": [
+          "No pots bloquejar a l'aire.",
+          "No pots bloquejar just després d'un dash.",
+          "No pots bloquejar mentre ataques.",
+          "Amb l'arc completament vermell, la guàrdia queda desactivada i només et queden salt i dash."
+        ],
+        "tip": "Mantenir la guàrdia drena voltatge a poc a poc. Pot fer-te sortir de la zona crítica, però cada segon bloquejant és iniciativa que regales al rival."
+      },
+      "voltage": {
+        "num": "VII",
+        "title": "Voltatge",
+        "paragraphs": [
+          "L'arc al voltant del teu retrat és la lectura clau del combat. Comença blau, passa a groc quan la pressió creix i entra en vermell quan el perill és real.",
+          "La progressió no és lineal: els primers cops l'eleven ràpid i després el risc depèn molt més de la inèrcia i del timing. Quan arriba l'estat crític, gairebé no queda marge d'error."
+        ],
+        "states": [
+          {
+            "tone": "safe",
+            "label": "Blau",
+            "caption": "segur"
+          },
+          {
+            "tone": "warn",
+            "label": "Groc",
+            "caption": "perill"
+          },
+          {
+            "tone": "critical",
+            "label": "Vermell",
+            "caption": "crític"
+          }
+        ]
+      },
+      "tips": {
+        "num": "VIII",
+        "title": "Consells pro",
+        "items": [
+          {
+            "title": "Guarda el dash attack",
+            "text": "No el gastis per inèrcia. Quan el rival ja és en groc intens o vermell, aquest cop és la manera més ràpida de convertir pressió en una vida."
+          },
+          {
+            "title": "Pensa en el segon salt",
+            "text": "Tens dos salts i tots dos es reinicien en tocar terra. El segon salt és recuperació, mix-up i correcció d'espai alhora."
+          },
+          {
+            "title": "Bloqueja aviat, no tard",
+            "text": "La guàrdia no entra instantàniament. Si esperes a tenir el cop a sobre, normalment ja has perdut l'intercanvi."
+          },
+          {
+            "title": "Aprofita el xoc de cossos",
+            "text": "Quan els lluitadors s'empenyen, la col·lisió canvia spacing i angles. Aprèn a llegir aquest rebot perquè regala confirmacions que semblen accidentals però no ho són."
+          }
+        ]
+      }
+    },
+    "footer": "Enuma Fighter · Manual operatiu rev 2.0"
   },
   "legal": {
     "back": "Enrere",

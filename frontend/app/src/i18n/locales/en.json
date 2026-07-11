@@ -41,9 +41,191 @@
     "en": "English"
   },
   "manual": {
-    "backToLobby": "Back to Lobby",
-    "coverEyebrow": "TOME OF COMBAT · OFFICIAL CODEX",
-    "coverSub": "Season 01 · Instruction Manual"
+    "backToLobby": "Back to lobby",
+    "hero": {
+      "eyebrow": "Operations // Combat Manual",
+      "title": "Tactical combat manual",
+      "subtitle": "Everything essential to enter the stage with intent instead of improvisation.",
+      "description": "The game revolves around space control, opponent reads, and smart dash timing. This page keeps the rules and combat flow clean, quick, and visually aligned with the rest of the game."
+    },
+    "quickFacts": [
+      {
+        "value": "3",
+        "label": "stocks per match"
+      },
+      {
+        "value": "2",
+        "label": "jumps per life"
+      },
+      {
+        "value": "1.65x",
+        "label": "dash attack knockback"
+      },
+      {
+        "value": "0 HP",
+        "label": "no health bar, only voltage"
+      }
+    ],
+    "tocLabel": "On this page",
+    "sections": {
+      "objective": {
+        "num": "I",
+        "title": "Objective",
+        "paragraphs": [
+          "Your goal is to launch the opponent off the stage. Each player starts with 3 stocks; lose the third one and the match is over.",
+          "There is no health bar. Every hit you take raises the voltage arc around your portrait. The higher that arc climbs, the farther the next hit sends you. Low voltage is manageable. Red voltage means almost any mistake can cost a stock."
+        ]
+      },
+      "arena": {
+        "num": "II",
+        "title": "Arena",
+        "intro": [
+          "Every stage has one main platform and, depending on the map, floating platforms that open extra routes, resets, and combo extensions."
+        ],
+        "stageBadge": "Stage layouts",
+        "boundaryLabels": {
+          "left": "Void",
+          "right": "Void",
+          "bottom": "Abyss"
+        },
+        "stageNames": [
+          "Karnamru",
+          "Surya",
+          "Vayusvara",
+          "Daat"
+        ],
+        "outro": [
+          "The red markers show the void boundaries. Cross the side or bottom lines and you lose a stock. Floating platforms are pass-through from below, so they matter for both escapes and traps."
+        ]
+      },
+      "controls": {
+        "num": "III",
+        "title": "Controls",
+        "helper": "These are the core inputs of the system. Learn them first; everything else is built on top of them.",
+        "or": "or",
+        "dashNote": "double tap",
+        "items": {
+          "move": "Move",
+          "jump": "Jump",
+          "attackBlock": "Attack / block",
+          "dash": "Dash",
+          "crouch": "Crouch"
+        }
+      },
+      "attacks": {
+        "num": "IV",
+        "title": "Attacks",
+        "intro": "Press SPACE once to swing. Press again right after a hit lands to chain into a three-hit sequence. Wait too long and the sequence resets.",
+        "moves": [
+          {
+            "input": "SPACE",
+            "name": "Normal attack",
+            "description": "Your standard grounded hit. It chains into up to 3 strikes if you re-input with the correct rhythm after each connection."
+          },
+          {
+            "input": "SPACE in air",
+            "name": "Aerial attack",
+            "description": "Attack while airborne. It breaks your current chain, but it is strong for intercepting jumps or sealing recoveries."
+          },
+          {
+            "input": "↓ + SPACE",
+            "name": "Crouch attack",
+            "description": "A low strike for catching grounded rivals or punishing defensive crouch play. It also breaks the current combo route."
+          },
+          {
+            "input": "→→ then SPACE",
+            "name": "Dash attack",
+            "description": "The most explosive tool in the kit. It reaches farther, applies 1.65x knockback, and is available only once per dash."
+          }
+        ],
+        "combo": {
+          "label": "Combo",
+          "hits": [
+            "Hit 1",
+            "Hit 2",
+            "Hit 3"
+          ],
+          "note": "press again right after contact to keep the chain alive"
+        },
+        "outro": "Every combo hit also increases the pressure of the exchange. As both fighters build voltage, a clean sequence quickly turns from chip pressure into a genuine launch threat."
+      },
+      "dash": {
+        "num": "V",
+        "title": "Dash",
+        "paragraphs": [
+          "Dash triggers with a double tap left or right. It is a short, fast burst with real tactical weight because it cancels knockback the instant it starts.",
+          "That makes it your strongest escape tool when you are being juggled, and one of your best ways to reset spacing before forcing the next exchange."
+        ],
+        "bullets": [
+          "It needs a short recharge between uses.",
+          "You cannot block immediately after it ends; there is a small recovery window.",
+          "If you attack right as dash ends, mobility converts into the strongest hit in the game."
+        ]
+      },
+      "block": {
+        "num": "VI",
+        "title": "Blocking",
+        "paragraphs": [
+          "Hold SPACE for a moment to enter guard stance. Blocking greatly reduces launch distance and slows how fast voltage climbs.",
+          "It does not freeze the character. You still move slowly, which means you can reposition while absorbing pressure."
+        ],
+        "bullets": [
+          "You cannot block in the air.",
+          "You cannot block immediately after a dash.",
+          "You cannot block while attacking.",
+          "When the arc is fully red, guard is disabled and only jump or dash remain."
+        ],
+        "tip": "Holding guard drains voltage over time. It can pull you back from critical, but every second spent blocking is a second of initiative handed to your opponent."
+      },
+      "voltage": {
+        "num": "VII",
+        "title": "Voltage",
+        "paragraphs": [
+          "The arc around your portrait is the key combat readout. It starts blue, turns yellow as pressure builds, and moves into red when you are in real danger.",
+          "Its growth is not linear: early hits ramp it quickly, then risk becomes more about momentum and timing. Once the critical state appears, the room for error is nearly gone."
+        ],
+        "states": [
+          {
+            "tone": "safe",
+            "label": "Blue",
+            "caption": "safe"
+          },
+          {
+            "tone": "warn",
+            "label": "Yellow",
+            "caption": "danger"
+          },
+          {
+            "tone": "critical",
+            "label": "Red",
+            "caption": "critical"
+          }
+        ]
+      },
+      "tips": {
+        "num": "VIII",
+        "title": "Pro tips",
+        "items": [
+          {
+            "title": "Save the dash attack",
+            "text": "Do not spend it on autopilot. When the opponent is already deep into yellow or red, that hit is the fastest way to convert pressure into a stock."
+          },
+          {
+            "title": "Think with the second jump",
+            "text": "You have two jumps and both reset on landing. The second jump is recovery, mix-up, and spacing correction all at once."
+          },
+          {
+            "title": "Block early, not late",
+            "text": "Guard is not instant. If you wait until the hit is already on top of you, the exchange is usually lost."
+          },
+          {
+            "title": "Use body collision",
+            "text": "When fighters push each other, collision changes spacing and angles. Learn that rebound because it creates follow-ups that look accidental but are not."
+          }
+        ]
+      }
+    },
+    "footer": "Enuma Fighter · Operational manual rev 2.0"
   },
   "legal": {
     "back": "Back",
