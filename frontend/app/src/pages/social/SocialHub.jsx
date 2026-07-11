@@ -1,4 +1,5 @@
 import LanguageSelector from "@src/components/LanguageSelector.jsx";
+import PageBackButton from "@src/components/ui/PageBackButton.jsx";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import "./social.css";
@@ -418,7 +419,9 @@ export default function SocialHub({ user, onBack, initialTab = "global" }) {
           </div>
           <div className="social-header-actions">
             <LanguageSelector variant="manual" compact />
-            <button type="button" className="social-back" onClick={onBack}>{t("socialHub.backToLobby")}</button>
+            <PageBackButton onClick={onBack}>
+              {t("socialHub.backToLobby")}
+            </PageBackButton>
           </div>
         </header>
 
