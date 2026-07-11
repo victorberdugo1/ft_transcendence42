@@ -32,9 +32,38 @@ function normalizeUser(rawUser) {
   };
 }
 
+function teardownGameRuntimeForAuth() {
+  const glfw = window.GLFW;
+  if (glfw) {
+    if (typeof glfw.onKeydown === "function") {
+      window.removeEventListener("keydown", glfw.onKeydown, true);
+      document.removeEventListener("keydown", glfw.onKeydown, true);
+    }
+    if (typeof glfw.onKeyPress === "function") {
+      window.removeEventListener("keypress", glfw.onKeyPress, true);
+      document.removeEventListener("keypress", glfw.onKeyPress, true);
+    }
+    if (typeof glfw.onKeyup === "function") {
+      window.removeEventListener("keyup", glfw.onKeyup, true);
+      document.removeEventListener("keyup", glfw.onKeyup, true);
+    }
+    if (typeof glfw.onBlur === "function") {
+      window.removeEventListener("blur", glfw.onBlur, true);
+      document.removeEventListener("blur", glfw.onBlur, true);
+    }
+  }
+
+  const gameScript = document.querySelector('script[src="/game.js"]');
+  if (gameScript) gameScript.remove();
+
+  // If a focus trap or stale element survived outside React, drop focus now.
+  if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
+}
+
 export default function App() {
   const [authStatus, setAuthStatus] = useState("loading");
   const [authView, setAuthView] = useState("login");
+  const [authEpoch, setAuthEpoch] = useState(0);
   const [user, setUser] = useState(null);
   const [page, setPage] = useState("auth");
   const [legalBackPage, setLegalBackPage] = useState("auth");
@@ -111,9 +140,13 @@ export default function App() {
     try {
       await fetch("/api/logout", { method: "POST", credentials: "include" });
     } catch (_) {}
+
+    teardownGameRuntimeForAuth();
+
     setUser(null);
     setAuthStatus("guest");
     setAuthView("login");
+    setAuthEpoch((v) => v + 1);
     // Clean matchmaking cooldown so it does not bleed into the next login.
     try {
       sessionStorage.removeItem("matchmakingSafeAt");
@@ -197,6 +230,7 @@ export default function App() {
   if (authStatus !== "authenticated" || !user) {
     return (
       <AuthGate
+        key={`auth-${authEpoch}`}
         view={authView}
         onChangeView={setAuthView}
         onLogin={handleAuthSuccess}
