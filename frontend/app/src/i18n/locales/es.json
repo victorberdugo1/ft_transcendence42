@@ -270,6 +270,64 @@
       }
     }
   },
+  "achievementsPage": {
+    "kicker": "Registro de combatiente",
+    "title": "Logros",
+    "backToLobby": "← Volver al lobby",
+    "hero": {
+      "chip": "Progreso activo",
+      "title": "Panel de logros de {{playerName}}",
+      "description": "Consulta cada hito desbloqueado, el progreso actual de las metas pendientes y la siguiente recompensa competitiva del jugador."
+    },
+    "summary": {
+      "unlocked": "Desbloqueados",
+      "completion": "Completado",
+      "wins": "Victorias",
+      "bestStreak": "Mejor racha"
+    },
+    "loading": {
+      "title": "Cargando logros...",
+      "text": "Sincronizando las recompensas de la arena y el progreso competitivo."
+    },
+    "error": {
+      "title": "No se pudieron cargar los logros"
+    },
+    "errors": {
+      "loadFailed": "No se pudo cargar el panel de logros."
+    },
+    "status": {
+      "unlocked": "Desbloqueado",
+      "locked": "Bloqueado"
+    },
+    "filters": {
+      "label": "Filtros de logros",
+      "all": "Todos",
+      "unlocked": "Desbloqueados",
+      "locked": "Pendientes"
+    },
+    "labels": {
+      "featured": "En foco",
+      "nextTarget": "Siguiente objetivo",
+      "catalog": "Catalogo",
+      "catalogCount": "{{count}} entradas visibles",
+      "progressWins": "{{current}} de {{total}} victorias",
+      "notEarnedYet": "Aun no desbloqueado",
+      "allUnlockedTitle": "Coleccion completada",
+      "allUnlockedText": "Ya tienes todos los logros disponibles en esta temporada."
+    },
+    "definitions": {
+      "first_win": {
+        "name": "Primera victoria",
+        "description": "Rompe el hielo en la arena y consigue tu primera partida ganada.",
+        "hint": "Gana {{goal}} partida para desbloquearlo."
+      },
+      "veteran": {
+        "name": "Veterano",
+        "description": "Demuestra consistencia competitiva acumulando una base real de victorias.",
+        "hint": "Alcanza {{goal}} victorias para desbloquearlo."
+      }
+    }
+  },
   "fight": {
     "header": {
       "title": "Fight Lobby"

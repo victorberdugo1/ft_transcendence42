@@ -270,6 +270,64 @@
       }
     }
   },
+  "achievementsPage": {
+    "kicker": "Registre del lluitador",
+    "title": "Assoliments",
+    "backToLobby": "← Tornar al lobby",
+    "hero": {
+      "chip": "Progres actiu",
+      "title": "Tauler d'assoliments de {{playerName}}",
+      "description": "Consulta cada fita desbloquejada, el progres actual dels objectius pendents i la recompensa competitiva seguent d'aquest jugador."
+    },
+    "summary": {
+      "unlocked": "Desbloquejats",
+      "completion": "Completat",
+      "wins": "Victories",
+      "bestStreak": "Millor ratxa"
+    },
+    "loading": {
+      "title": "Carregant assoliments...",
+      "text": "Sincronitzant les recompenses de l'arena i el progres competitiu."
+    },
+    "error": {
+      "title": "No s'han pogut carregar els assoliments"
+    },
+    "errors": {
+      "loadFailed": "No s'ha pogut carregar el tauler d'assoliments."
+    },
+    "status": {
+      "unlocked": "Desbloquejat",
+      "locked": "Bloquejat"
+    },
+    "filters": {
+      "label": "Filtres d'assoliments",
+      "all": "Tots",
+      "unlocked": "Desbloquejats",
+      "locked": "Pendents"
+    },
+    "labels": {
+      "featured": "En focus",
+      "nextTarget": "Objectiu seguent",
+      "catalog": "Cataleg",
+      "catalogCount": "{{count}} entrades visibles",
+      "progressWins": "{{current}} de {{total}} victories",
+      "notEarnedYet": "Encara no desbloquejat",
+      "allUnlockedTitle": "Col·leccio completada",
+      "allUnlockedText": "Ja tens tots els assoliments disponibles en aquesta temporada."
+    },
+    "definitions": {
+      "first_win": {
+        "name": "Primera victoria",
+        "description": "Trenca el gel a l'arena i aconsegueix la teva primera partida guanyada.",
+        "hint": "Guanya {{goal}} partida per desbloquejar-lo."
+      },
+      "veteran": {
+        "name": "Veterà",
+        "description": "Demostra consistencia competitiva acumulant una base real de victories.",
+        "hint": "Arriba a {{goal}} victories per desbloquejar-lo."
+      }
+    }
+  },
   "fight": {
     "header": {
       "title": "Fight Lobby"

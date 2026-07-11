@@ -7,6 +7,8 @@ import { useLeaveGrace } from "@src/hooks/useLeaveGrace.js";
 import { useLobbySssLock } from "@src/hooks/useLobbySssLock.js";
 import { useSessionAuth } from "@src/hooks/useSessionAuth.js";
 import { useWsNavigationGuards } from "@src/hooks/useWsNavigationGuards.js";
+import "@src/pages/achievements/achievements.css";
+import Achievements from "@src/pages/achievements/Achievements.jsx";
 import "@src/pages/auth/auth.css";
 import Privacy from "@src/pages/auth/Privacy.jsx";
 import Terms from "@src/pages/auth/Terms.jsx";
@@ -301,9 +303,16 @@ export default function App() {
             user={user}
             onPlay={() => setPage("fightLobby")}
             onProfile={() => setPage("profile")}
+            onAchievements={() => setPage("achievements")}
             onManual={() => setPage("manual")}
             onLogout={handleLogout}
           />
+        </div>
+      )}
+
+      {page === "achievements" && (
+        <div style={{ position: "fixed", inset: 0, zIndex: 10 }}>
+          <Achievements user={user} onBack={() => setPage("lobby")} />
         </div>
       )}
 

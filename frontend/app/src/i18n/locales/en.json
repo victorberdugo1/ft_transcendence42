@@ -270,6 +270,64 @@
       }
     }
   },
+  "achievementsPage": {
+    "kicker": "Fighter record",
+    "title": "Achievements",
+    "backToLobby": "← Back to lobby",
+    "hero": {
+      "chip": "Active progress",
+      "title": "Achievement board for {{playerName}}",
+      "description": "Review every unlocked milestone, current progress on pending goals, and the next competitive reward on this player profile."
+    },
+    "summary": {
+      "unlocked": "Unlocked",
+      "completion": "Completion",
+      "wins": "Wins",
+      "bestStreak": "Best streak"
+    },
+    "loading": {
+      "title": "Loading achievements...",
+      "text": "Syncing arena rewards and competitive progress."
+    },
+    "error": {
+      "title": "Achievements could not be loaded"
+    },
+    "errors": {
+      "loadFailed": "The achievements board could not be loaded."
+    },
+    "status": {
+      "unlocked": "Unlocked",
+      "locked": "Locked"
+    },
+    "filters": {
+      "label": "Achievement filters",
+      "all": "All",
+      "unlocked": "Unlocked",
+      "locked": "Pending"
+    },
+    "labels": {
+      "featured": "Featured",
+      "nextTarget": "Next target",
+      "catalog": "Catalog",
+      "catalogCount": "{{count}} visible entries",
+      "progressWins": "{{current}} of {{total}} wins",
+      "notEarnedYet": "Not earned yet",
+      "allUnlockedTitle": "Collection complete",
+      "allUnlockedText": "You already own every achievement currently available this season."
+    },
+    "definitions": {
+      "first_win": {
+        "name": "First win",
+        "description": "Break the ice in the arena and secure your first victory.",
+        "hint": "Win {{goal}} match to unlock it."
+      },
+      "veteran": {
+        "name": "Veteran",
+        "description": "Show competitive consistency by building a real bank of victories.",
+        "hint": "Reach {{goal}} wins to unlock it."
+      }
+    }
+  },
   "fight": {
     "header": {
       "title": "Fight Lobby"
