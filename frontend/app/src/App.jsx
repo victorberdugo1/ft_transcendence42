@@ -108,6 +108,10 @@ export default function App() {
     legalBackPageRef.current = legalBackPage;
   }, [legalBackPage]);
 
+  useEffect(() => {
+    if (page !== "game") teardownGameRuntime();
+  }, [page]);
+
   useSessionAuth({ setUser, setAuthStatus, setPage, normalizeUser });
 
   const runMatchCleanup = useCallback(() => {
@@ -155,9 +159,6 @@ export default function App() {
     } catch (_) {}
 
     teardownGameRuntime();
-  useEffect(() => {
-    if (page !== "game") teardownGameRuntime();
-  }, [page]);
 
     setUser(null);
     setAuthStatus("guest");
