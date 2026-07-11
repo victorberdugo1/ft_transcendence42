@@ -1,5 +1,3 @@
-@import url("https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Orbitron:wght@600;700;800&display=swap");
-
 .ach-page {
   --ach-bg: #06080d;
   --ach-panel: rgba(11, 15, 24, 0.78);
@@ -14,6 +12,10 @@
   --ach-gold: #ffe36e;
   --ach-pink: #ff6db8;
   --ach-green: #6bf3b0;
+  --page-scrollbar-color: rgba(96, 219, 255, 0.42) rgba(255, 255, 255, 0.05);
+  --page-scrollbar-track: rgba(255, 255, 255, 0.04);
+  --page-scrollbar-thumb-border: rgba(4, 6, 10, 0.92);
+  --page-scrollbar-thumb-bg: rgba(96, 219, 255, 0.46);
   height: 100dvh;
   min-height: 100dvh;
   max-height: 100dvh;
@@ -41,21 +43,6 @@
     ),
     linear-gradient(140deg, #04060a 0%, #0d1119 45%, #07090e 100%);
   font-family: "Barlow", sans-serif;
-  scrollbar-color: rgba(96, 219, 255, 0.42) rgba(255, 255, 255, 0.05);
-}
-
-.ach-page::-webkit-scrollbar {
-  width: 10px;
-}
-
-.ach-page::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.04);
-}
-
-.ach-page::-webkit-scrollbar-thumb {
-  border: 2px solid rgba(4, 6, 10, 0.92);
-  border-radius: 999px;
-  background: rgba(96, 219, 255, 0.46);
 }
 
 .ach-page::before,
@@ -194,116 +181,14 @@
   z-index: 20;
 }
 
-.ach-header-actions .langsel-manual {
-  border: 0;
-  background: transparent;
-  backdrop-filter: none;
-}
-
-.ach-header-actions .langsel-manual .langsel-trigger {
-  min-height: 42px;
-  min-width: 92px;
-  padding: 0 14px;
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  background: rgba(255, 255, 255, 0.04);
-  color: var(--ach-text);
-  clip-path: polygon(10px 0, 100% 0, calc(100% - 10px) 100%, 0 100%);
-  transition:
-    transform 180ms ease,
-    background 180ms ease,
-    border-color 180ms ease;
-}
-
-.ach-header-actions .langsel-manual .langsel-trigger:hover,
-.ach-header-actions .langsel-manual .langsel-trigger:focus-visible {
-  background: rgba(96, 219, 255, 0.12);
-  border-color: rgba(96, 219, 255, 0.3);
-}
-
-.ach-header-actions .langsel-manual .langsel-arrow,
-.ach-header-actions .langsel-manual .langsel-check {
-  color: var(--ach-cyan);
-}
-
 .ach-header-actions .langsel-menu {
   top: calc(100% + 10px);
   right: 0;
 }
 
-.ach-header-actions .langsel-manual .langsel-menu {
-  min-width: 220px;
-  padding: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  background:
-    linear-gradient(
-      145deg,
-      rgba(255, 255, 255, 0.07),
-      rgba(255, 255, 255, 0.02)
-    ),
-    rgba(10, 13, 20, 0.98);
-  clip-path: polygon(
-    10px 0,
-    100% 0,
-    100% calc(100% - 10px),
-    calc(100% - 10px) 100%,
-    0 100%,
-    0 10px
-  );
-  box-shadow: 0 18px 36px rgba(0, 0, 0, 0.32);
-}
-
-.ach-header-actions .langsel-manual .langsel-option {
-  min-height: 42px;
-  border: 1px solid transparent;
-  color: var(--ach-text);
-  clip-path: polygon(8px 0, 100% 0, calc(100% - 8px) 100%, 0 100%);
-}
-
-.ach-header-actions .langsel-manual .langsel-option:hover,
-.ach-header-actions .langsel-manual .langsel-option:focus-visible {
-  background: rgba(96, 219, 255, 0.1);
-  border-color: rgba(96, 219, 255, 0.16);
-}
-
-.ach-header-actions .langsel-manual .langsel-option-active {
-  background: rgba(96, 219, 255, 0.16);
-  color: #ffffff;
-}
-
-.ach-back,
 .ach-filter,
 .ach-card {
   font: inherit;
-}
-
-.ach-back {
-  min-height: 42px;
-  padding: 0 16px;
-  border: 1px solid rgba(255, 255, 255, 0.22);
-  background:
-    linear-gradient(
-      180deg,
-      rgba(255, 255, 255, 0.08),
-      rgba(255, 255, 255, 0.02)
-    ),
-    rgba(255, 255, 255, 0.04);
-  color: var(--ach-text);
-  cursor: pointer;
-  clip-path: polygon(10px 0, 100% 0, calc(100% - 10px) 100%, 0 100%);
-  transition:
-    transform 180ms ease,
-    background 180ms ease,
-    border-color 180ms ease,
-    box-shadow 180ms ease;
-}
-
-.ach-back:hover,
-.ach-back:focus-visible {
-  background: rgba(96, 219, 255, 0.12);
-  border-color: rgba(96, 219, 255, 0.3);
-  transform: translateY(-1px);
-  box-shadow: 0 16px 30px rgba(0, 0, 0, 0.26);
-  outline: none;
 }
 
 .ach-hero {
@@ -884,12 +769,12 @@
 
   .ach-header-actions .langsel,
   .ach-header-actions .langsel-manual,
-  .ach-back {
+  .ach-header-actions .page-back-btn {
     width: 100%;
   }
 
   .ach-header-actions .langsel-manual .langsel-trigger,
-  .ach-back {
+  .ach-header-actions .page-back-btn {
     width: 100%;
     justify-content: center;
   }

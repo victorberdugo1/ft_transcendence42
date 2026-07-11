@@ -1,4 +1,6 @@
 import LanguageSelector from "@src/components/LanguageSelector.jsx";
+import PageBackButton from "@src/components/ui/PageBackButton.jsx";
+import { apiFetchJson } from "@src/utils/http.js";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -18,15 +20,6 @@ const MODES = [
   { id: "spectate" },
 ];
 const DEFAULT_AVATAR_URL = "/avatars/default.png";
-
-async function apiFetch(path, opts = {}) {
-  const res = await fetch(path, { credentials: "include", ...opts });
-  if (!res.ok) {
-    const body = await res.json().catch(() => ({}));
-    throw new Error(body.error || `HTTP ${res.status}`);
-  }
-  return res.json();
-}
 
 // ── UserCard ───────────────────────────────────────────────────────────────────
 
@@ -455,7 +448,7 @@ function ModeSpectator({ onEnterGame }) {
 
   async function load() {
     try {
-      const data = await apiFetch("/api/sessions");
+      const data = await apiFetchJson("/api/sessions");
       setSessions(data.sessions ?? []);
       setError("");
     } catch (e) {
@@ -685,16 +678,14 @@ export default function FightLobby({
         <div className="fight-lobby-toolbar">
           <div className="fight-lobby-toolbar-start">
             {!sssLocked ? (
-              <button
-                type="button"
-                className="fight-lobby-back-button"
+              <PageBackButton
                 onClick={handleBack}
                 disabled={graceActive}
                 title={graceActive ? t("fight.status.serverRelease") : undefined}
                 style={{ position: "static", top: "auto", right: "auto" }}
               >
                 {t("fight.actions.back")}
-              </button>
+              </PageBackButton>
             ) : (
               <div className="fight-lobby-back-spacer" aria-hidden="true" />
             )}

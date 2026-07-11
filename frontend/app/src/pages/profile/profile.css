@@ -11,6 +11,10 @@
   --profile-cyan: #58dcff;
   --profile-gold: #ffe870;
   --profile-pink: #ff63c7;
+  --page-scrollbar-color: rgba(88, 220, 255, 0.42) rgba(255, 255, 255, 0.06);
+  --page-scrollbar-track: rgba(255, 255, 255, 0.06);
+  --page-scrollbar-thumb-border: rgba(7, 9, 15, 0.9);
+  --page-scrollbar-thumb-bg: rgba(88, 220, 255, 0.48);
   height: 100vh;
   min-height: 100vh;
   width: 100vw;
@@ -40,21 +44,6 @@
   --profile-title-font: "Oxanium", "Segoe UI", sans-serif;
   --profile-body-font: "Rajdhani", "Segoe UI", sans-serif;
   font-family: var(--profile-body-font);
-  scrollbar-color: rgba(88, 220, 255, 0.42) rgba(255, 255, 255, 0.06);
-}
-
-.profile-page::-webkit-scrollbar {
-  width: 10px;
-}
-
-.profile-page::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.06);
-}
-
-.profile-page::-webkit-scrollbar-thumb {
-  border: 2px solid rgba(7, 9, 15, 0.9);
-  border-radius: 999px;
-  background: rgba(88, 220, 255, 0.48);
 }
 
 .profile-page::before,

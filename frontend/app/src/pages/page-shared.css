@@ -1,0 +1,168 @@
+@import url("https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Orbitron:wght@600;700;800&display=swap");
+
+:where(.page-back-btn) {
+  min-height: 42px;
+  padding: 0 16px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  background:
+    linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.08),
+      rgba(255, 255, 255, 0.02)
+    ),
+    rgba(255, 255, 255, 0.04);
+  color: var(--page-back-fg, #f8f5ed);
+  cursor: pointer;
+  clip-path: polygon(10px 0, 100% 0, calc(100% - 10px) 100%, 0 100%);
+  transition:
+    transform 180ms ease,
+    background 180ms ease,
+    border-color 180ms ease,
+    box-shadow 180ms ease;
+}
+
+:where(.page-back-btn:hover, .page-back-btn:focus-visible) {
+  background: rgba(96, 219, 255, 0.12);
+  border-color: rgba(96, 219, 255, 0.32);
+  transform: translateY(-1px);
+  box-shadow: 0 16px 30px rgba(0, 0, 0, 0.24);
+  outline: none;
+}
+
+:where(.page-back-btn:disabled) {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* Shared language-selector skin for page headers (social + achievements). */
+:where(.social-header-actions, .ach-header-actions) .langsel-manual {
+  border: 0;
+  background: transparent;
+  backdrop-filter: none;
+}
+
+/* Shared custom scrollbar for full-page themed screens. */
+:where(.ach-page, .mn-page, .profile-page) {
+  scrollbar-color: var(
+    --page-scrollbar-color,
+    rgba(96, 219, 255, 0.42) rgba(255, 255, 255, 0.05)
+  );
+}
+
+:where(.ach-page, .mn-page, .profile-page)::-webkit-scrollbar {
+  width: 10px;
+}
+
+:where(.ach-page, .mn-page, .profile-page)::-webkit-scrollbar-track {
+  background: var(--page-scrollbar-track, rgba(255, 255, 255, 0.04));
+}
+
+:where(.ach-page, .mn-page, .profile-page)::-webkit-scrollbar-thumb {
+  border: 2px solid var(--page-scrollbar-thumb-border, rgba(4, 6, 10, 0.92));
+  border-radius: 999px;
+  background: var(--page-scrollbar-thumb-bg, rgba(96, 219, 255, 0.46));
+}
+
+:where(.social-header-actions, .ach-header-actions)
+  .langsel-manual
+  .langsel-trigger {
+  min-height: 42px;
+  min-width: 92px;
+  padding: 0 14px;
+  border: 1px solid
+    var(
+      --langsel-border,
+      var(
+        --social-line-strong,
+        var(--ach-line-strong, rgba(255, 255, 255, 0.18))
+      )
+    );
+  background: var(
+    --langsel-trigger-bg,
+    linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.08),
+      rgba(255, 255, 255, 0.02)
+    ),
+    rgba(255, 255, 255, 0.04)
+  );
+  color: var(--langsel-text, var(--social-text, var(--ach-text, #fff)));
+  clip-path: polygon(10px 0, 100% 0, calc(100% - 10px) 100%, 0 100%);
+  transition:
+    transform 180ms ease,
+    background 180ms ease,
+    border-color 180ms ease;
+}
+
+:where(.social-header-actions, .ach-header-actions)
+  .langsel-manual
+  .langsel-trigger:hover,
+:where(.social-header-actions, .ach-header-actions)
+  .langsel-manual
+  .langsel-trigger:focus-visible {
+  background: var(--langsel-hover-bg, rgba(96, 219, 255, 0.12));
+  border-color: var(--langsel-hover-border, rgba(96, 219, 255, 0.3));
+}
+
+:where(.social-header-actions, .ach-header-actions)
+  .langsel-manual
+  .langsel-arrow,
+:where(.social-header-actions, .ach-header-actions)
+  .langsel-manual
+  .langsel-check {
+  color: var(--langsel-accent, var(--social-cyan, var(--ach-cyan, #60dbff)));
+}
+
+:where(.social-header-actions, .ach-header-actions)
+  .langsel-manual
+  .langsel-menu {
+  min-width: 220px;
+  padding: 10px;
+  border: 1px solid var(--langsel-menu-border, rgba(255, 255, 255, 0.14));
+  background: var(
+    --langsel-menu-bg,
+    linear-gradient(
+      145deg,
+      rgba(255, 255, 255, 0.08),
+      rgba(255, 255, 255, 0.02)
+    ),
+    rgba(8, 12, 20, 0.98)
+  );
+  clip-path: polygon(
+    10px 0,
+    100% 0,
+    100% calc(100% - 10px),
+    calc(100% - 10px) 100%,
+    0 100%,
+    0 10px
+  );
+  box-shadow: 0 18px 36px rgba(0, 0, 0, 0.32);
+}
+
+:where(.social-header-actions, .ach-header-actions)
+  .langsel-manual
+  .langsel-option {
+  min-height: 42px;
+  border: 1px solid transparent;
+  color: var(--langsel-text, var(--social-text, var(--ach-text, #fff)));
+  clip-path: polygon(8px 0, 100% 0, calc(100% - 8px) 100%, 0 100%);
+}
+
+:where(.social-header-actions, .ach-header-actions)
+  .langsel-manual
+  .langsel-option:hover,
+:where(.social-header-actions, .ach-header-actions)
+  .langsel-manual
+  .langsel-option:focus-visible {
+  background: var(--langsel-option-hover-bg, rgba(96, 219, 255, 0.1));
+  border-color: var(--langsel-option-hover-border, rgba(96, 219, 255, 0.16));
+}
+
+:where(.social-header-actions, .ach-header-actions)
+  .langsel-manual
+  .langsel-option-active {
+  background: var(--langsel-option-active-bg, rgba(96, 219, 255, 0.16));
+  color: #ffffff;
+}

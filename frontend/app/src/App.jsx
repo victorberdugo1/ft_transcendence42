@@ -18,6 +18,7 @@ import "@src/pages/lobby/lobby.css";
 import Lobby from "@src/pages/lobby/Lobby.jsx";
 import "@src/pages/manual/manual.css";
 import Manual from "@src/pages/manual/Manual.jsx";
+import "@src/pages/page-shared.css";
 import "@src/pages/profile/profile.css";
 import Profile from "@src/pages/profile/Profile.jsx";
 import "@src/pages/social/social.css";

@@ -956,7 +956,7 @@
   text-shadow: 0 5px 0 rgba(0, 0, 0, 0.4);
 }
 
-.fight-lobby-overlay .fight-lobby-back-button {
+.fight-lobby-overlay .fight-lobby-toolbar-start .page-back-btn {
   position: absolute;
   top: 24px;
   right: 28px;
@@ -971,7 +971,7 @@
   clip-path: polygon(12px 0, 100% 0, calc(100% - 12px) 100%, 0 100%);
 }
 
-.fight-lobby-overlay .fight-lobby-back-button:hover {
+.fight-lobby-overlay .fight-lobby-toolbar-start .page-back-btn:hover {
   background: rgba(255, 223, 50, 0.16);
 }
 
@@ -1215,7 +1215,7 @@
     font-size: 2.4rem;
   }
 
-  .fight-lobby-overlay .fight-lobby-back-button {
+  .fight-lobby-overlay .fight-lobby-toolbar-start .page-back-btn {
     position: static;
     justify-self: start;
   }

@@ -6,8 +6,12 @@ import eldwinPortrait from "@src/assets/characters/eldwin_portrait.jpg";
 import gabrielPortrait from "@src/assets/characters/gabriel_portrait.jpg";
 import hildaPortrait from "@src/assets/characters/hilda_portrait.jpg";
 import quimburPortrait from "@src/assets/characters/quimbur_portrait.jpg";
-import LanguageSelector from "@src/components/LanguageSelector.jsx";
-import { useEffect, useMemo, useState } from "react";
+import PageBackButton from "@src/components/ui/PageBackButton.jsx";
+import PageHeader from "@src/components/ui/PageHeader.jsx";
+import RequestStateCard from "@src/components/ui/RequestStateCard.jsx";
+import { useApiRequest } from "@src/hooks/useApiRequest.js";
+import { safeNumber } from "@src/utils/number.js";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import logo from "../../../assets/logo.png";
 import logomini from "../../../assets/logomini.png";
@@ -17,11 +21,6 @@ const PROFILE_ERROR_KEYS = {
   loadFailed: "profile.errors.loadFailed",
   avatarSaveFailed: "profile.errors.avatarSaveFailed",
 };
-
-function safeNumber(value, fallback = 0) {
-  const n = Number(value);
-  return Number.isFinite(n) ? n : fallback;
-}
 
 function formatPercent(value) {
   const n = safeNumber(value);
@@ -326,45 +325,33 @@ function EmptyState({ title, text }) {
 
 export default function Profile({ onBack }) {
   const { t, i18n } = useTranslation();
-  const [status, setStatus] = useState("loading");
   const [activeTab, setActiveTab] = useState("overview");
-  const [profile, setProfile] = useState(null);
-  const [error, setError] = useState("");
-  const [reloadKey, setReloadKey] = useState(0);
   const [avatarPickerOpen, setAvatarPickerOpen] = useState(false);
   const [selectedAvatar, setSelectedAvatar] = useState(null);
   const [avatarSaving, setAvatarSaving] = useState(false);
   const [avatarError, setAvatarError] = useState("");
 
-  useEffect(() => {
-    let cancelled = false;
-    async function loadProfile() {
-      setStatus("loading");
-      setError("");
-      try {
-        const res = await fetch("/api/profile/me", { credentials: "include" });
-        if (!res.ok) {
-          throw new Error(
-            res.status === 401
-              ? PROFILE_ERROR_KEYS.sessionExpired
-              : PROFILE_ERROR_KEYS.loadFailed
-          );
-        }
-        const data = await res.json();
-        if (!cancelled) {
-          setProfile(data);
-          setStatus("success");
-        }
-      } catch (err) {
-        if (!cancelled) {
-          setError(err.message || PROFILE_ERROR_KEYS.loadFailed);
-          setStatus("error");
-        }
-      }
+  const loadProfile = useCallback(async () => {
+    const res = await fetch("/api/profile/me", { credentials: "include" });
+    if (!res.ok) {
+      throw new Error(
+        res.status === 401
+          ? PROFILE_ERROR_KEYS.sessionExpired
+          : PROFILE_ERROR_KEYS.loadFailed
+      );
     }
-    loadProfile();
-    return () => { cancelled = true; };
-  }, [reloadKey]);
+    return res.json();
+  }, []);
+
+  const profileRequest = useApiRequest(
+    loadProfile,
+    [loadProfile],
+    { defaultError: PROFILE_ERROR_KEYS.loadFailed }
+  );
+
+  const status = profileRequest.status;
+  const error = profileRequest.error;
+  const profile = profileRequest.data;
 
   const safeProfile = useMemo(() => normalizeProfile(profile), [profile]);
   const stats = safeProfile.globalStats;
@@ -423,7 +410,7 @@ export default function Profile({ onBack }) {
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error || PROFILE_ERROR_KEYS.avatarSaveFailed);
-      setProfile(current => current ? {
+      profileRequest.setData(current => current ? {
         ...current,
         user: { ...current.user, avatar: data.avatar },
       } : current);
@@ -438,12 +425,19 @@ export default function Profile({ onBack }) {
   if (status === "loading") {
     return (
       <main className="profile-page">
-        <section className="profile-state-card">
-          <span className="profile-kicker">{t("profile.kicker")}</span>
-          <h1>{t("profile.loading.title")}</h1>
-          <p>{t("profile.loading.text")}</p>
-          <button type="button" className="profile-secondary-button" onClick={onBack}>{t("profile.actions.backToLobby")}</button>
-        </section>
+        <RequestStateCard
+          className="profile-state-card"
+          kicker={t("profile.kicker")}
+          kickerClassName="profile-kicker"
+          title={t("profile.loading.title")}
+          message={t("profile.loading.text")}
+          headingTag="h1"
+          actions={(
+            <PageBackButton onClick={onBack}>
+              {t("profile.actions.backToLobby")}
+            </PageBackButton>
+          )}
+        />
       </main>
     );
   }
@@ -451,15 +445,22 @@ export default function Profile({ onBack }) {
   if (status === "error") {
     return (
       <main className="profile-page">
-        <section className="profile-state-card">
-          <span className="profile-kicker">{t("profile.kicker")}</span>
-          <h1>{t("profile.error.title")}</h1>
-          <p>{error?.startsWith("profile.") ? t(error) : error}</p>
-          <div className="profile-actions">
-            <button type="button" className="profile-primary-button" onClick={() => setReloadKey(k => k + 1)}>{t("profile.actions.retry")}</button>
-            <button type="button" className="profile-secondary-button" onClick={onBack}>{t("profile.actions.backToLobby")}</button>
-          </div>
-        </section>
+        <RequestStateCard
+          className="profile-state-card"
+          kicker={t("profile.kicker")}
+          kickerClassName="profile-kicker"
+          title={t("profile.error.title")}
+          message={error?.startsWith("profile.") ? t(error) : error}
+          headingTag="h1"
+          actions={(
+            <div className="profile-actions">
+              <button type="button" className="profile-primary-button" onClick={profileRequest.run}>{t("profile.actions.retry")}</button>
+              <PageBackButton onClick={onBack}>
+                {t("profile.actions.backToLobby")}
+              </PageBackButton>
+            </div>
+          )}
+        />
       </main>
     );
   }
@@ -467,16 +468,15 @@ export default function Profile({ onBack }) {
   return (
     <main className="profile-page">
       <div className="profile-shell">
-        <header className="profile-header">
-          <div>
-            <span className="profile-kicker">{t("profile.header.kicker")}</span>
-            <h1>{t("profile.header.title")}</h1>
-          </div>
-          <div className="profile-header-controls">
-            <LanguageSelector variant="manual" compact />
-            <button type="button" className="profile-secondary-button" onClick={onBack}>{t("profile.actions.backToLobby")}</button>
-          </div>
-        </header>
+        <PageHeader
+          className="profile-header"
+          kickerClassName="profile-kicker"
+          actionsClassName="profile-header-controls"
+          kicker={t("profile.header.kicker")}
+          title={t("profile.header.title")}
+          onBack={onBack}
+          backLabel={t("profile.actions.backToLobby")}
+        />
 
         <nav className="profile-tabs" role="tablist" aria-label={t("profile.tabs.aria")}>
           <button
