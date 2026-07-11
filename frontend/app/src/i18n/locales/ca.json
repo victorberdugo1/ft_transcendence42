@@ -38,7 +38,8 @@
     "label": "Idioma",
     "ca": "Catala",
     "es": "Espanyol",
-    "en": "English"
+    "en": "English",
+    "ru": "Русский"
   },
   "manual": {
     "backToLobby": "Tornar al lobby",
@@ -226,6 +227,234 @@
       }
     },
     "footer": "Enuma Fighter · Manual operatiu rev 2.0"
+  },
+  "lobby": {
+    "a11y": {
+      "mainHub": "Hub principal",
+      "logo": "Logotip d'Enuma Fighter"
+    },
+    "status": {
+      "ready": "A punt"
+    },
+    "soon": "Aviat",
+    "logout": "Tancar sessio",
+    "logoutAria": "Tanca la sessio de {{playerName}}",
+    "footer": {
+      "arena": "Arena global",
+      "season": "Temporada 01"
+    },
+    "menu": {
+      "fight": {
+        "label": "Fight",
+        "kicker": "Smash"
+      },
+      "profile": {
+        "label": "Perfil",
+        "kicker": "Fighter"
+      },
+      "achievements": {
+        "label": "Assoliments",
+        "kicker": "Rewards"
+      },
+      "chat": {
+        "label": "Xat",
+        "kicker": "Social"
+      },
+      "friends": {
+        "label": "Amics",
+        "kicker": "Crew"
+      },
+      "manual": {
+        "label": "Manual",
+        "kicker": "Codex"
+      }
+    }
+  },
+  "fight": {
+    "header": {
+      "title": "Fight Lobby"
+    },
+    "actions": {
+      "back": "← Tornar",
+      "logout": "Tancar sessio"
+    },
+    "legal": {
+      "privacy": "Politica de privacitat",
+      "terms": "Termes del servei"
+    },
+    "status": {
+      "waiting": "Esperant…",
+      "availableIn": "Disponible en {{seconds}} s…",
+      "serverRelease": "⏳ Esperant que el servidor alliberi la teva partida anterior…"
+    },
+    "userCard": {
+      "defaultInitials": "J",
+      "playerFallback": "Jugador",
+      "avatarAlt": "Avatar de {{playerName}}",
+      "stats": {
+        "winsShort": "V",
+        "lossesShort": "D",
+        "levelShort": "Nv"
+      }
+    },
+    "modes": {
+      "versus": {
+        "tab": "Versus",
+        "description": "Juga un 1v1 en directe contra un altre jugador connectat. Quan entris, l'emparellament es tancara automaticament quan arribi un segon rival.",
+        "cta": "Buscar partida"
+      },
+      "training": {
+        "tab": "vs IA",
+        "description": "Entrena contra oponents CPU. Tria entre 1 i 4 enemics i selecciona l'escenari.",
+        "enemiesLabel": "Enemics · toca per activar",
+        "stageLabel": "Escenari",
+        "enemiesSelected": "{{count}} enemics",
+        "cta": "Iniciar entrenament contra {{enemyLabel}}"
+      },
+      "tournament": {
+        "tab": "Torneig",
+        "description": "Entra a la sala d'espera del torneig. S'hi poden unir fins a 8 jugadors i qualsevol pot iniciar el bracket quan estigui llest. Els eliminats continuen com a espectadors.",
+        "joinCta": "Unir-se a la sala del torneig",
+        "spectateCta": "Torneig en curs · passa a espectador",
+        "leaveCta": "← Sortir de la sala"
+      },
+      "spectate": {
+        "tab": "Espectar",
+        "description": "Mira qualsevol sessio activa en directe. La llista s'actualitza cada 3 segons.",
+        "cta": "Veure"
+      }
+    },
+    "tournament": {
+      "waitingLine": "🏟️ {{playerCount}}/{{maxPlayers}} en espera{{suffix}}",
+      "inProgressSuffix": "· torneig en curs",
+      "roomStatus": "Sala d'espera · {{playerCount}}/{{maxPlayers}}{{suffix}}",
+      "startedSuffix": "· el torneig ja ha començat",
+      "playerFallback": "Jugador {{clientId}}",
+      "youMarker": "← tu",
+      "botLabel": "Bot (CPU)",
+      "autofill": "emplenat automatic",
+      "needPlayersTitle": "Calen almenys 2 jugadors per començar",
+      "starting": "Iniciant…",
+      "waitingPlayers": "Esperant jugadors…",
+      "startWithBots": "Iniciar torneig ({{playerCount}} jugadors + {{botCount}} bots)",
+      "startPlayersOnly": "Iniciar torneig ({{playerCount}} jugadors)",
+      "errors": {
+        "alreadyStarted": "El torneig ja ha començat. Hi pots entrar com a espectador.",
+        "roomFull": "La sala es plena (maxim 8 jugadors).",
+        "notAuthenticated": "Has d'iniciar sessio per unir-t'hi.",
+        "notInRoom": "No ets dins de la sala.",
+        "notConnected": "Encara no hi ha connexio amb el servidor. Espera un moment."
+      }
+    },
+    "spectate": {
+      "loading": "Carregant sessions…",
+      "empty": "No hi ha sessions actives ara mateix. Torna-ho a comprovar aviat.",
+      "playerCount": "{{count}} jugadors",
+      "spectators": "👁 {{count}}",
+      "tournamentTag": "Torneig #{{tournamentId}}",
+      "modeLabels": {
+        "oneVsOne": "1v1",
+        "brawl": "Brawl",
+        "tournament": "Torneig"
+      }
+    }
+  },
+  "profile": {
+    "kicker": "Perfil",
+    "player": "Jugador",
+    "loading": {
+      "title": "Carregant perfil...",
+      "text": "Recuperant el teu ultim registre a l'arena."
+    },
+    "error": {
+      "title": "No s'ha pogut carregar el perfil"
+    },
+    "errors": {
+      "sessionExpired": "Sessio expirada. Inicia sessio de nou.",
+      "loadFailed": "No s'ha pogut carregar el perfil.",
+      "avatarSaveFailed": "No s'ha pogut desar l'avatar."
+    },
+    "actions": {
+      "retry": "Torna-ho a provar",
+      "backToLobby": "Tornar al lobby"
+    },
+    "header": {
+      "kicker": "Dades del lluitador",
+      "title": "Perfil del jugador"
+    },
+    "tabs": {
+      "aria": "Seccions del perfil",
+      "overview": "Resum",
+      "history": "Historial"
+    },
+    "stats": {
+      "experience": "Experiencia",
+      "xpProgress": "Progres d'XP {{percent}} percent",
+      "wins": "Victories",
+      "losses": "Derrotes",
+      "draws": "Empats",
+      "matches": "Partides",
+      "winRate": "Ratio de victoria",
+      "xp": "XP",
+      "level": "Nivell"
+    },
+    "sections": {
+      "globalStats": "Estadistiques globals",
+      "bestCharacter": "Millor personatge",
+      "characterStats": "Estadistiques per personatge"
+    },
+    "characters": {
+      "bestBadge": "Millor personatge",
+      "unknownCharacter": "Personatge"
+    },
+    "history": {
+      "kicker": "Arxiu de combats",
+      "recentMatches": "Partides recents",
+      "opponent": "Oponent",
+      "vs": "vs",
+      "unknownPlayer": "Jugador desconegut",
+      "you": "Tu",
+      "rival": "Rival",
+      "unknownDate": "Data desconeguda",
+      "gameTypes": {
+        "unknown": "Desconegut",
+        "brawler": "Brawler",
+        "tournament": "Torneig"
+      },
+      "results": {
+        "win": "VICTORIA",
+        "loss": "DERROTA",
+        "draw": "EMPAT",
+        "unknown": "DESCONEGUT"
+      }
+    },
+    "avatar": {
+      "alt": "Avatar de perfil",
+      "change": "Canviar avatar",
+      "identity": "Identitat del jugador",
+      "choose": "Triar avatar",
+      "closeSelector": "Tancar selector d'avatar",
+      "selected": "Seleccionat",
+      "cancel": "Cancelar",
+      "saving": "Desant...",
+      "save": "Desar avatar",
+      "options": {
+        "logo": "Logo",
+        "miniLogo": "Mini logo"
+      }
+    },
+    "empty": {
+      "bestCharacterTitle": "Encara no hi ha millor personatge",
+      "bestCharacterText": "Juga partides per descobrir el teu millor personatge",
+      "characterStatsTitle": "Encara no hi ha estadistiques per personatge",
+      "characterStatsText": "Les noves partides amb seguiment per personatge apareixeran aqui.",
+      "matchHistoryTitle": "Encara no hi ha historial",
+      "matchHistoryText": "Juga partides contra persones per construir el teu historial"
+    },
+    "common": {
+      "unknown": "Desconegut",
+      "notAvailable": "n/d"
+    }
   },
   "legal": {
     "back": "Enrere",

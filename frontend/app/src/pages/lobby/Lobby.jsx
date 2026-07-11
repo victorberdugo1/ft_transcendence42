@@ -1,3 +1,5 @@
+import LanguageSelector from "@src/components/LanguageSelector.jsx";
+import { useTranslation } from "react-i18next";
 import logoImage from "../../../assets/logo.png";
 
 // ── Lobby ──────────────────────────────────────────────────────────────────────
@@ -6,45 +8,46 @@ import logoImage from "../../../assets/logo.png";
 // so this component just fires it directly without duplicating that logic.
 
 export default function Lobby({ user, onPlay, onProfile, onManual, onLogout }) {
+  const { t } = useTranslation();
   const playerName = user.username || user.email || "player";
 
   const menuItems = [
     {
       className: "lobby-tile-play",
-      label:     "Fight",
-      kicker:    "Smash",
+      label:     t("lobby.menu.fight.label"),
+      kicker:    t("lobby.menu.fight.kicker"),
       action:    onPlay,
       disabled:  false,
     },
     {
       className: "lobby-tile-profile",
-      label:     "Profile",
-      kicker:    "Fighter",
+      label:     t("lobby.menu.profile.label"),
+      kicker:    t("lobby.menu.profile.kicker"),
       action:    onProfile,
       disabled:  false,
     },
     {
       className: "lobby-tile-achievements",
-      label:     "Achievements",
-      kicker:    "Rewards",
+      label:     t("lobby.menu.achievements.label"),
+      kicker:    t("lobby.menu.achievements.kicker"),
       disabled:  true,
     },
     {
       className: "lobby-tile-chat",
-      label:     "Chat",
-      kicker:    "Social",
+      label:     t("lobby.menu.chat.label"),
+      kicker:    t("lobby.menu.chat.kicker"),
       disabled:  true,
     },
     {
       className: "lobby-tile-friends",
-      label:     "Friends",
-      kicker:    "Crew",
+      label:     t("lobby.menu.friends.label"),
+      kicker:    t("lobby.menu.friends.kicker"),
       disabled:  true,
     },
     {
       className: "lobby-tile-manual",
-      label:     "Manual",
-      kicker:    "Codex",
+      label:     t("lobby.menu.manual.label"),
+      kicker:    t("lobby.menu.manual.kicker"),
       action:    onManual,
       disabled:  false,
     },
@@ -52,15 +55,18 @@ export default function Lobby({ user, onPlay, onProfile, onManual, onLogout }) {
 
   return (
     <div className="lobby-page">
-      <main className="lobby-command-center" aria-label="Main hub">
+      <main className="lobby-command-center" aria-label={t("lobby.a11y.mainHub")}>
         <header className="lobby-topbar">
           <div className="lobby-title-lockup">
             <span className="lobby-title-mark">Enuma</span>
             <strong>Fighter</strong>
           </div>
-          <div className="lobby-player-chip">
-            <span className="lobby-player-status">Ready</span>
-            <strong>{playerName}</strong>
+          <div className="lobby-topbar-right">
+            <LanguageSelector variant="manual" compact />
+            <div className="lobby-player-chip">
+              <span className="lobby-player-status">{t("lobby.status.ready")}</span>
+              <strong>{playerName}</strong>
+            </div>
           </div>
         </header>
 
@@ -80,7 +86,7 @@ export default function Lobby({ user, onPlay, onProfile, onManual, onLogout }) {
             >
               <span className="lobby-tile-kicker">{item.kicker}</span>
               <span className="lobby-tile-label">{item.label}</span>
-              {item.disabled ? <span className="lobby-tile-lock">Soon</span> : null}
+              {item.disabled ? <span className="lobby-tile-lock">{t("lobby.soon")}</span> : null}
             </button>
           ))}
 
@@ -89,20 +95,20 @@ export default function Lobby({ user, onPlay, onProfile, onManual, onLogout }) {
             type="button"
             className="lobby-tile lobby-tile-logout"
             onClick={onLogout}
-            aria-label={`Log out ${playerName}`}
+            aria-label={t("lobby.logoutAria", { playerName })}
           >
-            <span>Logout</span>
+            <span>{t("lobby.logout")}</span>
           </button>
 
-          <div className="lobby-logo-core" aria-label="Enuma Fighter logo">
+          <div className="lobby-logo-core" aria-label={t("lobby.a11y.logo")}>
             <span className="lobby-logo-flare" aria-hidden="true" />
             <img src={logoImage} alt="" className="lobby-logo-image" />
           </div>
         </section>
 
         <footer className="lobby-footer-strip">
-          <span>Worldwide Arena</span>
-          <strong>Season 01</strong>
+          <span>{t("lobby.footer.arena")}</span>
+          <strong>{t("lobby.footer.season")}</strong>
         </footer>
       </main>
     </div>

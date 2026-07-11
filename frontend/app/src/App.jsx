@@ -56,6 +56,14 @@ function teardownGameRuntimeForAuth() {
   const gameScript = document.querySelector('script[src="/game.js"]');
   if (gameScript) gameScript.remove();
 
+  // Defensive reset in case a previous runtime assigned DOM key handlers.
+  window.onkeydown = null;
+  window.onkeyup = null;
+  window.onkeypress = null;
+  document.onkeydown = null;
+  document.onkeyup = null;
+  document.onkeypress = null;
+
   // If a focus trap or stale element survived outside React, drop focus now.
   if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
 }
@@ -155,6 +163,13 @@ export default function App() {
     // Reconnect WS so the old authenticated socket is closed and replaced
     // with an unauthenticated one. Without this the server keeps the slot open.
     if (typeof window.reconnectWS === "function") window.reconnectWS();
+
+    // Some stale capture listeners from previous game runtimes can survive
+    // a SPA-only transition. A programmatic reload guarantees a clean keyboard
+    // state (same effect users report when pressing F5 manually).
+    window._programmaticReload = true;
+    window._playerChoseToLeave = true;
+    window.location.reload();
   }
 
   const handleEnterGame = useCallback((mode, opts = {}) => {

@@ -3,9 +3,10 @@ import { initReactI18next } from "react-i18next";
 import ca from "./locales/ca.json";
 import en from "./locales/en.json";
 import es from "./locales/es.json";
+import ru from "./locales/ru.json";
 
 const DEFAULT_LANGUAGE = "es";
-const SUPPORTED = ["ca", "es", "en"];
+const SUPPORTED = ["ca", "es", "en", "ru"];
 
 function detectLanguage() {
   try {
@@ -19,6 +20,7 @@ function detectLanguage() {
   if (browserLang.startsWith("ca")) return "ca";
   if (browserLang.startsWith("en")) return "en";
   if (browserLang.startsWith("es")) return "es";
+  if (browserLang.startsWith("ru")) return "ru";
   return DEFAULT_LANGUAGE;
 }
 
@@ -27,6 +29,7 @@ i18n.use(initReactI18next).init({
     ca: { translation: ca },
     es: { translation: es },
     en: { translation: en },
+    ru: { translation: ru },
   },
   lng: detectLanguage(),
   fallbackLng: DEFAULT_LANGUAGE,

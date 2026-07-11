@@ -9,20 +9,111 @@
   margin-bottom: 0.5rem;
 }
 
+.fight-lobby-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 0.5rem;
+}
+
+.fight-lobby-toolbar-start,
+.fight-lobby-toolbar-end {
+  display: flex;
+  align-items: center;
+}
+
+.fight-lobby-toolbar-end {
+  margin-left: auto;
+}
+
+.fight-lobby-back-spacer {
+  width: 112px;
+  height: 42px;
+}
+
 .fight-lobby-back-button {
-  justify-self: start;
+  min-height: 42px;
   padding: 10px 16px;
   border-radius: 999px;
   border: 1px solid rgba(215, 194, 154, 0.35);
   background: transparent;
   color: #d7c29a;
   cursor: pointer;
-  transition: background 0.15s ease, border-color 0.15s ease;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease;
 }
 
 .fight-lobby-back-button:hover {
   background: rgba(215, 194, 154, 0.1);
   border-color: rgba(215, 194, 154, 0.6);
+}
+
+.fight-lobby-overlay .fight-lobby-toolbar-end .langsel-auth .langsel-trigger {
+  min-width: 104px;
+  border-radius: 0;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-left: 5px solid #ffdf32;
+  background: rgba(0, 0, 0, 0.42);
+  color: #fffaf2;
+  font-family: "Arial Black", Impact, sans-serif;
+  letter-spacing: 0.04em;
+  clip-path: polygon(12px 0, 100% 0, calc(100% - 12px) 100%, 0 100%);
+}
+
+.fight-lobby-overlay
+  .fight-lobby-toolbar-end
+  .langsel-auth
+  .langsel-trigger:hover,
+.fight-lobby-overlay
+  .fight-lobby-toolbar-end
+  .langsel-auth
+  .langsel-trigger:focus-visible {
+  border-color: rgba(255, 255, 255, 0.28);
+  background: rgba(255, 223, 50, 0.16);
+}
+
+.fight-lobby-overlay .fight-lobby-toolbar-end .langsel-auth .langsel-arrow,
+.fight-lobby-overlay .fight-lobby-toolbar-end .langsel-auth .langsel-check {
+  color: #ffe17a;
+}
+
+.fight-lobby-overlay .fight-lobby-toolbar-end .langsel-auth .langsel-menu {
+  border-radius: 0;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(8, 12, 20, 0.98);
+  box-shadow: 0 18px 36px rgba(0, 0, 0, 0.36);
+}
+
+.fight-lobby-overlay .fight-lobby-toolbar-end .langsel-auth .langsel-option {
+  border-radius: 0;
+  color: #fffaf2;
+  font-family: "Arial Black", Impact, sans-serif;
+  letter-spacing: 0.04em;
+}
+
+.fight-lobby-overlay
+  .fight-lobby-toolbar-end
+  .langsel-auth
+  .langsel-option:hover,
+.fight-lobby-overlay
+  .fight-lobby-toolbar-end
+  .langsel-auth
+  .langsel-option:focus-visible {
+  background: rgba(255, 223, 50, 0.12);
+}
+
+.fight-lobby-overlay
+  .fight-lobby-toolbar-end
+  .langsel-auth
+  .langsel-option-active {
+  background: rgba(255, 223, 50, 0.18);
+}
+
+.fight-lobby-back-button:disabled {
+  opacity: 0.6;
+  cursor: wait;
 }
 
 .lobby-card {
@@ -130,7 +221,9 @@
   color: #cfdae5;
   cursor: pointer;
   font-size: 0.82rem;
-  transition: background 0.15s, border-color 0.15s;
+  transition:
+    background 0.15s,
+    border-color 0.15s;
 }
 
 .lobby-mode-tab:hover {
@@ -186,7 +279,9 @@
   color: #cfdae5;
   cursor: pointer;
   font-size: 0.75rem;
-  transition: background 0.12s, border-color 0.12s;
+  transition:
+    background 0.12s,
+    border-color 0.12s;
 }
 
 .lobby-char-btn img {
@@ -236,7 +331,10 @@
   cursor: pointer;
   font-size: 0.82rem;
   letter-spacing: 0.04em;
-  transition: background 0.12s, border-color 0.12s, color 0.12s;
+  transition:
+    background 0.12s,
+    border-color 0.12s,
+    color 0.12s;
   text-align: center;
 }
 
@@ -266,6 +364,32 @@
   border-radius: 12px;
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(236, 213, 175, 0.12);
+}
+
+@media (max-width: 720px) {
+  .fight-lobby-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    margin-bottom: 1rem;
+  }
+
+  .fight-lobby-toolbar-start,
+  .fight-lobby-toolbar-end {
+    width: 100%;
+  }
+
+  .fight-lobby-toolbar-end {
+    margin-left: 0;
+  }
+
+  .fight-lobby-back-spacer {
+    display: none;
+  }
+
+  .fight-lobby-back-button {
+    width: 100%;
+    justify-content: center;
+  }
 }
 
 .lobby-session-info {
@@ -413,7 +537,6 @@
   }
 }
 
-
 /* ── In-game toolbar ─────────────────────────────────────────────────────── */
 
 .game-toolbar {
@@ -459,7 +582,9 @@
   font-size: 0.85rem;
   white-space: nowrap;
   backdrop-filter: blur(4px);
-  transition: background 0.15s, border-color 0.15s;
+  transition:
+    background 0.15s,
+    border-color 0.15s;
 }
 
 .logout-button:hover:not(:disabled) {

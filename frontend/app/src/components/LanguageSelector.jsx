@@ -6,6 +6,7 @@ const LANGUAGE_OPTIONS = [
   { code: "ca", flag: "🇦🇩" },
   { code: "es", flag: "🇪🇸" },
   { code: "en", flag: "🇬🇧" },
+  { code: "ru", flag: "🇷🇺" },
 ];
 
 export default function LanguageSelector({ variant = "manual", compact = false }) {
@@ -40,6 +41,11 @@ export default function LanguageSelector({ variant = "manual", compact = false }
   }, [isOpen]);
 
   function handleLanguageSelect(languageCode) {
+    const hasResources = !!i18n.getResourceBundle(languageCode, "translation");
+    if (!hasResources) {
+      setIsOpen(false);
+      return;
+    }
     i18n.changeLanguage(languageCode);
     setIsOpen(false);
   }

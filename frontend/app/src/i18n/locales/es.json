@@ -38,7 +38,8 @@
     "label": "Idioma",
     "ca": "Catala",
     "es": "Espanol",
-    "en": "English"
+    "en": "English",
+    "ru": "Русский"
   },
   "manual": {
     "backToLobby": "Volver al lobby",
@@ -226,6 +227,234 @@
       }
     },
     "footer": "Enuma Fighter · Manual operativo rev 2.0"
+  },
+  "lobby": {
+    "a11y": {
+      "mainHub": "Hub principal",
+      "logo": "Logo de Enuma Fighter"
+    },
+    "status": {
+      "ready": "Listo"
+    },
+    "soon": "Proximamente",
+    "logout": "Cerrar sesion",
+    "logoutAria": "Cerrar sesion de {{playerName}}",
+    "footer": {
+      "arena": "Arena global",
+      "season": "Temporada 01"
+    },
+    "menu": {
+      "fight": {
+        "label": "Fight",
+        "kicker": "Smash"
+      },
+      "profile": {
+        "label": "Perfil",
+        "kicker": "Fighter"
+      },
+      "achievements": {
+        "label": "Logros",
+        "kicker": "Rewards"
+      },
+      "chat": {
+        "label": "Chat",
+        "kicker": "Social"
+      },
+      "friends": {
+        "label": "Amigos",
+        "kicker": "Crew"
+      },
+      "manual": {
+        "label": "Manual",
+        "kicker": "Codex"
+      }
+    }
+  },
+  "fight": {
+    "header": {
+      "title": "Fight Lobby"
+    },
+    "actions": {
+      "back": "← Volver",
+      "logout": "Cerrar sesion"
+    },
+    "legal": {
+      "privacy": "Politica de privacidad",
+      "terms": "Terminos del servicio"
+    },
+    "status": {
+      "waiting": "Esperando…",
+      "availableIn": "Disponible en {{seconds}} s…",
+      "serverRelease": "⏳ Esperando a que el servidor libere tu partida anterior…"
+    },
+    "userCard": {
+      "defaultInitials": "J",
+      "playerFallback": "Jugador",
+      "avatarAlt": "Avatar de {{playerName}}",
+      "stats": {
+        "winsShort": "V",
+        "lossesShort": "D",
+        "levelShort": "Nv"
+      }
+    },
+    "modes": {
+      "versus": {
+        "tab": "Versus",
+        "description": "Juega un 1v1 en directo contra otro jugador conectado. Cuando entres, el emparejamiento se cerrara automaticamente al llegar un segundo rival.",
+        "cta": "Buscar partida"
+      },
+      "training": {
+        "tab": "vs IA",
+        "description": "Entrena contra oponentes CPU. Elige entre 1 y 4 enemigos y selecciona el escenario.",
+        "enemiesLabel": "Enemigos · toca para activar",
+        "stageLabel": "Escenario",
+        "enemiesSelected": "{{count}} enemigos",
+        "cta": "Iniciar entrenamiento contra {{enemyLabel}}"
+      },
+      "tournament": {
+        "tab": "Torneo",
+        "description": "Entra en la sala de espera del torneo. Pueden unirse hasta 8 jugadores y cualquiera puede lanzar el bracket cuando este listo. Los eliminados siguen como espectadores.",
+        "joinCta": "Unirse a la sala del torneo",
+        "spectateCta": "Torneo en curso · pasar a espectador",
+        "leaveCta": "← Salir de la sala"
+      },
+      "spectate": {
+        "tab": "Espectar",
+        "description": "Mira cualquier sesion activa en directo. La lista se actualiza cada 3 segundos.",
+        "cta": "Ver"
+      }
+    },
+    "tournament": {
+      "waitingLine": "🏟️ {{playerCount}}/{{maxPlayers}} en espera{{suffix}}",
+      "inProgressSuffix": "· torneo en curso",
+      "roomStatus": "Sala de espera · {{playerCount}}/{{maxPlayers}}{{suffix}}",
+      "startedSuffix": "· el torneo ya ha empezado",
+      "playerFallback": "Jugador {{clientId}}",
+      "youMarker": "← tu",
+      "botLabel": "Bot (CPU)",
+      "autofill": "relleno automatico",
+      "needPlayersTitle": "Se necesitan al menos 2 jugadores para empezar",
+      "starting": "Iniciando…",
+      "waitingPlayers": "Esperando jugadores…",
+      "startWithBots": "Iniciar torneo ({{playerCount}} jugadores + {{botCount}} bots)",
+      "startPlayersOnly": "Iniciar torneo ({{playerCount}} jugadores)",
+      "errors": {
+        "alreadyStarted": "El torneo ya ha empezado. Puedes entrar como espectador.",
+        "roomFull": "La sala esta llena (maximo 8 jugadores).",
+        "notAuthenticated": "Debes iniciar sesion para unirte.",
+        "notInRoom": "No estas dentro de la sala.",
+        "notConnected": "Todavia no hay conexion con el servidor. Espera un momento."
+      }
+    },
+    "spectate": {
+      "loading": "Cargando sesiones…",
+      "empty": "No hay sesiones activas ahora mismo. Vuelve a comprobarlo en breve.",
+      "playerCount": "{{count}} jugadores",
+      "spectators": "👁 {{count}}",
+      "tournamentTag": "Torneo #{{tournamentId}}",
+      "modeLabels": {
+        "oneVsOne": "1v1",
+        "brawl": "Brawl",
+        "tournament": "Torneo"
+      }
+    }
+  },
+  "profile": {
+    "kicker": "Perfil",
+    "player": "Jugador",
+    "loading": {
+      "title": "Cargando perfil...",
+      "text": "Recuperando tu ultimo registro en la arena."
+    },
+    "error": {
+      "title": "No se pudo cargar el perfil"
+    },
+    "errors": {
+      "sessionExpired": "Sesion expirada. Inicia sesion de nuevo.",
+      "loadFailed": "No se pudo cargar el perfil.",
+      "avatarSaveFailed": "No se pudo guardar el avatar."
+    },
+    "actions": {
+      "retry": "Reintentar",
+      "backToLobby": "Volver al lobby"
+    },
+    "header": {
+      "kicker": "Datos del luchador",
+      "title": "Perfil del jugador"
+    },
+    "tabs": {
+      "aria": "Secciones del perfil",
+      "overview": "Resumen",
+      "history": "Historial"
+    },
+    "stats": {
+      "experience": "Experiencia",
+      "xpProgress": "Progreso de XP {{percent}} por ciento",
+      "wins": "Victorias",
+      "losses": "Derrotas",
+      "draws": "Empates",
+      "matches": "Partidas",
+      "winRate": "Ratio de victoria",
+      "xp": "XP",
+      "level": "Nivel"
+    },
+    "sections": {
+      "globalStats": "Estadisticas globales",
+      "bestCharacter": "Mejor personaje",
+      "characterStats": "Estadisticas por personaje"
+    },
+    "characters": {
+      "bestBadge": "Mejor personaje",
+      "unknownCharacter": "Personaje"
+    },
+    "history": {
+      "kicker": "Archivo de combates",
+      "recentMatches": "Partidas recientes",
+      "opponent": "Oponente",
+      "vs": "vs",
+      "unknownPlayer": "Jugador desconocido",
+      "you": "Tu",
+      "rival": "Rival",
+      "unknownDate": "Fecha desconocida",
+      "gameTypes": {
+        "unknown": "Desconocido",
+        "brawler": "Brawler",
+        "tournament": "Torneo"
+      },
+      "results": {
+        "win": "VICTORIA",
+        "loss": "DERROTA",
+        "draw": "EMPATE",
+        "unknown": "DESCONOCIDO"
+      }
+    },
+    "avatar": {
+      "alt": "Avatar de perfil",
+      "change": "Cambiar avatar",
+      "identity": "Identidad del jugador",
+      "choose": "Elegir avatar",
+      "closeSelector": "Cerrar selector de avatar",
+      "selected": "Seleccionado",
+      "cancel": "Cancelar",
+      "saving": "Guardando...",
+      "save": "Guardar avatar",
+      "options": {
+        "logo": "Logo",
+        "miniLogo": "Mini logo"
+      }
+    },
+    "empty": {
+      "bestCharacterTitle": "Aun no hay mejor personaje",
+      "bestCharacterText": "Juega partidas para descubrir tu mejor personaje",
+      "characterStatsTitle": "Aun no hay estadisticas por personaje",
+      "characterStatsText": "Las nuevas partidas con seguimiento por personaje apareceran aqui.",
+      "matchHistoryTitle": "Aun no hay historial",
+      "matchHistoryText": "Juega partidas contra personas para construir tu historial"
+    },
+    "common": {
+      "unknown": "Desconocido",
+      "notAvailable": "n/d"
+    }
   },
   "legal": {
     "back": "Volver",

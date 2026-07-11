@@ -1,4 +1,6 @@
+import LanguageSelector from "@src/components/LanguageSelector.jsx";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 
 const CHAR_PORTRAITS = {
   eld: "assets/eldwin_portrait.jpg",
@@ -10,10 +12,10 @@ const CHAR_NAMES = { eld: "Eldwin", hil: "Hilda", qui: "Quimbur", gab: "Gabriel"
 const CHAR_IDS   = ["eld", "hil", "qui", "gab"];
 const STAGE_NAMES = ["Karnamru", "Surya", "Vayusvara", "Daat"];
 const MODES = [
-  { id: "versus",     label: "Versus"     },
-  { id: "training",   label: "vs AI"      },
-  { id: "tournament", label: "Tournament" },
-  { id: "spectate",   label: "Spectate"   },
+  { id: "versus" },
+  { id: "training" },
+  { id: "tournament" },
+  { id: "spectate" },
 ];
 const DEFAULT_AVATAR_URL = "/avatars/default.png";
 
@@ -29,10 +31,11 @@ async function apiFetch(path, opts = {}) {
 // ── UserCard ───────────────────────────────────────────────────────────────────
 
 function UserCard({ user, stats, onLogout, logoutLoading }) {
+  const { t } = useTranslation();
   const hasCustomAvatar = !!user.avatarUrl && user.avatarUrl !== DEFAULT_AVATAR_URL;
   const [avatarSrc,    setAvatarSrc]    = useState(hasCustomAvatar ? user.avatarUrl : "");
   const [avatarFailed, setAvatarFailed] = useState(false);
-  const initials = (user.username || user.email || "P").trim().slice(0, 2).toUpperCase();
+  const initials = (user.username || user.email || t("fight.userCard.defaultInitials")).trim().slice(0, 2).toUpperCase();
 
   useEffect(() => {
     const next = user.avatarUrl && user.avatarUrl !== DEFAULT_AVATAR_URL ? user.avatarUrl : "";
@@ -46,7 +49,7 @@ function UserCard({ user, stats, onLogout, logoutLoading }) {
         <img
           className="lobby-avatar"
           src={avatarSrc}
-          alt={user.username || "Player avatar"}
+          alt={t("fight.userCard.avatarAlt", { playerName: user.username || user.email || t("fight.userCard.playerFallback") })}
           onError={() => setAvatarFailed(true)}
         />
       ) : (
@@ -59,9 +62,9 @@ function UserCard({ user, stats, onLogout, logoutLoading }) {
       </div>
       {stats && (
         <div className="lobby-mini-stats">
-          <span><b>{stats.wins   ?? 0}</b> W</span>
-          <span><b>{stats.losses ?? 0}</b> L</span>
-          <span>Lv <b>{stats.level ?? 1}</b></span>
+          <span><b>{stats.wins   ?? 0}</b> {t("fight.userCard.stats.winsShort")}</span>
+          <span><b>{stats.losses ?? 0}</b> {t("fight.userCard.stats.lossesShort")}</span>
+          <span>{t("fight.userCard.stats.levelShort")} <b>{stats.level ?? 1}</b></span>
           <span><b>{stats.xp ?? 0}</b> XP</span>
         </div>
       )}
@@ -71,7 +74,7 @@ function UserCard({ user, stats, onLogout, logoutLoading }) {
         onClick={onLogout}
         disabled={logoutLoading}
       >
-        {logoutLoading ? "…" : "Log out"}
+        {logoutLoading ? "…" : t("fight.actions.logout")}
       </button>
     </div>
   );
@@ -80,11 +83,11 @@ function UserCard({ user, stats, onLogout, logoutLoading }) {
 // ── Mode: Versus ───────────────────────────────────────────────────────────────
 
 function ModeVersus({ onEnterGame, matchCooldown = 0, graceActive = false }) {
+  const { t } = useTranslation();
   return (
     <div className="lobby-mode-body">
       <p className="lobby-mode-desc">
-        Play a live 1v1 against another connected player. Once you enter, you
-        will be matched automatically when a second player joins.
+        {t("fight.modes.versus.description")}
       </p>
       <button
         className="auth-submit lobby-play"
@@ -93,10 +96,10 @@ function ModeVersus({ onEnterGame, matchCooldown = 0, graceActive = false }) {
         disabled={matchCooldown > 0 || graceActive}
       >
         {graceActive
-          ? "Waiting\u2026"
+          ? t("fight.status.waiting")
           : matchCooldown > 0
-            ? `Available in ${matchCooldown}s\u2026`
-            : "Find match"}
+            ? t("fight.status.availableIn", { seconds: matchCooldown })
+            : t("fight.modes.versus.cta")}
       </button>
     </div>
   );
@@ -105,6 +108,7 @@ function ModeVersus({ onEnterGame, matchCooldown = 0, graceActive = false }) {
 // ── Mode: vs AI ────────────────────────────────────────────────────────────────
 
 function ModeAI({ onEnterGame, matchCooldown = 0, graceActive = false }) {
+  const { t } = useTranslation();
   const [selectedChars, setSelectedChars] = useState(["eld"]);
   const [stageId,       setStageId]       = useState(0);
 
@@ -120,15 +124,15 @@ function ModeAI({ onEnterGame, matchCooldown = 0, graceActive = false }) {
 
   const enemyLabel = selectedChars.length === 1
     ? CHAR_NAMES[selectedChars[0]]
-    : `${selectedChars.length} enemies`;
+    : t("fight.modes.training.enemiesSelected", { count: selectedChars.length });
 
   return (
     <div className="lobby-mode-body">
       <p className="lobby-mode-desc">
-        Train against CPU opponents. Select 1 to 4 enemies and a stage.
+        {t("fight.modes.training.description")}
       </p>
 
-      <p className="lobby-section-label">Enemies (tap to toggle)</p>
+      <p className="lobby-section-label">{t("fight.modes.training.enemiesLabel")}</p>
       <div className="lobby-char-pick">
         {CHAR_IDS.map(id => (
           <button
@@ -148,7 +152,7 @@ function ModeAI({ onEnterGame, matchCooldown = 0, graceActive = false }) {
         ))}
       </div>
 
-      <p className="lobby-section-label">Stage</p>
+      <p className="lobby-section-label">{t("fight.modes.training.stageLabel")}</p>
       <div className="lobby-stage-pick">
         {STAGE_NAMES.map((name, idx) => (
           <button
@@ -169,10 +173,10 @@ function ModeAI({ onEnterGame, matchCooldown = 0, graceActive = false }) {
         disabled={matchCooldown > 0 || graceActive}
       >
         {graceActive
-          ? "Waiting\u2026"
+          ? t("fight.status.waiting")
           : matchCooldown > 0
-            ? `Available in ${matchCooldown}s\u2026`
-            : `Start training vs ${enemyLabel}`}
+            ? t("fight.status.availableIn", { seconds: matchCooldown })
+            : t("fight.modes.training.cta", { enemyLabel })}
       </button>
     </div>
   );
@@ -181,6 +185,7 @@ function ModeAI({ onEnterGame, matchCooldown = 0, graceActive = false }) {
 // ── Mode: Tournament ───────────────────────────────────────────────────────────
 
 function ModeTournament({ onEnterGame, matchCooldown = 0, graceActive = false }) {
+  const { t } = useTranslation();
   const [room,      setRoom]      = useState(null);
   const [inRoom,    setInRoom]    = useState(false);
   const [roomError, setRoomError] = useState("");
@@ -258,10 +263,10 @@ function ModeTournament({ onEnterGame, matchCooldown = 0, graceActive = false })
     function onError(e) {
       const reason = e.detail?.reason ?? "Unknown error";
       const msgs = {
-        already_started:   "The tournament has already started. You can spectate it instead.",
-        room_full:         "The room is full (8 players max).",
-        not_authenticated: "You must be logged in to join.",
-        not_in_room:       "You are not in the room.",
+        already_started:   t("fight.tournament.errors.alreadyStarted"),
+        room_full:         t("fight.tournament.errors.roomFull"),
+        not_authenticated: t("fight.tournament.errors.notAuthenticated"),
+        not_in_room:       t("fight.tournament.errors.notInRoom"),
       };
       setRoomError(msgs[reason] ?? reason);
       setLaunching(false);
@@ -295,7 +300,7 @@ function ModeTournament({ onEnterGame, matchCooldown = 0, graceActive = false })
   function handleJoin() {
     setRoomError("");
     if (!window._ws || window._ws.readyState !== 1) {
-      setRoomError("Not connected to the server yet. Please wait a moment.");
+      setRoomError(t("fight.tournament.errors.notConnected"));
       return;
     }
     window._ws.send(JSON.stringify({ type: "tournament_join" }));
@@ -340,14 +345,15 @@ function ModeTournament({ onEnterGame, matchCooldown = 0, graceActive = false })
     return (
       <div className="lobby-mode-body">
         <p className="lobby-mode-desc">
-          Join the tournament waiting room. Up to 8 players can join. Once
-          ready, any player can launch the bracket. Eliminated players watch
-          as spectators.
+          {t("fight.modes.tournament.description")}
         </p>
         {room && (
           <p className="lobby-loading">
-            🏟️ {playerCount}/{maxPlayers} player{playerCount !== 1 ? "s" : ""} waiting
-            {room.started ? " — tournament in progress" : ""}
+            {t("fight.tournament.waitingLine", {
+              playerCount,
+              maxPlayers,
+              suffix: room.started ? ` ${t("fight.tournament.inProgressSuffix")}` : "",
+            })}
           </p>
         )}
         {roomError && <p className="auth-error">{roomError}</p>}
@@ -358,12 +364,12 @@ function ModeTournament({ onEnterGame, matchCooldown = 0, graceActive = false })
           disabled={matchCooldown > 0 || graceActive || room?.started}
         >
           {graceActive
-            ? "Waiting\u2026"
+            ? t("fight.status.waiting")
             : matchCooldown > 0
-              ? `Available in ${matchCooldown}s\u2026`
+              ? t("fight.status.availableIn", { seconds: matchCooldown })
               : room?.started
-                ? "Tournament in progress — Spectate instead"
-                : "Join tournament room"}
+                ? t("fight.modes.tournament.spectateCta")
+                : t("fight.modes.tournament.joinCta")}
         </button>
       </div>
     );
@@ -372,8 +378,11 @@ function ModeTournament({ onEnterGame, matchCooldown = 0, graceActive = false })
   return (
     <div className="lobby-mode-body">
       <p className="lobby-mode-desc">
-        Waiting room · {playerCount}/{maxPlayers} players
-        {room?.started ? " — Tournament has started!" : ""}
+        {t("fight.tournament.roomStatus", {
+          playerCount,
+          maxPlayers,
+          suffix: room?.started ? ` ${t("fight.tournament.startedSuffix")}` : "",
+        })}
       </p>
 
       <div className="lobby-sessions">
@@ -381,9 +390,9 @@ function ModeTournament({ onEnterGame, matchCooldown = 0, graceActive = false })
           <div key={p.clientId} className="lobby-session-row">
             <div className="lobby-session-info">
               <span className="lobby-session-badge">#{i + 1}</span>
-              <span className="lobby-session-players">{p.username ?? `Player ${p.clientId}`}</span>
+              <span className="lobby-session-players">{p.username ?? t("fight.tournament.playerFallback", { clientId: p.clientId })}</span>
               {p.clientId === (window._myClientId ?? -1) && (
-                <span className="lobby-session-specs">← you</span>
+                <span className="lobby-session-specs">{t("fight.tournament.youMarker")}</span>
               )}
             </div>
           </div>
@@ -394,11 +403,11 @@ function ModeTournament({ onEnterGame, matchCooldown = 0, graceActive = false })
               <span className="lobby-session-badge">#{playerCount + i + 1}</span>
               {willUseBots ? (
                 <>
-                  <span className="lobby-session-players" style={{ fontStyle: "italic" }}>Bot (CPU)</span>
-                  <span className="lobby-session-specs" style={{ fontSize: "0.72rem" }}>auto-fill</span>
+                  <span className="lobby-session-players" style={{ fontStyle: "italic" }}>{t("fight.tournament.botLabel")}</span>
+                  <span className="lobby-session-specs" style={{ fontSize: "0.72rem" }}>{t("fight.tournament.autofill")}</span>
                 </>
               ) : (
-                <span className="lobby-session-players" style={{ fontStyle: "italic" }}>Waiting…</span>
+                <span className="lobby-session-players" style={{ fontStyle: "italic" }}>{t("fight.status.waiting")}</span>
               )}
             </div>
           </div>
@@ -412,15 +421,15 @@ function ModeTournament({ onEnterGame, matchCooldown = 0, graceActive = false })
         type="button"
         onClick={handleLaunch}
         disabled={!canLaunch}
-        title={playerCount < 2 ? "Need at least 2 players to start" : undefined}
+        title={playerCount < 2 ? t("fight.tournament.needPlayersTitle") : undefined}
       >
         {launching
-          ? "Starting\u2026"
+          ? t("fight.tournament.starting")
           : playerCount < 2
-            ? "Waiting for players\u2026"
+            ? t("fight.tournament.waitingPlayers")
             : willUseBots
-              ? `Start tournament (${playerCount} players + ${maxPlayers - playerCount} bots)`
-              : `Start tournament (${playerCount} players)`}
+              ? t("fight.tournament.startWithBots", { playerCount, botCount: maxPlayers - playerCount })
+              : t("fight.tournament.startPlayersOnly", { playerCount })}
       </button>
 
       <button
@@ -429,7 +438,7 @@ function ModeTournament({ onEnterGame, matchCooldown = 0, graceActive = false })
         onClick={handleLeave}
         style={{ marginTop: "4px" }}
       >
-        ← Leave room
+        {t("fight.modes.tournament.leaveCta")}
       </button>
     </div>
   );
@@ -438,6 +447,7 @@ function ModeTournament({ onEnterGame, matchCooldown = 0, graceActive = false })
 // ── Mode: Spectator ────────────────────────────────────────────────────────────
 
 function ModeSpectator({ onEnterGame }) {
+  const { t } = useTranslation();
   const [sessions, setSessions] = useState(null);
   const [loading,  setLoading]  = useState(true);
   const [error,    setError]    = useState("");
@@ -461,20 +471,24 @@ function ModeSpectator({ onEnterGame }) {
     return () => clearInterval(intervalRef.current);
   }, []);
 
-  const modeLabel = { "1v1": "1v1", brawl: "Brawl", tournament: "Tournament" };
+  const modeLabel = {
+    "1v1": t("fight.spectate.modeLabels.oneVsOne"),
+    brawl: t("fight.spectate.modeLabels.brawl"),
+    tournament: t("fight.spectate.modeLabels.tournament"),
+  };
 
   return (
     <div className="lobby-mode-body">
       <p className="lobby-mode-desc">
-        Watch any active session live. The list refreshes every 3 seconds.
+        {t("fight.modes.spectate.description")}
       </p>
 
-      {loading && <p className="lobby-loading">Loading sessions…</p>}
+      {loading && <p className="lobby-loading">{t("fight.spectate.loading")}</p>}
       {error   && <p className="auth-error">{error}</p>}
 
       {!loading && sessions !== null && (
         sessions.length === 0 ? (
-          <p className="lobby-loading">No active sessions right now. Check back soon.</p>
+          <p className="lobby-loading">{t("fight.spectate.empty")}</p>
         ) : (
           <div className="lobby-sessions">
             {sessions.map(s => (
@@ -482,13 +496,13 @@ function ModeSpectator({ onEnterGame }) {
                 <div className="lobby-session-info">
                   <span className="lobby-session-badge">{modeLabel[s.mode] ?? s.mode}</span>
                   <span className="lobby-session-players">
-                    {s.playerIds.length} player{s.playerIds.length !== 1 ? "s" : ""}
+                    {t("fight.spectate.playerCount", { count: s.playerIds.length })}
                   </span>
                   {s.spectators > 0 && (
-                    <span className="lobby-session-specs">👁 {s.spectators}</span>
+                    <span className="lobby-session-specs">{t("fight.spectate.spectators", { count: s.spectators })}</span>
                   )}
                   {s.tournamentId && (
-                    <span className="lobby-session-specs">Tournament #{s.tournamentId}</span>
+                    <span className="lobby-session-specs">{t("fight.spectate.tournamentTag", { tournamentId: s.tournamentId })}</span>
                   )}
                 </div>
                 <button
@@ -496,7 +510,7 @@ function ModeSpectator({ onEnterGame }) {
                   type="button"
                   onClick={() => onEnterGame("spectate", { sessionId: s.sessionId })}
                 >
-                  Watch
+                  {t("fight.modes.spectate.cta")}
                 </button>
               </div>
             ))}
@@ -520,6 +534,7 @@ export default function FightLobby({
   graceActive = false,
   sssLocked   = false,
 }) {
+  const { t } = useTranslation();
   const [stats,         setStats]         = useState(null);
   const [logoutLoading, setLogoutLoading] = useState(false);
   const [activeMode,    setActiveMode]    = useState("versus");
@@ -667,23 +682,30 @@ export default function FightLobby({
     <div className="auth-page">
       <div className="auth-card lobby-card" style={{ position: "relative" }}>
 
-        {/* Back button — hidden while SSS pair is active (stage_confirmed
-             received, match_start not yet) or grace is pending */}
-        {!sssLocked && (
-          <button
-            type="button"
-            className="fight-lobby-back-button"
-            onClick={handleBack}
-            disabled={graceActive}
-            title={graceActive ? "Waiting for the server to release your previous match…" : undefined}
-            style={{ position: "absolute", top: "1rem", right: "1rem" }}
-          >
-            ← Go back
-          </button>
-        )}
+        <div className="fight-lobby-toolbar">
+          <div className="fight-lobby-toolbar-start">
+            {!sssLocked ? (
+              <button
+                type="button"
+                className="fight-lobby-back-button"
+                onClick={handleBack}
+                disabled={graceActive}
+                title={graceActive ? t("fight.status.serverRelease") : undefined}
+                style={{ position: "static", top: "auto", right: "auto" }}
+              >
+                {t("fight.actions.back")}
+              </button>
+            ) : (
+              <div className="fight-lobby-back-spacer" aria-hidden="true" />
+            )}
+          </div>
+          <div className="fight-lobby-toolbar-end">
+            <LanguageSelector variant="auth" compact />
+          </div>
+        </div>
 
         <p className="auth-eyebrow">ft_transcendence</p>
-        <h1 className="auth-title">Fight Lobby</h1>
+        <h1 className="auth-title">{t("fight.header.title")}</h1>
 
         <UserCard
           user={user}
@@ -701,7 +723,7 @@ export default function FightLobby({
               className={`lobby-mode-tab ${activeMode === m.id ? "lobby-mode-tab-active" : ""}`}
               onClick={() => { setActiveMode(m.id); setSessionError(""); }}
             >
-              {m.label}
+              {t(`fight.modes.${m.id}.tab`)}
             </button>
           ))}
         </div>
@@ -710,7 +732,7 @@ export default function FightLobby({
             releases the previous session (up to 5s after pressing Back) */}
         {graceActive && (
           <p className="auth-error" style={{ textAlign: "center", marginBottom: "0.5rem" }}>
-            ⏳ Waiting for the server to release your previous match…
+            {t("fight.status.serverRelease")}
           </p>
         )}
 
@@ -725,9 +747,9 @@ export default function FightLobby({
         {sessionError && <p className="auth-error">{sessionError}</p>}
 
         <div className="legal-footer">
-          <button type="button" className="auth-link" onClick={onPrivacy}>Privacy Policy</button>
+          <button type="button" className="auth-link" onClick={onPrivacy}>{t("fight.legal.privacy")}</button>
           <span className="legal-separator">|</span>
-          <button type="button" className="auth-link" onClick={onTerms}>Terms of Service</button>
+          <button type="button" className="auth-link" onClick={onTerms}>{t("fight.legal.terms")}</button>
         </div>
 
       </div>

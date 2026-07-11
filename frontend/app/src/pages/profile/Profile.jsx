@@ -1,14 +1,22 @@
+import eldwinAvatar from "@src/assets/avatars/p00.png";
+import hildaAvatar from "@src/assets/avatars/p01.png";
+import quimburAvatar from "@src/assets/avatars/p02.png";
+import gabrielAvatar from "@src/assets/avatars/p03.png";
+import eldwinPortrait from "@src/assets/characters/eldwin_portrait.jpg";
+import gabrielPortrait from "@src/assets/characters/gabriel_portrait.jpg";
+import hildaPortrait from "@src/assets/characters/hilda_portrait.jpg";
+import quimburPortrait from "@src/assets/characters/quimbur_portrait.jpg";
+import LanguageSelector from "@src/components/LanguageSelector.jsx";
 import { useEffect, useMemo, useState } from "react";
-import eldwinPortrait from "../../assets/characters/eldwin_portrait.jpg";
-import gabrielPortrait from "../../assets/characters/gabriel_portrait.jpg";
-import hildaPortrait from "../../assets/characters/hilda_portrait.jpg";
-import quimburPortrait from "../../assets/characters/quimbur_portrait.jpg";
-import eldwinAvatar from "../../assets/avatars/p00.png";
-import hildaAvatar from "../../assets/avatars/p01.png";
-import quimburAvatar from "../../assets/avatars/p02.png";
-import gabrielAvatar from "../../assets/avatars/p03.png";
+import { useTranslation } from "react-i18next";
 import logo from "../../../assets/logo.png";
 import logomini from "../../../assets/logomini.png";
+
+const PROFILE_ERROR_KEYS = {
+  sessionExpired: "profile.errors.sessionExpired",
+  loadFailed: "profile.errors.loadFailed",
+  avatarSaveFailed: "profile.errors.avatarSaveFailed",
+};
 
 function safeNumber(value, fallback = 0) {
   const n = Number(value);
@@ -20,34 +28,26 @@ function formatPercent(value) {
   return `${Number(n.toFixed(2))}%`;
 }
 
-const MATCH_DATE_FORMATTER = new Intl.DateTimeFormat("en-GB", {
-  day: "2-digit",
-  month: "short",
-  year: "numeric",
-  hour: "2-digit",
-  minute: "2-digit",
-});
-
-function formatDate(value) {
-  if (!value) return "Unknown date";
+function formatDate(value, formatter, t) {
+  if (!value) return t("profile.history.unknownDate");
   const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? "Unknown date" : MATCH_DATE_FORMATTER.format(date);
+  return Number.isNaN(date.getTime()) ? t("profile.history.unknownDate") : formatter.format(date);
 }
 
-function formatGameType(value) {
+function formatGameType(value, t) {
   const type = String(value || "").trim().toLowerCase();
-  if (!type) return "Unknown";
-  if (type === "brawler") return "Brawler";
-  if (type === "tournament") return "Tournament";
+  if (!type) return t("profile.history.gameTypes.unknown");
+  if (type === "brawler") return t("profile.history.gameTypes.brawler");
+  if (type === "tournament") return t("profile.history.gameTypes.tournament");
   return type.charAt(0).toUpperCase() + type.slice(1);
 }
 
-function formatResult(value) {
+function formatResult(value, t) {
   const result = String(value || "").trim().toLowerCase();
-  if (result === "win") return "WIN";
-  if (result === "loss") return "LOSS";
-  if (result === "draw") return "DRAW";
-  return "UNKNOWN";
+  if (result === "win") return t("profile.history.results.win");
+  if (result === "loss") return t("profile.history.results.loss");
+  if (result === "draw") return t("profile.history.results.draw");
+  return t("profile.history.results.unknown");
 }
 
 function initials(value) {
@@ -69,17 +69,18 @@ const CHARACTER_AVATARS = {
   qui: quimburAvatar,
   gab: gabrielAvatar,
 };
-const AVATAR_OPTIONS = [
-  ...Object.entries(CHARACTER_VISUALS).map(([charId, visual]) => ({
-    id: `character:${charId}`,
-    label: visual.name,
-    type: "character",
-    src: CHARACTER_AVATARS[charId],
-  })),
-  { id: "logo:main", label: "Logo", type: "logo", src: logo },
-  { id: "logo:mini", label: "Mini logo", type: "logo", src: logomini },
-];
-const AVATAR_OPTIONS_BY_ID = new Map(AVATAR_OPTIONS.map(option => [option.id, option]));
+function getAvatarOptions(t) {
+  return [
+    ...Object.entries(CHARACTER_VISUALS).map(([charId, visual]) => ({
+      id: `character:${charId}`,
+      label: visual.name,
+      type: "character",
+      src: CHARACTER_AVATARS[charId],
+    })),
+    { id: "logo:main", label: t("profile.avatar.options.logo"), type: "logo", src: logo },
+    { id: "logo:mini", label: t("profile.avatar.options.miniLogo"), type: "logo", src: logomini },
+  ];
+}
 
 function getCharacterId(character) {
   return String(character?.charId || "").trim().toLowerCase();
@@ -93,8 +94,8 @@ function getCharacterVisual(character) {
   return null;
 }
 
-function getAvatarVisual(avatarId) {
-  return AVATAR_OPTIONS_BY_ID.get(avatarId) ?? null;
+function getAvatarVisual(avatarId, optionsById) {
+  return optionsById.get(avatarId) ?? null;
 }
 
 function xpRequiredForLevel(level) {
@@ -117,7 +118,7 @@ function normalizeProfile(profile) {
   return {
     user: {
       id: profile?.user?.id ?? null,
-      username: profile?.user?.username || "Player",
+      username: profile?.user?.username || "",
       avatar: profile?.user?.avatar || null,
     },
     globalStats: {
@@ -135,7 +136,7 @@ function normalizeProfile(profile) {
   };
 }
 
-function Avatar({ src, label, className = "" }) {
+function Avatar({ src, label, className = "", t }) {
   const [failed, setFailed] = useState(false);
 
   useEffect(() => {
@@ -143,16 +144,16 @@ function Avatar({ src, label, className = "" }) {
   }, [src]);
 
   if (src && !failed) {
-    return <img className={`profile-avatar ${className}`} src={src} alt={label || "Profile avatar"} onError={() => setFailed(true)} />;
+    return <img className={`profile-avatar ${className}`} src={src} alt={label || t("profile.avatar.alt")} onError={() => setFailed(true)} />;
   }
   return (
-    <div className={`profile-avatar profile-avatar-fallback ${className}`} aria-label={label || "Profile avatar"}>
+    <div className={`profile-avatar profile-avatar-fallback ${className}`} aria-label={label || t("profile.avatar.alt")}>
       {initials(label)}
     </div>
   );
 }
 
-function AvatarPicker({ currentAvatar, selectedAvatar, saving, error, onSelect, onClose, onSave }) {
+function AvatarPicker({ currentAvatar, selectedAvatar, saving, error, avatarOptions, onSelect, onClose, onSave, t }) {
   const canSave = Boolean(selectedAvatar) && selectedAvatar !== currentAvatar && !saving;
 
   return (
@@ -162,14 +163,14 @@ function AvatarPicker({ currentAvatar, selectedAvatar, saving, error, onSelect, 
       <section className="profile-avatar-modal" role="dialog" aria-modal="true" aria-labelledby="profile-avatar-modal-title">
         <header className="profile-avatar-modal-header">
           <div>
-            <span className="profile-kicker">Player identity</span>
-            <h2 id="profile-avatar-modal-title">Choose avatar</h2>
+            <span className="profile-kicker">{t("profile.avatar.identity")}</span>
+            <h2 id="profile-avatar-modal-title">{t("profile.avatar.choose")}</h2>
           </div>
-          <button type="button" className="profile-avatar-close" onClick={onClose} disabled={saving} aria-label="Close avatar selector">X</button>
+          <button type="button" className="profile-avatar-close" onClick={onClose} disabled={saving} aria-label={t("profile.avatar.closeSelector")}>X</button>
         </header>
 
         <div className="profile-avatar-grid">
-          {AVATAR_OPTIONS.map(option => {
+          {avatarOptions.map(option => {
             const selected = option.id === selectedAvatar;
             return (
               <button
@@ -184,7 +185,7 @@ function AvatarPicker({ currentAvatar, selectedAvatar, saving, error, onSelect, 
                   <img className="profile-avatar-option-image" src={option.src} alt="" />
                 </span>
                 <span className="profile-avatar-option-label">{option.label}</span>
-                {selected ? <span className="profile-avatar-selected-badge">Selected</span> : null}
+                {selected ? <span className="profile-avatar-selected-badge">{t("profile.avatar.selected")}</span> : null}
               </button>
             );
           })}
@@ -193,9 +194,9 @@ function AvatarPicker({ currentAvatar, selectedAvatar, saving, error, onSelect, 
         {error ? <p className="profile-avatar-error" role="alert">{error}</p> : null}
 
         <div className="profile-avatar-actions">
-          <button type="button" className="profile-secondary-button" onClick={onClose} disabled={saving}>Cancel</button>
+          <button type="button" className="profile-secondary-button" onClick={onClose} disabled={saving}>{t("profile.avatar.cancel")}</button>
           <button type="button" className="profile-primary-button" onClick={onSave} disabled={!canSave}>
-            {saving ? "Saving..." : "Save avatar"}
+            {saving ? t("profile.avatar.saving") : t("profile.avatar.save")}
           </button>
         </div>
       </section>
@@ -203,10 +204,10 @@ function AvatarPicker({ currentAvatar, selectedAvatar, saving, error, onSelect, 
   );
 }
 
-function CharacterPreview({ character }) {
+function CharacterPreview({ character, t }) {
   const [failed, setFailed] = useState(false);
   const visual = getCharacterVisual(character);
-  const label = visual?.name || character?.name || character?.charId || "Character";
+  const label = visual?.name || character?.name || character?.charId || t("profile.characters.unknownCharacter");
   if (visual?.src && !failed) {
     return (
       <div className="profile-character-preview profile-character-portrait-card">
@@ -234,37 +235,37 @@ function StatTile({ label, value }) {
   );
 }
 
-function CharacterCard({ character, featured = false }) {
+function CharacterCard({ character, featured = false, t }) {
   const totalMatches = safeNumber(character?.totalMatches);
   const visual = getCharacterVisual(character);
-  const displayName = character?.name || visual?.name || "Unknown";
+  const displayName = character?.name || visual?.name || t("profile.common.unknown");
   return (
     <article className={featured ? "profile-character-card profile-character-card-featured" : "profile-character-card"}>
-      <CharacterPreview character={character} />
+      <CharacterPreview character={character} t={t} />
       <div className="profile-character-body">
         <div className="profile-character-heading">
           <div>
-            {featured ? <span className="profile-character-badge">Best character</span> : null}
+            {featured ? <span className="profile-character-badge">{t("profile.characters.bestBadge")}</span> : null}
             <h3>{displayName}</h3>
           </div>
-          <span>{character?.charId || "n/a"}</span>
+          <span>{character?.charId || t("profile.common.notAvailable")}</span>
         </div>
         <div className="profile-character-stats">
-          <StatTile label="Wins" value={safeNumber(character?.wins)} />
-          <StatTile label="Losses" value={safeNumber(character?.losses)} />
-          <StatTile label="Draws" value={safeNumber(character?.draws)} />
-          <StatTile label="Matches" value={totalMatches} />
-          <StatTile label="Win rate" value={formatPercent(character?.winRate)} />
+          <StatTile label={t("profile.stats.wins")} value={safeNumber(character?.wins)} />
+          <StatTile label={t("profile.stats.losses")} value={safeNumber(character?.losses)} />
+          <StatTile label={t("profile.stats.draws")} value={safeNumber(character?.draws)} />
+          <StatTile label={t("profile.stats.matches")} value={totalMatches} />
+          <StatTile label={t("profile.stats.winRate")} value={formatPercent(character?.winRate)} />
         </div>
       </div>
     </article>
   );
 }
 
-function HistoryFighter({ participant, label }) {
+function HistoryFighter({ participant, label, t }) {
   const charId = getCharacterId(participant);
   const avatar = CHARACTER_AVATARS[charId] ?? null;
-  const characterName = participant?.characterName || "Unknown";
+  const characterName = participant?.characterName || t("profile.common.unknown");
 
   return (
     <div className="profile-history-fighter">
@@ -285,30 +286,30 @@ function HistoryFighter({ participant, label }) {
   );
 }
 
-function MatchHistoryCard({ match }) {
+function MatchHistoryCard({ match, t, dateFormatter }) {
   const result = ["win", "loss", "draw"].includes(match?.result) ? match.result : "unknown";
   const score = match?.score?.raw || `${safeNumber(match?.score?.player)} - ${safeNumber(match?.score?.opponent)}`;
 
   return (
     <article className={`profile-history-card profile-history-card-${result}`}>
       <div className="profile-history-result">
-        <span>{formatResult(result)}</span>
+        <span>{formatResult(result, t)}</span>
         <strong>{score}</strong>
       </div>
 
       <div className="profile-history-matchup">
-        <span className="profile-history-opponent-label">Opponent</span>
-        <h3>vs {match?.opponent?.username || "Unknown player"}</h3>
+        <span className="profile-history-opponent-label">{t("profile.history.opponent")}</span>
+        <h3>{t("profile.history.vs")} {match?.opponent?.username || t("profile.history.unknownPlayer")}</h3>
         <div className="profile-history-fighters">
-          <HistoryFighter participant={match?.player} label="You" />
+          <HistoryFighter participant={match?.player} label={t("profile.history.you")} t={t} />
           <span className="profile-history-versus">VS</span>
-          <HistoryFighter participant={match?.opponentPlayer} label="Rival" />
+          <HistoryFighter participant={match?.opponentPlayer} label={t("profile.history.rival")} t={t} />
         </div>
       </div>
 
       <footer className="profile-history-meta">
-        <span>{formatGameType(match?.gameType)}</span>
-        <time dateTime={match?.playedAt || undefined}>{formatDate(match?.playedAt)}</time>
+        <span>{formatGameType(match?.gameType, t)}</span>
+        <time dateTime={match?.playedAt || undefined}>{formatDate(match?.playedAt, dateFormatter, t)}</time>
       </footer>
     </article>
   );
@@ -324,6 +325,7 @@ function EmptyState({ title, text }) {
 }
 
 export default function Profile({ onBack }) {
+  const { t, i18n } = useTranslation();
   const [status, setStatus] = useState("loading");
   const [activeTab, setActiveTab] = useState("overview");
   const [profile, setProfile] = useState(null);
@@ -341,7 +343,13 @@ export default function Profile({ onBack }) {
       setError("");
       try {
         const res = await fetch("/api/profile/me", { credentials: "include" });
-        if (!res.ok) throw new Error(res.status === 401 ? "Session expired. Please sign in again." : "Profile could not be loaded.");
+        if (!res.ok) {
+          throw new Error(
+            res.status === 401
+              ? PROFILE_ERROR_KEYS.sessionExpired
+              : PROFILE_ERROR_KEYS.loadFailed
+          );
+        }
         const data = await res.json();
         if (!cancelled) {
           setProfile(data);
@@ -349,7 +357,7 @@ export default function Profile({ onBack }) {
         }
       } catch (err) {
         if (!cancelled) {
-          setError(err.message || "Profile could not be loaded.");
+          setError(err.message || PROFILE_ERROR_KEYS.loadFailed);
           setStatus("error");
         }
       }
@@ -366,7 +374,20 @@ export default function Profile({ onBack }) {
   const level = safeNumber(stats.level, 1);
   const xp = safeNumber(stats.xp);
   const xpBar = useMemo(() => xpProgress(xp, level), [xp, level]);
-  const avatarVisual = getAvatarVisual(user.avatar);
+  const avatarOptions = useMemo(() => getAvatarOptions(t), [t]);
+  const avatarOptionsById = useMemo(() => new Map(avatarOptions.map(option => [option.id, option])), [avatarOptions]);
+  const avatarVisual = getAvatarVisual(user.avatar, avatarOptionsById);
+  const dateFormatter = useMemo(
+    () =>
+      new Intl.DateTimeFormat(i18n.resolvedLanguage || i18n.language || "en", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      }),
+    [i18n.language, i18n.resolvedLanguage]
+  );
 
   useEffect(() => {
     if (!avatarPickerOpen) return undefined;
@@ -378,7 +399,7 @@ export default function Profile({ onBack }) {
   }, [avatarPickerOpen, avatarSaving]);
 
   function openAvatarPicker() {
-    setSelectedAvatar(getAvatarVisual(user.avatar) ? user.avatar : null);
+    setSelectedAvatar(getAvatarVisual(user.avatar, avatarOptionsById) ? user.avatar : null);
     setAvatarError("");
     setAvatarPickerOpen(true);
   }
@@ -401,14 +422,14 @@ export default function Profile({ onBack }) {
         body: JSON.stringify({ avatar: selectedAvatar }),
       });
       const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data.error || "Avatar could not be saved.");
+      if (!res.ok) throw new Error(data.error || PROFILE_ERROR_KEYS.avatarSaveFailed);
       setProfile(current => current ? {
         ...current,
         user: { ...current.user, avatar: data.avatar },
       } : current);
       setAvatarPickerOpen(false);
     } catch (err) {
-      setAvatarError(err.message || "Avatar could not be saved.");
+      setAvatarError(err.message || PROFILE_ERROR_KEYS.avatarSaveFailed);
     } finally {
       setAvatarSaving(false);
     }
@@ -418,10 +439,10 @@ export default function Profile({ onBack }) {
     return (
       <main className="profile-page">
         <section className="profile-state-card">
-          <span className="profile-kicker">Profile</span>
-          <h1>Loading profile...</h1>
-          <p>Pulling your latest arena record.</p>
-          <button type="button" className="profile-secondary-button" onClick={onBack}>Back to lobby</button>
+          <span className="profile-kicker">{t("profile.kicker")}</span>
+          <h1>{t("profile.loading.title")}</h1>
+          <p>{t("profile.loading.text")}</p>
+          <button type="button" className="profile-secondary-button" onClick={onBack}>{t("profile.actions.backToLobby")}</button>
         </section>
       </main>
     );
@@ -431,12 +452,12 @@ export default function Profile({ onBack }) {
     return (
       <main className="profile-page">
         <section className="profile-state-card">
-          <span className="profile-kicker">Profile</span>
-          <h1>Could not load profile</h1>
-          <p>{error}</p>
+          <span className="profile-kicker">{t("profile.kicker")}</span>
+          <h1>{t("profile.error.title")}</h1>
+          <p>{error?.startsWith("profile.") ? t(error) : error}</p>
           <div className="profile-actions">
-            <button type="button" className="profile-primary-button" onClick={() => setReloadKey(k => k + 1)}>Retry</button>
-            <button type="button" className="profile-secondary-button" onClick={onBack}>Back to lobby</button>
+            <button type="button" className="profile-primary-button" onClick={() => setReloadKey(k => k + 1)}>{t("profile.actions.retry")}</button>
+            <button type="button" className="profile-secondary-button" onClick={onBack}>{t("profile.actions.backToLobby")}</button>
           </div>
         </section>
       </main>
@@ -448,13 +469,16 @@ export default function Profile({ onBack }) {
       <div className="profile-shell">
         <header className="profile-header">
           <div>
-            <span className="profile-kicker">Fighter data</span>
-            <h1>Player Profile</h1>
+            <span className="profile-kicker">{t("profile.header.kicker")}</span>
+            <h1>{t("profile.header.title")}</h1>
           </div>
-          <button type="button" className="profile-secondary-button" onClick={onBack}>Back to lobby</button>
+          <div className="profile-header-controls">
+            <LanguageSelector variant="manual" compact />
+            <button type="button" className="profile-secondary-button" onClick={onBack}>{t("profile.actions.backToLobby")}</button>
+          </div>
         </header>
 
-        <nav className="profile-tabs" role="tablist" aria-label="Profile sections">
+        <nav className="profile-tabs" role="tablist" aria-label={t("profile.tabs.aria")}>
           <button
             id="profile-overview-tab"
             type="button"
@@ -464,7 +488,7 @@ export default function Profile({ onBack }) {
             className={activeTab === "overview" ? "profile-tab profile-tab-active" : "profile-tab"}
             onClick={() => setActiveTab("overview")}
           >
-            Overview
+            {t("profile.tabs.overview")}
           </button>
           <button
             id="profile-history-tab"
@@ -475,32 +499,33 @@ export default function Profile({ onBack }) {
             className={activeTab === "history" ? "profile-tab profile-tab-active" : "profile-tab"}
             onClick={() => setActiveTab("history")}
           >
-            History
+            {t("profile.tabs.history")}
           </button>
         </nav>
 
         {activeTab === "overview" ? (
         <div className="profile-layout" id="profile-overview-panel" role="tabpanel" aria-labelledby="profile-overview-tab">
           <aside className="profile-card profile-user-card">
-            <button type="button" className="profile-avatar-button" onClick={openAvatarPicker} aria-label="Change avatar">
+            <button type="button" className="profile-avatar-button" onClick={openAvatarPicker} aria-label={t("profile.avatar.change")}>
               <Avatar
                 src={avatarVisual?.src ?? null}
-                label={user.username || "Player"}
+                label={user.username || t("profile.player")}
                 className={avatarVisual ? `profile-avatar-${avatarVisual.type}` : ""}
+                t={t}
               />
-              <span className="profile-avatar-edit-hint">Change avatar</span>
+              <span className="profile-avatar-edit-hint">{t("profile.avatar.change")}</span>
             </button>
             <div className="profile-user-copy">
-              <span>Player</span>
-              <h2>{user.username || "Unknown player"}</h2>
+              <span>{t("profile.player")}</span>
+              <h2>{user.username || t("profile.history.unknownPlayer")}</h2>
               <strong className="profile-level-pill">Lv. {level}</strong>
             </div>
             <div className="profile-xp-block">
               <div className="profile-xp-label">
-                <span>Experience</span>
+                <span>{t("profile.stats.experience")}</span>
                 <strong>{xp} / {xpBar.next}</strong>
               </div>
-              <div className="profile-xp-track" aria-label={`XP progress ${Math.round(xpBar.progress)} percent`}>
+              <div className="profile-xp-track" aria-label={t("profile.stats.xpProgress", { percent: Math.round(xpBar.progress) })}>
                 <span style={{ width: `${xpBar.progress}%` }} />
               </div>
               <div className="profile-xp-meta">
@@ -511,43 +536,45 @@ export default function Profile({ onBack }) {
           </aside>
 
           <section className="profile-main">
-            <section className="profile-card">
-              <div className="profile-section-heading">
-                <h2>Global stats</h2>
-              </div>
-              <div className="profile-stats-grid">
-                <StatTile label="Wins" value={safeNumber(stats.wins)} />
-                <StatTile label="Losses" value={safeNumber(stats.losses)} />
-                <StatTile label="Draws" value={safeNumber(stats.draws)} />
-                <StatTile label="Matches" value={safeNumber(stats.totalMatches)} />
-                <StatTile label="Win rate" value={formatPercent(stats.winRate)} />
-                <StatTile label="XP" value={xp} />
-                <StatTile label="Level" value={level} />
-              </div>
-            </section>
+            <section className="profile-card profile-overview-surface">
+              <section className="profile-overview-block">
+                <div className="profile-section-heading">
+                  <h2>{t("profile.sections.globalStats")}</h2>
+                </div>
+                <div className="profile-stats-grid">
+                  <StatTile label={t("profile.stats.wins")} value={safeNumber(stats.wins)} />
+                  <StatTile label={t("profile.stats.losses")} value={safeNumber(stats.losses)} />
+                  <StatTile label={t("profile.stats.draws")} value={safeNumber(stats.draws)} />
+                  <StatTile label={t("profile.stats.matches")} value={safeNumber(stats.totalMatches)} />
+                  <StatTile label={t("profile.stats.winRate")} value={formatPercent(stats.winRate)} />
+                  <StatTile label={t("profile.stats.xp")} value={xp} />
+                  <StatTile label={t("profile.stats.level")} value={level} />
+                </div>
+              </section>
 
-            <section className="profile-card">
-              <div className="profile-section-heading">
-                <h2>Best character</h2>
-              </div>
-              {safeProfile.bestCharacter
-                ? <CharacterCard character={safeProfile.bestCharacter} featured />
-                : <EmptyState title="No best character yet" text="Play matches to discover your best character" />}
-            </section>
+              <section className="profile-overview-block">
+                <div className="profile-section-heading">
+                  <h2>{t("profile.sections.bestCharacter")}</h2>
+                </div>
+                {safeProfile.bestCharacter
+                  ? <CharacterCard character={safeProfile.bestCharacter} featured t={t} />
+                  : <EmptyState title={t("profile.empty.bestCharacterTitle")} text={t("profile.empty.bestCharacterText")} />}
+              </section>
 
-            <section className="profile-card">
+              <section className="profile-overview-block">
               <div className="profile-section-heading">
-                <h2>Character stats</h2>
+                <h2>{t("profile.sections.characterStats")}</h2>
               </div>
               {characters.length ? (
                 <div className="profile-character-grid">
                   {characters.map((character) => (
-                    <CharacterCard key={character.charId || character.name} character={character} />
+                    <CharacterCard key={character.charId || character.name} character={character} t={t} />
                   ))}
                 </div>
               ) : (
-                <EmptyState title="No character stats yet" text="New matches with character tracking will appear here." />
+                <EmptyState title={t("profile.empty.characterStatsTitle")} text={t("profile.empty.characterStatsText")} />
               )}
+              </section>
             </section>
           </section>
         </div>
@@ -555,18 +582,18 @@ export default function Profile({ onBack }) {
           <section className="profile-history-panel" id="profile-history-panel" role="tabpanel" aria-labelledby="profile-history-tab">
             <header className="profile-history-heading">
               <div>
-                <span className="profile-kicker">Match archive</span>
-                <h2>Recent matches</h2>
+                <span className="profile-kicker">{t("profile.history.kicker")}</span>
+                <h2>{t("profile.history.recentMatches")}</h2>
               </div>
               <strong>{matchHistory.length} / 20</strong>
             </header>
 
             {matchHistory.length ? (
               <div className="profile-history-list">
-                {matchHistory.map(match => <MatchHistoryCard key={match.id} match={match} />)}
+                {matchHistory.map(match => <MatchHistoryCard key={match.id} match={match} t={t} dateFormatter={dateFormatter} />)}
               </div>
             ) : (
-              <EmptyState title="No match history yet" text="Play human matches to build your history" />
+              <EmptyState title={t("profile.empty.matchHistoryTitle")} text={t("profile.empty.matchHistoryText")} />
             )}
           </section>
         )}
@@ -577,13 +604,15 @@ export default function Profile({ onBack }) {
           currentAvatar={user.avatar}
           selectedAvatar={selectedAvatar}
           saving={avatarSaving}
-          error={avatarError}
+          error={avatarError?.startsWith("profile.") ? t(avatarError) : avatarError}
+          avatarOptions={avatarOptions}
           onSelect={avatarId => {
             setSelectedAvatar(avatarId);
             setAvatarError("");
           }}
           onClose={closeAvatarPicker}
           onSave={saveAvatar}
+          t={t}
         />
       ) : null}
     </main>
