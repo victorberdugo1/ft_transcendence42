@@ -1,5 +1,3 @@
-@import url("https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Orbitron:wght@600;700;800&display=swap");
-
 .social-page {
   --social-bg: #060910;
   --social-panel: rgba(11, 16, 27, 0.84);
@@ -133,20 +131,12 @@
   z-index: 3;
 }
 
-.social-header-actions .langsel-manual {
-  border: 0;
-  background: transparent;
-  backdrop-filter: none;
-}
-
 .social-header-actions .langsel-manual .langsel-menu {
   top: -6px;
   right: calc(100% + 10px);
   z-index: 24;
 }
 
-.social-header-actions .langsel-manual .langsel-trigger,
-.social-back,
 .social-tab,
 .social-link-button,
 .social-action-primary,
@@ -156,8 +146,6 @@
   font: inherit;
 }
 
-.social-header-actions .langsel-manual .langsel-trigger,
-.social-back,
 .social-tab,
 .social-link-button,
 .social-action-primary,
@@ -181,10 +169,6 @@
     box-shadow 180ms ease;
 }
 
-.social-header-actions .langsel-manual .langsel-trigger:hover,
-.social-header-actions .langsel-manual .langsel-trigger:focus-visible,
-.social-back:hover,
-.social-back:focus-visible,
 .social-tab:hover,
 .social-tab:focus-visible,
 .social-link-button:hover,
@@ -198,36 +182,6 @@
   background: rgba(96, 219, 255, 0.12);
   box-shadow: 0 16px 30px rgba(0, 0, 0, 0.24);
   outline: none;
-}
-
-.social-header-actions .langsel-manual .langsel-arrow,
-.social-header-actions .langsel-manual .langsel-check {
-  color: var(--social-cyan);
-}
-
-.social-header-actions .langsel-manual .langsel-menu {
-  min-width: 220px;
-  padding: 10px;
-  border: 1px solid var(--social-line);
-  background:
-    linear-gradient(
-      145deg,
-      rgba(255, 255, 255, 0.08),
-      rgba(255, 255, 255, 0.02)
-    ),
-    rgba(8, 12, 20, 0.98);
-  clip-path: polygon(
-    10px 0,
-    100% 0,
-    100% calc(100% - 10px),
-    calc(100% - 10px) 100%,
-    0 100%,
-    0 10px
-  );
-}
-
-.social-header-actions .langsel-manual .langsel-option {
-  color: var(--social-text);
 }
 
 .social-summary {
@@ -759,7 +713,7 @@
 
   .social-header-actions .langsel,
   .social-header-actions .langsel-manual,
-  .social-back {
+  .social-header-actions .page-back-btn {
     width: 100%;
   }
 
