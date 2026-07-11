@@ -76,6 +76,32 @@ CREATE INDEX IF NOT EXISTS idx_messages_conversation ON messages(
     GREATEST(sender_id, receiver_id),
     sent_at
 );
+-- ─── Canales de chat ──────────────────────────────────────
+CREATE TABLE IF NOT EXISTS chat_channels (
+    id SERIAL PRIMARY KEY,
+    key VARCHAR(50) UNIQUE NOT NULL CHECK (key <> ''),
+    title VARCHAR(100) NOT NULL CHECK (title <> ''),
+    description TEXT,
+    is_readonly BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+CREATE TABLE IF NOT EXISTS channel_messages (
+    id SERIAL PRIMARY KEY,
+    channel_id INTEGER NOT NULL REFERENCES chat_channels(id) ON DELETE CASCADE,
+    sender_id INTEGER REFERENCES users(id) ON DELETE
+    SET NULL,
+        content TEXT NOT NULL CHECK (content <> ''),
+        sent_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_channel_messages_channel_time ON channel_messages(channel_id, sent_at DESC, id DESC);
+CREATE INDEX IF NOT EXISTS idx_channel_messages_sender ON channel_messages(sender_id);
+INSERT INTO chat_channels (key, title, description)
+VALUES (
+        'lobby',
+        'Lobby Global',
+        'Canal principal para el hub social del lobby'
+    ) ON CONFLICT (key) DO NOTHING;
 -- ─── Partidas ─────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS matches (
     id SERIAL PRIMARY KEY,
