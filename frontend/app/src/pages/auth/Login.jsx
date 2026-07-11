@@ -1,6 +1,6 @@
+import { apiFetchJson } from "@src/utils/http.js";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { apiFetchJson } from "@src/utils/http.js";
 
 function isValidEmail(email) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
