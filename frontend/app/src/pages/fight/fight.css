@@ -32,7 +32,7 @@
   height: 42px;
 }
 
-.fight-lobby-back-button {
+.fight-lobby-toolbar-start .page-back-btn {
   min-height: 42px;
   padding: 10px 16px;
   border-radius: 999px;
@@ -45,7 +45,7 @@
     border-color 0.15s ease;
 }
 
-.fight-lobby-back-button:hover {
+.fight-lobby-toolbar-start .page-back-btn:hover {
   background: rgba(215, 194, 154, 0.1);
   border-color: rgba(215, 194, 154, 0.6);
 }
@@ -111,7 +111,7 @@
   background: rgba(255, 223, 50, 0.18);
 }
 
-.fight-lobby-back-button:disabled {
+.fight-lobby-toolbar-start .page-back-btn:disabled {
   opacity: 0.6;
   cursor: wait;
 }
@@ -386,7 +386,7 @@
     display: none;
   }
 
-  .fight-lobby-back-button {
+  .fight-lobby-toolbar-start .page-back-btn {
     width: 100%;
     justify-content: center;
   }
