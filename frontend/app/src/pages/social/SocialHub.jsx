@@ -1,27 +1,10 @@
-import LanguageSelector from "@src/components/LanguageSelector.jsx";
-import PageBackButton from "@src/components/ui/PageBackButton.jsx";
+import PageHeader from "@src/components/ui/PageHeader.jsx";
+import { apiFetchJson } from "@src/utils/http.js";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import "./social.css";
 
 const POLL_MS = 5000;
-
-async function apiFetch(url, options = {}) {
-  const headers = options.body
-    ? { "Content-Type": "application/json", ...(options.headers || {}) }
-    : options.headers;
-
-  const response = await fetch(url, {
-    credentials: "include",
-    ...options,
-    headers,
-  });
-  const data = await response.json().catch(() => ({}));
-  if (!response.ok) {
-    throw new Error(data.error || "Request failed");
-  }
-  return data;
-}
 
 function formatDateTime(value, language) {
   if (!value) return "";
@@ -151,7 +134,7 @@ export default function SocialHub({ user, onBack, initialTab = "global" }) {
   const loadHub = useCallback(async ({ silent = false } = {}) => {
     if (!silent) setHubStatus("loading");
     try {
-      const data = await apiFetch("/api/chat/overview");
+      const data = await apiFetchJson("/api/chat/overview");
       setHub(data);
       setHubStatus("ready");
       setError("");
@@ -173,10 +156,10 @@ export default function SocialHub({ user, onBack, initialTab = "global" }) {
     if (!silent) setThreadStatus("loading");
     try {
       if (target.type === "channel") {
-        const data = await apiFetch(`/api/chat/channels/${target.key}/messages?limit=120`);
+        const data = await apiFetchJson(`/api/chat/channels/${target.key}/messages?limit=120`);
         setThreadMessages(Array.isArray(data.messages) ? data.messages : []);
       } else {
-        const data = await apiFetch(`/api/messages/${target.user.id}?limit=120`);
+        const data = await apiFetchJson(`/api/messages/${target.user.id}?limit=120`);
         const messages = Array.isArray(data.messages) ? data.messages : [];
         setThreadMessages(messages);
 
@@ -185,7 +168,7 @@ export default function SocialHub({ user, onBack, initialTab = "global" }) {
             (message) => Number(message.sender_id) === Number(target.user.id) && message.is_read === false
           );
           if (hasUnreadIncoming) {
-            await apiFetch(`/api/messages/${target.user.id}/read`, { method: "PUT" });
+            await apiFetchJson(`/api/messages/${target.user.id}/read`, { method: "PUT" });
             await loadHub({ silent: true });
           }
         }
@@ -281,7 +264,7 @@ export default function SocialHub({ user, onBack, initialTab = "global" }) {
     const timer = window.setTimeout(async () => {
       setSearchBusy(true);
       try {
-        const data = await apiFetch(`/api/chat/users?q=${encodeURIComponent(query)}`);
+        const data = await apiFetchJson(`/api/chat/users?q=${encodeURIComponent(query)}`);
         setSearchResults(Array.isArray(data.users) ? data.users : []);
       } catch (_) {
         setSearchResults([]);
@@ -327,12 +310,12 @@ export default function SocialHub({ user, onBack, initialTab = "global" }) {
     setSendBusy(true);
     try {
       if (selection.type === "channel") {
-        await apiFetch(`/api/chat/channels/${selection.key}/messages`, {
+        await apiFetchJson(`/api/chat/channels/${selection.key}/messages`, {
           method: "POST",
           body: JSON.stringify({ content }),
         });
       } else {
-        await apiFetch(`/api/messages/${selection.user.id}`, {
+        await apiFetchJson(`/api/messages/${selection.user.id}`, {
           method: "POST",
           body: JSON.stringify({ content }),
         });
@@ -352,7 +335,7 @@ export default function SocialHub({ user, onBack, initialTab = "global" }) {
   async function handleAcceptRequest(requestUserId) {
     setActionBusy(`accept-${requestUserId}`);
     try {
-      await apiFetch(`/api/friends/${requestUserId}`, { method: "PUT" });
+      await apiFetchJson(`/api/friends/${requestUserId}`, { method: "PUT" });
       const data = await loadHub({ silent: true });
       setSelection(selectDefault(activeTab, data));
     } catch (actionError) {
@@ -365,7 +348,7 @@ export default function SocialHub({ user, onBack, initialTab = "global" }) {
   async function handleDismissRequest(requestUserId) {
     setActionBusy(`dismiss-${requestUserId}`);
     try {
-      await apiFetch(`/api/friends/${requestUserId}`, { method: "DELETE" });
+      await apiFetchJson(`/api/friends/${requestUserId}`, { method: "DELETE" });
       const data = await loadHub({ silent: true });
       setSelection(selectDefault(activeTab, data));
     } catch (actionError) {
@@ -378,7 +361,7 @@ export default function SocialHub({ user, onBack, initialTab = "global" }) {
   async function handleSendRequest(targetUserId) {
     setActionBusy(`request-${targetUserId}`);
     try {
-      await apiFetch(`/api/friends/${targetUserId}`, { method: "POST" });
+      await apiFetchJson(`/api/friends/${targetUserId}`, { method: "POST" });
       await loadHub({ silent: true });
       setSearchResults((current) => current.map((entry) => (
         entry.id === targetUserId ? { ...entry, friendshipStatus: "outgoing" } : entry
@@ -394,7 +377,7 @@ export default function SocialHub({ user, onBack, initialTab = "global" }) {
     setActionBusy(`remove-${friendUserId}`);
     try {
       const wasSelected = selectedFriend?.id === friendUserId;
-      const data = await apiFetch(`/api/friends/${friendUserId}`, { method: "DELETE" }).then(() => loadHub({ silent: true }));
+      const data = await apiFetchJson(`/api/friends/${friendUserId}`, { method: "DELETE" }).then(() => loadHub({ silent: true }));
       if (wasSelected) setSelection(selectDefault("friends", data));
     } catch (actionError) {
       setError(actionError.message || t("socialHub.errors.removeFriend"));
@@ -411,19 +394,16 @@ export default function SocialHub({ user, onBack, initialTab = "global" }) {
   return (
     <div className="social-page">
       <div className="social-shell">
-        <header className="social-header">
-          <div>
-            <span className="social-kicker">{t("socialHub.kicker")}</span>
-            <h1>{t("socialHub.title")}</h1>
-            <p>{t("socialHub.subtitle", { playerName: user.username || user.email })}</p>
-          </div>
-          <div className="social-header-actions">
-            <LanguageSelector variant="manual" compact />
-            <PageBackButton onClick={onBack}>
-              {t("socialHub.backToLobby")}
-            </PageBackButton>
-          </div>
-        </header>
+        <PageHeader
+          className="social-header"
+          kickerClassName="social-kicker"
+          actionsClassName="social-header-actions"
+          kicker={t("socialHub.kicker")}
+          title={t("socialHub.title")}
+          subtitle={t("socialHub.subtitle", { playerName: user.username || user.email })}
+          onBack={onBack}
+          backLabel={t("socialHub.backToLobby")}
+        />
 
         <section className="social-summary">
           <div className="social-stat social-stat-cyan">
