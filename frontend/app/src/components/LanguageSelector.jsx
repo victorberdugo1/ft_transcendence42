@@ -50,9 +50,12 @@ export default function LanguageSelector({ variant = "manual", compact = false }
     setIsOpen(false);
   }
 
-  const rootClassName = compact
-    ? `langsel langsel-${variant} langsel-compact`
-    : `langsel langsel-${variant}`;
+  const rootClassName = [
+    "langsel",
+    `langsel-${variant}`,
+    compact ? "langsel-compact" : "",
+    isOpen ? "langsel-open" : "",
+  ].filter(Boolean).join(" ");
 
   return (
     <div className={rootClassName} ref={menuRef}>

@@ -256,6 +256,10 @@
         "label": "Assoliments",
         "kicker": "Rewards"
       },
+      "social": {
+        "label": "Social",
+        "kicker": "Xarxa"
+      },
       "chat": {
         "label": "Xat",
         "kicker": "Social"
@@ -267,6 +271,211 @@
       "manual": {
         "label": "Manual",
         "kicker": "Codex"
+      }
+    }
+  },
+  "socialHub": {
+    "kicker": "Xarxa operativa",
+    "title": "Hub social",
+    "subtitle": "Coordina partides, respon sollicituds i mante't connectat amb l'activitat social en viu de {{playerName}}.",
+    "backToLobby": "← Tornar al lobby",
+    "summary": {
+      "onlineFriends": "Amistats online",
+      "unread": "No llegits",
+      "pending": "Sollicituds"
+    },
+    "tabs": {
+      "label": "Seccions socials",
+      "global": "Global",
+      "direct": "Privats",
+      "friends": "Amistats",
+      "requests": "Sollicituds"
+    },
+    "sideTitles": {
+      "global": "Canals actius",
+      "direct": "Converses recents",
+      "friends": "Crew connectada",
+      "requests": "Sollicituds entrants"
+    },
+    "mainKickers": {
+      "channel": "Canal global",
+      "direct": "Linia privada",
+      "friend": "Contacte",
+      "request": "Sollicitud",
+      "empty": "Panell"
+    },
+    "presence": {
+      "online": "Online",
+      "offline": "Offline",
+      "in_lobby": "Al lobby",
+      "in_match": "En combat",
+      "in_tournament_room": "En torneig",
+      "spectating": "Espectant"
+    },
+    "channelKicker": "Lobby",
+    "requestKicker": "Pendent",
+    "friendMeta": "Disponible per coordinar",
+    "you": "Tu",
+    "noMessagesYet": "Encara sense missatges",
+    "loadingThread": "Carregant conversa...",
+    "emptyThread": "Encara no hi ha missatges en aquest fil.",
+    "emptySidebar": "No hi ha elements disponibles en aquesta seccio.",
+    "composerLabel": "Canal de sortida",
+    "messagesCount": "{{count}} missatges en aquest fil",
+    "messagePlaceholder": "Escriu un missatge tactic, una invitacio o una resposta rapida...",
+    "send": "Enviar",
+    "sending": "Enviant...",
+    "threadState": {
+      "live": "Activitat en viu",
+      "private": "Canal privat",
+      "channelHint": "Es comparteix amb tots els jugadors connectats al lobby.",
+      "directHint": "Nomes el veieu tu i el contacte seleccionat."
+    },
+    "context": {
+      "global": "Canal obert per coordinar, saludar i moure activitat dins del lobby principal.",
+      "direct": "Linia persistent amb {{playerName}} per coordinar partides, respostes rapides i seguiment.",
+      "friend": "Consulta l'estat actual de {{playerName}} i llança una accio directa sobre aquest contacte.",
+      "request": "Gestiona la sollicitud pendent de {{playerName}} sense sortir del hub social."
+    },
+    "friendCardKicker": "Jugador aliat",
+    "friendDescription": "{{playerName}} forma part de la teva xarxa social activa. Des d'aqui pots obrir un xat directe o netejar la relacio si ja no et cal.",
+    "requestDescription": "{{playerName}} vol entrar a la teva xarxa social. Accepta per obrir DM persistent i sincronitzar presencia en temps real.",
+    "empty": {
+      "title": "Selecciona un canal o contacte per començar",
+      "description": "Fes servir les pestanyes per saltar entre el canal global, privats, amistats i sollicituds pendents."
+    },
+    "actions": {
+      "openChat": "Obrir xat",
+      "removeFriend": "Eliminar amistat",
+      "working": "Processant...",
+      "accept": "Acceptar",
+      "dismiss": "Descartar",
+      "message": "Missatge",
+      "addFriend": "Afegir"
+    },
+    "discovery": {
+      "title": "Descobrir jugadors",
+      "label": "Buscar per nom",
+      "placeholder": "Ex. quimbur",
+      "searching": "Buscant perfils...",
+      "noResults": "No s'han trobat jugadors per aquesta cerca.",
+      "outgoing": "Sollicitud enviada",
+      "incoming": "T'ha enviat sollicitud"
+    },
+    "overview": {
+      "title": "Vista rapida",
+      "channels": "Canals",
+      "direct": "Xats directes",
+      "friends": "Amistats"
+    },
+    "errors": {
+      "loadHub": "No s'ha pogut carregar el hub social.",
+      "loadThread": "No s'ha pogut carregar la conversa seleccionada.",
+      "sendMessage": "No s'ha pogut enviar el missatge.",
+      "acceptRequest": "No s'ha pogut acceptar la sollicitud.",
+      "dismissRequest": "No s'ha pogut descartar la sollicitud.",
+      "sendRequest": "No s'ha pogut enviar la sollicitud d'amistat.",
+      "removeFriend": "No s'ha pogut eliminar l'amistat."
+    }
+  },
+  "achievementsPage": {
+    "kicker": "Registre del lluitador",
+    "title": "Assoliments",
+    "backToLobby": "← Tornar al lobby",
+    "hero": {
+      "chip": "Progres actiu",
+      "title": "Tauler d'assoliments de {{playerName}}",
+      "description": "Consulta cada fita desbloquejada, el progres actual dels objectius pendents i la recompensa competitiva seguent d'aquest jugador."
+    },
+    "summary": {
+      "unlocked": "Desbloquejats",
+      "completion": "Completat",
+      "wins": "Victories",
+      "bestStreak": "Millor ratxa"
+    },
+    "loading": {
+      "title": "Carregant assoliments...",
+      "text": "Sincronitzant les recompenses de l'arena i el progres competitiu."
+    },
+    "error": {
+      "title": "No s'han pogut carregar els assoliments"
+    },
+    "errors": {
+      "loadFailed": "No s'ha pogut carregar el tauler d'assoliments."
+    },
+    "status": {
+      "unlocked": "Desbloquejat",
+      "locked": "Bloquejat"
+    },
+    "filters": {
+      "label": "Filtres d'assoliments",
+      "all": "Tots",
+      "unlocked": "Desbloquejats",
+      "locked": "Pendents"
+    },
+    "labels": {
+      "featured": "En focus",
+      "nextTarget": "Objectiu seguent",
+      "catalog": "Cataleg",
+      "catalogCount": "{{count}} entrades visibles",
+      "progressWins": "{{current}} de {{total}} victories",
+      "progressStreak": "{{current}} de {{total}} victories seguides",
+      "progressBinary": "{{current}} de {{total}} objectiu",
+      "notEarnedYet": "Encara no desbloquejat",
+      "genericHint": "Desbloqueja aquest objectiu durant una partida real.",
+      "allUnlockedTitle": "Col·leccio completada",
+      "allUnlockedText": "Ja tens tots els assoliments disponibles en aquesta temporada."
+    },
+    "definitions": {
+      "first_win": {
+        "name": "Primera victoria",
+        "description": "Trenca el gel a l'arena i aconsegueix la teva primera partida guanyada.",
+        "hint": "Guanya {{goal}} partida per desbloquejar-lo."
+      },
+      "veteran": {
+        "name": "Veterà",
+        "description": "Demostra consistencia competitiva acumulant una base real de victories.",
+        "hint": "Arriba a {{goal}} victories per desbloquejar-lo."
+      },
+      "hot_streak": {
+        "name": "En ratxa",
+        "description": "Encadena tres victories seguides i deixa clar que el lobby es teu.",
+        "hint": "Aconsegueix una ratxa de {{goal}} victories per desbloquejar-lo."
+      },
+      "combo_master": {
+        "name": "Mestre del combo",
+        "description": "Connecta un combo complet en una partida que acabis guanyant.",
+        "hint": "Guanya una partida despres de completar un combo sencer."
+      },
+      "untouchable": {
+        "name": "Intocable",
+        "description": "Guanya sense rebre mal i surt de l'arena impecable.",
+        "hint": "Guanya una partida sense rebre mal."
+      },
+      "clean_sweep": {
+        "name": "Escombrada perfecta",
+        "description": "Tanca el combat conservant els teus tres stocks.",
+        "hint": "Guanya amb els 3 stocks inicials intactes."
+      },
+      "speedrunner": {
+        "name": "Velocista",
+        "description": "Resol la lluita abans que el public acabi d'asseure's.",
+        "hint": "Guanya en 45 segons o menys."
+      },
+      "bracket_breaker": {
+        "name": "Trenca brackets",
+        "description": "Derrota el teu primer rival dins del quadre oficial del torneig.",
+        "hint": "Guanya un combat de torneig."
+      },
+      "tournament_champion": {
+        "name": "Campio del torneig",
+        "description": "Sobreviu a tot el bracket i surt amb el titol.",
+        "hint": "Guanya un torneig complet."
+      },
+      "social": {
+        "name": "Sociable",
+        "description": "Obre la teva xarxa social del joc i assegura la primera amistat.",
+        "hint": "Accepta o aconsegueix la teva primera amistat."
       }
     }
   },

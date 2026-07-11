@@ -1,8 +1,8 @@
 'use strict';
 
-const http      = require('http');
+const http = require('http');
 const WebSocket = require('ws');
-const express   = require('express');
+const express = require('express');
 
 const db = require('./db');  // eslint-disable-line no-unused-vars  (keeps pool alive)
 
@@ -10,9 +10,9 @@ const { loadSession, requireAuth, register, login, logout, me } = require('./aut
 const { setupWebSocket } = require('./ws/handler');
 
 // Social routes
-const friends       = require('./social/friends');
-const chat          = require('./social/chat');
-const profile       = require('./social/profile');
+const friends = require('./social/friends');
+const chat = require('./social/chat');
+const profile = require('./social/profile');
 const notifications = require('./social/notifications');
 
 // Game-related query routes
@@ -20,9 +20,9 @@ const gameSession = require('./game/session');
 
 // ─── Express app ──────────────────────────────────────────────────────────────
 
-const app    = express();
+const app = express();
 const server = http.createServer(app);
-const wss    = new WebSocket.Server({ noServer: true });
+const wss = new WebSocket.Server({ noServer: true });
 
 app.use(express.json());
 app.use(loadSession);
@@ -30,42 +30,46 @@ app.use(loadSession);
 // ─── Auth routes ──────────────────────────────────────────────────────────────
 
 app.post('/api/register', register);
-app.post('/api/login',    login);
-app.post('/api/logout',   requireAuth, logout);
-app.get('/api/me',        requireAuth, me);
+app.post('/api/login', login);
+app.post('/api/logout', requireAuth, logout);
+app.get('/api/me', requireAuth, me);
 
 // ─── Profile routes ───────────────────────────────────────────────────────────
 
-app.get('/api/users/:id',              profile.getProfile);
-app.get('/api/profile/me',             requireAuth, profile.getMyProfileSummary);
-app.patch('/api/profile/avatar',        requireAuth, profile.updateAvatar);
-app.put('/api/profile',                requireAuth, profile.updateProfile);
-app.get('/api/users/:id/stats',        profile.getUserStats);
-app.get('/api/users/:id/history',      profile.getMatchHistory);
+app.get('/api/users/:id', profile.getProfile);
+app.get('/api/profile/me', requireAuth, profile.getMyProfileSummary);
+app.patch('/api/profile/avatar', requireAuth, profile.updateAvatar);
+app.put('/api/profile', requireAuth, profile.updateProfile);
+app.get('/api/users/:id/stats', profile.getUserStats);
+app.get('/api/users/:id/history', profile.getMatchHistory);
 app.get('/api/users/:id/achievements', profile.getUserAchievements);
-app.get('/api/profile/export',         requireAuth, profile.exportData);
-app.delete('/api/profile',             requireAuth, profile.deleteAccount);
+app.get('/api/profile/export', requireAuth, profile.exportData);
+app.delete('/api/profile', requireAuth, profile.deleteAccount);
 
 // ─── Friends routes ───────────────────────────────────────────────────────────
 
-app.get('/api/friends',          requireAuth, friends.listFriends);
+app.get('/api/friends', requireAuth, friends.listFriends);
 app.get('/api/friends/requests', requireAuth, friends.listPendingRequests);
-app.post('/api/friends/:id',     requireAuth, friends.sendRequest);
-app.put('/api/friends/:id',      requireAuth, friends.acceptRequest);
-app.delete('/api/friends/:id',   requireAuth, friends.removeFriend);
+app.post('/api/friends/:id', requireAuth, friends.sendRequest);
+app.put('/api/friends/:id', requireAuth, friends.acceptRequest);
+app.delete('/api/friends/:id', requireAuth, friends.removeFriend);
 
 // ─── Chat routes ──────────────────────────────────────────────────────────────
 
-app.get('/api/messages/unread',       requireAuth, chat.unreadCounts);
-app.get('/api/messages/:userId',      requireAuth, chat.getConversation);
-app.post('/api/messages/:userId',     requireAuth, chat.sendMessage);
+app.get('/api/chat/overview', requireAuth, chat.getHubOverview);
+app.get('/api/chat/users', requireAuth, chat.searchUsers);
+app.get('/api/chat/channels/:channelKey/messages', requireAuth, chat.getChannelMessages);
+app.post('/api/chat/channels/:channelKey/messages', requireAuth, chat.sendChannelMessage);
+app.get('/api/messages/unread', requireAuth, chat.unreadCounts);
+app.get('/api/messages/:userId', requireAuth, chat.getConversation);
+app.post('/api/messages/:userId', requireAuth, chat.sendMessage);
 app.put('/api/messages/:userId/read', requireAuth, chat.markRead);
 
 // ─── Notifications routes ─────────────────────────────────────────────────────
 
-app.get('/api/notifications',          requireAuth, notifications.listNotifications);
-app.patch('/api/notifications/read',   requireAuth, notifications.markAllRead);
-app.patch('/api/notifications/:id',    requireAuth, notifications.markOneRead);
+app.get('/api/notifications', requireAuth, notifications.listNotifications);
+app.patch('/api/notifications/read', requireAuth, notifications.markAllRead);
+app.patch('/api/notifications/:id', requireAuth, notifications.markOneRead);
 
 // ─── Leaderboard ──────────────────────────────────────────────────────────────
 
@@ -89,8 +93,8 @@ app.get('/api/leaderboard', async (req, res) => {
 app.get('/api/players', (req, res) => {
     const { players, spectators, playerSession } = gameSession;
     const list = Object.values(players).map(p => ({
-        clientId:  p.id,
-        dbUserId:  p.dbUserId ?? null,
+        clientId: p.id,
+        dbUserId: p.dbUserId ?? null,
         inSession: playerSession.has(p.id),
     }));
     res.json({ players: list, spectatorCount: Object.keys(spectators).length });
@@ -100,7 +104,7 @@ app.get('/api/sessions', (req, res) => {
     const { spectators, listActiveSessions } = gameSession;
     const lobbySpectators = Object.values(spectators).filter(s => s.watchingSession === null).length;
     res.json({
-        sessions:        listActiveSessions(),
+        sessions: listActiveSessions(),
         lobbySpectators,
         totalSpectators: Object.keys(spectators).length,
     });

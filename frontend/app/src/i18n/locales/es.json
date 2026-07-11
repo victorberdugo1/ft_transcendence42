@@ -256,6 +256,10 @@
         "label": "Logros",
         "kicker": "Rewards"
       },
+      "social": {
+        "label": "Social",
+        "kicker": "Red"
+      },
       "chat": {
         "label": "Chat",
         "kicker": "Social"
@@ -267,6 +271,211 @@
       "manual": {
         "label": "Manual",
         "kicker": "Codex"
+      }
+    }
+  },
+  "socialHub": {
+    "kicker": "Red operativa",
+    "title": "Hub social",
+    "subtitle": "Coordina partidas, responde solicitudes y mantente conectado con la actividad en vivo de {{playerName}}.",
+    "backToLobby": "← Volver al lobby",
+    "summary": {
+      "onlineFriends": "Amigos online",
+      "unread": "No leidos",
+      "pending": "Solicitudes"
+    },
+    "tabs": {
+      "label": "Secciones sociales",
+      "global": "Global",
+      "direct": "Privados",
+      "friends": "Amigos",
+      "requests": "Solicitudes"
+    },
+    "sideTitles": {
+      "global": "Canales activos",
+      "direct": "Conversaciones recientes",
+      "friends": "Crew conectada",
+      "requests": "Solicitudes entrantes"
+    },
+    "mainKickers": {
+      "channel": "Canal global",
+      "direct": "Linea privada",
+      "friend": "Contacto",
+      "request": "Solicitud",
+      "empty": "Panel"
+    },
+    "presence": {
+      "online": "Online",
+      "offline": "Offline",
+      "in_lobby": "En lobby",
+      "in_match": "En combate",
+      "in_tournament_room": "En torneo",
+      "spectating": "Espectando"
+    },
+    "channelKicker": "Lobby",
+    "requestKicker": "Pendiente",
+    "friendMeta": "Disponible para coordinar",
+    "you": "Tu",
+    "noMessagesYet": "Sin mensajes aun",
+    "loadingThread": "Cargando conversacion...",
+    "emptyThread": "Todavia no hay mensajes en este hilo.",
+    "emptySidebar": "No hay elementos disponibles en esta seccion.",
+    "composerLabel": "Canal de salida",
+    "messagesCount": "{{count}} mensajes en este hilo",
+    "messagePlaceholder": "Escribe un mensaje tactico, una invitacion o una respuesta rapida...",
+    "send": "Enviar",
+    "sending": "Enviando...",
+    "threadState": {
+      "live": "Actividad en vivo",
+      "private": "Canal privado",
+      "channelHint": "Se comparte con todos los jugadores conectados al lobby.",
+      "directHint": "Solo lo veis tu y el contacto seleccionado."
+    },
+    "context": {
+      "global": "Canal abierto para coordinar, saludar y mover actividad dentro del lobby general.",
+      "direct": "Linea persistente con {{playerName}} para coordinar partidas, respuestas rapidas y seguimiento.",
+      "friend": "Consulta el estado de {{playerName}} y abre una accion directa sobre este contacto.",
+      "request": "Gestiona la solicitud pendiente de {{playerName}} sin salir del hub social."
+    },
+    "friendCardKicker": "Jugador aliado",
+    "friendDescription": "{{playerName}} forma parte de tu red social activa. Desde aqui puedes abrir chat directo o limpiar la relacion si ya no la necesitas.",
+    "requestDescription": "{{playerName}} quiere entrar en tu red social. Acepta para abrir DM persistente y sincronizar presencia en tiempo real.",
+    "empty": {
+      "title": "Selecciona un canal o contacto para empezar",
+      "description": "Usa las pestañas para saltar entre el canal global, privados, amigos y solicitudes pendientes."
+    },
+    "actions": {
+      "openChat": "Abrir chat",
+      "removeFriend": "Eliminar amigo",
+      "working": "Procesando...",
+      "accept": "Aceptar",
+      "dismiss": "Descartar",
+      "message": "Mensaje",
+      "addFriend": "Agregar"
+    },
+    "discovery": {
+      "title": "Descubrir jugadores",
+      "label": "Buscar por nombre",
+      "placeholder": "Ej. quimbur",
+      "searching": "Buscando perfiles...",
+      "noResults": "No se encontraron jugadores para esta busqueda.",
+      "outgoing": "Solicitud enviada",
+      "incoming": "Te ha enviado solicitud"
+    },
+    "overview": {
+      "title": "Vista rapida",
+      "channels": "Canales",
+      "direct": "Chats directos",
+      "friends": "Amigos"
+    },
+    "errors": {
+      "loadHub": "No se pudo cargar el hub social.",
+      "loadThread": "No se pudo cargar la conversacion seleccionada.",
+      "sendMessage": "No se pudo enviar el mensaje.",
+      "acceptRequest": "No se pudo aceptar la solicitud.",
+      "dismissRequest": "No se pudo descartar la solicitud.",
+      "sendRequest": "No se pudo enviar la solicitud de amistad.",
+      "removeFriend": "No se pudo eliminar la amistad."
+    }
+  },
+  "achievementsPage": {
+    "kicker": "Registro de combatiente",
+    "title": "Logros",
+    "backToLobby": "← Volver al lobby",
+    "hero": {
+      "chip": "Progreso activo",
+      "title": "Panel de logros de {{playerName}}",
+      "description": "Consulta cada hito desbloqueado, el progreso actual de las metas pendientes y la siguiente recompensa competitiva del jugador."
+    },
+    "summary": {
+      "unlocked": "Desbloqueados",
+      "completion": "Completado",
+      "wins": "Victorias",
+      "bestStreak": "Mejor racha"
+    },
+    "loading": {
+      "title": "Cargando logros...",
+      "text": "Sincronizando las recompensas de la arena y el progreso competitivo."
+    },
+    "error": {
+      "title": "No se pudieron cargar los logros"
+    },
+    "errors": {
+      "loadFailed": "No se pudo cargar el panel de logros."
+    },
+    "status": {
+      "unlocked": "Desbloqueado",
+      "locked": "Bloqueado"
+    },
+    "filters": {
+      "label": "Filtros de logros",
+      "all": "Todos",
+      "unlocked": "Desbloqueados",
+      "locked": "Pendientes"
+    },
+    "labels": {
+      "featured": "En foco",
+      "nextTarget": "Siguiente objetivo",
+      "catalog": "Catalogo",
+      "catalogCount": "{{count}} entradas visibles",
+      "progressWins": "{{current}} de {{total}} victorias",
+      "progressStreak": "{{current}} de {{total}} victorias seguidas",
+      "progressBinary": "{{current}} de {{total}} objetivo",
+      "notEarnedYet": "Aun no desbloqueado",
+      "genericHint": "Desbloquea este objetivo durante una partida real.",
+      "allUnlockedTitle": "Coleccion completada",
+      "allUnlockedText": "Ya tienes todos los logros disponibles en esta temporada."
+    },
+    "definitions": {
+      "first_win": {
+        "name": "Primera victoria",
+        "description": "Rompe el hielo en la arena y consigue tu primera partida ganada.",
+        "hint": "Gana {{goal}} partida para desbloquearlo."
+      },
+      "veteran": {
+        "name": "Veterano",
+        "description": "Demuestra consistencia competitiva acumulando una base real de victorias.",
+        "hint": "Alcanza {{goal}} victorias para desbloquearlo."
+      },
+      "hot_streak": {
+        "name": "En racha",
+        "description": "Encadena tres victorias seguidas y deja claro que el lobby es tuyo.",
+        "hint": "Consigue una racha de {{goal}} victorias para desbloquearlo."
+      },
+      "combo_master": {
+        "name": "Maestro del combo",
+        "description": "Conecta un combo completo en una partida que termines ganando.",
+        "hint": "Gana una partida despues de completar un combo entero."
+      },
+      "untouchable": {
+        "name": "Intocable",
+        "description": "Gana sin recibir dano y abandona la arena impecable.",
+        "hint": "Gana una partida sin recibir dano."
+      },
+      "clean_sweep": {
+        "name": "Barrida perfecta",
+        "description": "Cierra el combate conservando tus tres stocks.",
+        "hint": "Gana con tus 3 stocks iniciales intactos."
+      },
+      "speedrunner": {
+        "name": "Velocista",
+        "description": "Resuelve la pelea antes de que el publico termine de sentarse.",
+        "hint": "Gana en 45 segundos o menos."
+      },
+      "bracket_breaker": {
+        "name": "Rompe brackets",
+        "description": "Derriba a tu primer rival dentro del cuadro oficial del torneo.",
+        "hint": "Gana un combate de torneo."
+      },
+      "tournament_champion": {
+        "name": "Campeon del torneo",
+        "description": "Sobrevive a todo el bracket y sal con el titulo.",
+        "hint": "Gana un torneo completo."
+      },
+      "social": {
+        "name": "Sociable",
+        "description": "Abre tu red social del juego y asegura tu primera amistad.",
+        "hint": "Acepta o consigue tu primera amistad."
       }
     }
   },

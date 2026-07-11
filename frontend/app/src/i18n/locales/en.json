@@ -256,6 +256,10 @@
         "label": "Achievements",
         "kicker": "Rewards"
       },
+      "social": {
+        "label": "Social",
+        "kicker": "Network"
+      },
       "chat": {
         "label": "Chat",
         "kicker": "Social"
@@ -267,6 +271,211 @@
       "manual": {
         "label": "Manual",
         "kicker": "Codex"
+      }
+    }
+  },
+  "socialHub": {
+    "kicker": "Operational network",
+    "title": "Social hub",
+    "subtitle": "Coordinate matches, answer requests, and stay aligned with {{playerName}}'s live social activity.",
+    "backToLobby": "← Back to lobby",
+    "summary": {
+      "onlineFriends": "Friends online",
+      "unread": "Unread",
+      "pending": "Requests"
+    },
+    "tabs": {
+      "label": "Social sections",
+      "global": "Global",
+      "direct": "Direct",
+      "friends": "Friends",
+      "requests": "Requests"
+    },
+    "sideTitles": {
+      "global": "Active channels",
+      "direct": "Recent conversations",
+      "friends": "Connected crew",
+      "requests": "Incoming requests"
+    },
+    "mainKickers": {
+      "channel": "Global channel",
+      "direct": "Private line",
+      "friend": "Contact",
+      "request": "Request",
+      "empty": "Panel"
+    },
+    "presence": {
+      "online": "Online",
+      "offline": "Offline",
+      "in_lobby": "In lobby",
+      "in_match": "In match",
+      "in_tournament_room": "In tournament",
+      "spectating": "Spectating"
+    },
+    "channelKicker": "Lobby",
+    "requestKicker": "Pending",
+    "friendMeta": "Ready to coordinate",
+    "you": "You",
+    "noMessagesYet": "No messages yet",
+    "loadingThread": "Loading conversation...",
+    "emptyThread": "No messages have landed in this thread yet.",
+    "emptySidebar": "Nothing is available in this section yet.",
+    "composerLabel": "Outgoing channel",
+    "messagesCount": "{{count}} messages in this thread",
+    "messagePlaceholder": "Write a tactical note, an invite, or a fast response...",
+    "send": "Send",
+    "sending": "Sending...",
+    "threadState": {
+      "live": "Live activity",
+      "private": "Private line",
+      "channelHint": "Shared with every player connected to the lobby channel.",
+      "directHint": "Visible only to you and the selected contact."
+    },
+    "context": {
+      "global": "Open channel for coordinating, greeting, and moving activity inside the main lobby.",
+      "direct": "Persistent line with {{playerName}} for match coordination, quick replies, and follow-up.",
+      "friend": "Review {{playerName}}'s current state and launch a direct action on this contact.",
+      "request": "Handle {{playerName}}'s pending request without leaving the social hub."
+    },
+    "friendCardKicker": "Allied player",
+    "friendDescription": "{{playerName}} is part of your active social network. From here you can open a direct chat or clear the relationship if it is no longer needed.",
+    "requestDescription": "{{playerName}} wants into your social network. Accept to unlock persistent DM and live presence sync.",
+    "empty": {
+      "title": "Select a channel or contact to get started",
+      "description": "Use the tabs to jump between the global channel, direct lines, friends, and pending requests."
+    },
+    "actions": {
+      "openChat": "Open chat",
+      "removeFriend": "Remove friend",
+      "working": "Working...",
+      "accept": "Accept",
+      "dismiss": "Dismiss",
+      "message": "Message",
+      "addFriend": "Add friend"
+    },
+    "discovery": {
+      "title": "Discover players",
+      "label": "Search by username",
+      "placeholder": "e.g. quimbur",
+      "searching": "Searching profiles...",
+      "noResults": "No players matched that search.",
+      "outgoing": "Request sent",
+      "incoming": "Sent you a request"
+    },
+    "overview": {
+      "title": "Quick overview",
+      "channels": "Channels",
+      "direct": "Direct chats",
+      "friends": "Friends"
+    },
+    "errors": {
+      "loadHub": "The social hub could not be loaded.",
+      "loadThread": "The selected conversation could not be loaded.",
+      "sendMessage": "The message could not be sent.",
+      "acceptRequest": "The request could not be accepted.",
+      "dismissRequest": "The request could not be dismissed.",
+      "sendRequest": "The friend request could not be sent.",
+      "removeFriend": "The friendship could not be removed."
+    }
+  },
+  "achievementsPage": {
+    "kicker": "Fighter record",
+    "title": "Achievements",
+    "backToLobby": "← Back to lobby",
+    "hero": {
+      "chip": "Active progress",
+      "title": "Achievement board for {{playerName}}",
+      "description": "Review every unlocked milestone, current progress on pending goals, and the next competitive reward on this player profile."
+    },
+    "summary": {
+      "unlocked": "Unlocked",
+      "completion": "Completion",
+      "wins": "Wins",
+      "bestStreak": "Best streak"
+    },
+    "loading": {
+      "title": "Loading achievements...",
+      "text": "Syncing arena rewards and competitive progress."
+    },
+    "error": {
+      "title": "Achievements could not be loaded"
+    },
+    "errors": {
+      "loadFailed": "The achievements board could not be loaded."
+    },
+    "status": {
+      "unlocked": "Unlocked",
+      "locked": "Locked"
+    },
+    "filters": {
+      "label": "Achievement filters",
+      "all": "All",
+      "unlocked": "Unlocked",
+      "locked": "Pending"
+    },
+    "labels": {
+      "featured": "Featured",
+      "nextTarget": "Next target",
+      "catalog": "Catalog",
+      "catalogCount": "{{count}} visible entries",
+      "progressWins": "{{current}} of {{total}} wins",
+      "progressStreak": "{{current}} of {{total}} streak wins",
+      "progressBinary": "{{current}} of {{total}} objective",
+      "notEarnedYet": "Not earned yet",
+      "genericHint": "Unlock this objective during live play.",
+      "allUnlockedTitle": "Collection complete",
+      "allUnlockedText": "You already own every achievement currently available this season."
+    },
+    "definitions": {
+      "first_win": {
+        "name": "First win",
+        "description": "Break the ice in the arena and secure your first victory.",
+        "hint": "Win {{goal}} match to unlock it."
+      },
+      "veteran": {
+        "name": "Veteran",
+        "description": "Show competitive consistency by building a real bank of victories.",
+        "hint": "Reach {{goal}} wins to unlock it."
+      },
+      "hot_streak": {
+        "name": "Hot streak",
+        "description": "Chain three wins in a row and prove the lobby is yours for the moment.",
+        "hint": "Reach a {{goal}}-win streak to unlock it."
+      },
+      "combo_master": {
+        "name": "Combo master",
+        "description": "Land a full combo sequence in a match you finish on top.",
+        "hint": "Finish a match after completing a full combo."
+      },
+      "untouchable": {
+        "name": "Untouchable",
+        "description": "Win without taking damage and leave the arena spotless.",
+        "hint": "Win a match without receiving damage."
+      },
+      "clean_sweep": {
+        "name": "Clean sweep",
+        "description": "Close the set while keeping all three stocks alive.",
+        "hint": "Win with your 3 starting stocks intact."
+      },
+      "speedrunner": {
+        "name": "Speedrunner",
+        "description": "End the fight before the crowd even settles in.",
+        "hint": "Win in 45 seconds or less."
+      },
+      "bracket_breaker": {
+        "name": "Bracket breaker",
+        "description": "Take down your first tournament opponent on the official bracket.",
+        "hint": "Win a tournament match."
+      },
+      "tournament_champion": {
+        "name": "Tournament champion",
+        "description": "Survive the full bracket and leave with the title.",
+        "hint": "Win an entire tournament."
+      },
+      "social": {
+        "name": "Social",
+        "description": "Open your crew sheet and secure your first friendship link.",
+        "hint": "Accept or earn your first friendship."
       }
     }
   },

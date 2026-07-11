@@ -1,6 +1,7 @@
 'use strict';
 
 const db = require('../db');
+const { grantAchievement } = require('../game/achievements');
 
 async function listFriends(req, res) {
     try {
@@ -61,6 +62,16 @@ async function acceptRequest(req, res) {
             [requesterId, req.user.user_id]
         );
         if (!rowCount) return res.status(404).json({ error: 'Request not found' });
+
+        try {
+            await Promise.all([
+                grantAchievement(req.user.user_id, 'social', db),
+                grantAchievement(requesterId, 'social', db),
+            ]);
+        } catch (err) {
+            console.error('[FRIENDS] social achievement:', err.message);
+        }
+
         res.json({ ok: true });
     } catch (err) {
         console.error('[FRIENDS] acceptRequest:', err.message);

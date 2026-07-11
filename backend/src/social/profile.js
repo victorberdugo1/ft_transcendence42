@@ -1,6 +1,7 @@
 'use strict';
 
 const db = require('../db');
+const { checkAndGrantAchievements } = require('../game/achievements');
 const { CHARACTER_DEFS } = require('../game/constants');
 
 const ALLOWED_AVATARS = new Set([
@@ -313,9 +314,11 @@ async function getMatchHistory(req, res) {
     }
 }
 
-async function getUserAchievements(req, res) {  
+async function getUserAchievements(req, res) {
     const userId = parseInt(req.params.id);
     try {
+        await checkAndGrantAchievements(userId);
+
         const { rows } = await db.query(
             `SELECT a.key, a.name, a.description, ua.earned_at
              FROM user_achievements ua JOIN achievements a ON a.id = ua.achievement_id
