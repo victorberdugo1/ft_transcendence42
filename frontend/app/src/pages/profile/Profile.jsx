@@ -536,31 +536,32 @@ export default function Profile({ onBack }) {
           </aside>
 
           <section className="profile-main">
-            <section className="profile-card">
-              <div className="profile-section-heading">
-                <h2>{t("profile.sections.globalStats")}</h2>
-              </div>
-              <div className="profile-stats-grid">
-                <StatTile label={t("profile.stats.wins")} value={safeNumber(stats.wins)} />
-                <StatTile label={t("profile.stats.losses")} value={safeNumber(stats.losses)} />
-                <StatTile label={t("profile.stats.draws")} value={safeNumber(stats.draws)} />
-                <StatTile label={t("profile.stats.matches")} value={safeNumber(stats.totalMatches)} />
-                <StatTile label={t("profile.stats.winRate")} value={formatPercent(stats.winRate)} />
-                <StatTile label={t("profile.stats.xp")} value={xp} />
-                <StatTile label={t("profile.stats.level")} value={level} />
-              </div>
-            </section>
+            <section className="profile-card profile-overview-surface">
+              <section className="profile-overview-block">
+                <div className="profile-section-heading">
+                  <h2>{t("profile.sections.globalStats")}</h2>
+                </div>
+                <div className="profile-stats-grid">
+                  <StatTile label={t("profile.stats.wins")} value={safeNumber(stats.wins)} />
+                  <StatTile label={t("profile.stats.losses")} value={safeNumber(stats.losses)} />
+                  <StatTile label={t("profile.stats.draws")} value={safeNumber(stats.draws)} />
+                  <StatTile label={t("profile.stats.matches")} value={safeNumber(stats.totalMatches)} />
+                  <StatTile label={t("profile.stats.winRate")} value={formatPercent(stats.winRate)} />
+                  <StatTile label={t("profile.stats.xp")} value={xp} />
+                  <StatTile label={t("profile.stats.level")} value={level} />
+                </div>
+              </section>
 
-            <section className="profile-card">
-              <div className="profile-section-heading">
-                <h2>{t("profile.sections.bestCharacter")}</h2>
-              </div>
-              {safeProfile.bestCharacter
-                ? <CharacterCard character={safeProfile.bestCharacter} featured t={t} />
-                : <EmptyState title={t("profile.empty.bestCharacterTitle")} text={t("profile.empty.bestCharacterText")} />}
-            </section>
+              <section className="profile-overview-block">
+                <div className="profile-section-heading">
+                  <h2>{t("profile.sections.bestCharacter")}</h2>
+                </div>
+                {safeProfile.bestCharacter
+                  ? <CharacterCard character={safeProfile.bestCharacter} featured t={t} />
+                  : <EmptyState title={t("profile.empty.bestCharacterTitle")} text={t("profile.empty.bestCharacterText")} />}
+              </section>
 
-            <section className="profile-card">
+              <section className="profile-overview-block">
               <div className="profile-section-heading">
                 <h2>{t("profile.sections.characterStats")}</h2>
               </div>
@@ -573,6 +574,7 @@ export default function Profile({ onBack }) {
               ) : (
                 <EmptyState title={t("profile.empty.characterStatsTitle")} text={t("profile.empty.characterStatsText")} />
               )}
+              </section>
             </section>
           </section>
         </div>

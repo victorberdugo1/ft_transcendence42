@@ -245,28 +245,28 @@
     },
     "menu": {
       "fight": {
-        "label": "Fight",
-        "kicker": "Smash"
+        "label": "Бой",
+        "kicker": "Арена"
       },
       "profile": {
         "label": "Профиль",
-        "kicker": "Fighter"
+        "kicker": "Боец"
       },
       "achievements": {
         "label": "Достижения",
-        "kicker": "Rewards"
+        "kicker": "Награды"
       },
       "chat": {
         "label": "Чат",
-        "kicker": "Social"
+        "kicker": "Соцсеть"
       },
       "friends": {
         "label": "Друзья",
-        "kicker": "Crew"
+        "kicker": "Команда"
       },
       "manual": {
-        "label": "Мануал",
-        "kicker": "Codex"
+        "label": "Руководство",
+        "kicker": "Кодекс"
       }
     }
   },
@@ -322,14 +322,14 @@
       "kicker": "Архив боёв",
       "recentMatches": "Недавние матчи",
       "opponent": "Соперник",
-      "vs": "vs",
+      "vs": "против",
       "unknownPlayer": "Неизвестный игрок",
       "you": "Ты",
       "rival": "Соперник",
       "unknownDate": "Дата неизвестна",
       "gameTypes": {
         "unknown": "Неизвестно",
-        "brawler": "Brawler",
+        "brawler": "Дуэль",
         "tournament": "Турнир"
       },
       "results": {

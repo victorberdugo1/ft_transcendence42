@@ -1,3 +1,5 @@
+@import url("https://fonts.googleapis.com/css2?family=Oxanium:wght@500;700;800&family=Rajdhani:wght@500;600;700&display=swap");
+
 .profile-page {
   --profile-bg: #07090f;
   --profile-panel: rgba(17, 20, 31, 0.72);
@@ -35,14 +37,9 @@
       transparent 24rem
     ),
     linear-gradient(135deg, #05060a 0%, #10131d 48%, #07090f 100%);
-  font-family:
-    Inter,
-    ui-sans-serif,
-    system-ui,
-    -apple-system,
-    BlinkMacSystemFont,
-    "Segoe UI",
-    sans-serif;
+  --profile-title-font: "Oxanium", "Segoe UI", sans-serif;
+  --profile-body-font: "Rajdhani", "Segoe UI", sans-serif;
+  font-family: var(--profile-body-font);
   scrollbar-color: rgba(88, 220, 255, 0.42) rgba(255, 255, 255, 0.06);
 }
 
@@ -98,8 +95,13 @@
   background: linear-gradient(180deg, transparent 0%, rgba(0, 0, 0, 0.42) 100%);
 }
 
+.profile-page > * {
+  position: relative;
+  z-index: 1;
+}
+
 .profile-shell {
-  width: min(1220px, calc(100vw - 36px));
+  width: min(1280px, calc(100vw - 40px));
   margin: 0 auto;
   padding: 28px 0 44px;
   animation: profileEnter 420ms ease both;
@@ -131,8 +133,9 @@
   display: block;
   margin-bottom: 6px;
   color: var(--profile-cyan);
-  font-size: 0.74rem;
-  font-weight: 900;
+  font-size: 0.72rem;
+  font-weight: 800;
+  font-family: var(--profile-title-font);
   letter-spacing: 0;
   text-transform: uppercase;
 }
@@ -140,6 +143,8 @@
 .profile-header h1,
 .profile-state-card h1 {
   margin: 0;
+  font-family: var(--profile-title-font);
+  font-weight: 800;
   font-size: clamp(2rem, 4vw, 3.4rem);
   line-height: 0.95;
   letter-spacing: 0;
@@ -174,9 +179,11 @@
   border-radius: 7px;
   background: rgba(0, 0, 0, 0.28);
   box-shadow: 0 12px 28px rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(10px);
 }
 
 .profile-tab {
+  position: relative;
   min-width: 118px;
   min-height: 40px;
   padding: 0 16px;
@@ -185,8 +192,9 @@
   color: var(--profile-muted);
   background: transparent;
   font: inherit;
-  font-size: 0.82rem;
-  font-weight: 900;
+  font-size: 0.8rem;
+  font-weight: 700;
+  font-family: var(--profile-title-font);
   text-transform: uppercase;
   cursor: pointer;
   transition:
@@ -214,17 +222,34 @@
   box-shadow: 0 0 22px rgba(255, 232, 112, 0.2);
 }
 
+.profile-tab-active::after {
+  content: "";
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 3px;
+  height: 2px;
+  border-radius: 999px;
+  background: rgba(8, 10, 16, 0.42);
+}
+
 .profile-layout {
   display: grid;
-  grid-template-columns: minmax(270px, 340px) minmax(0, 1fr);
-  gap: 20px;
+  grid-template-columns: minmax(290px, 350px) minmax(0, 1fr);
+  gap: 24px;
   align-items: start;
 }
 
 .profile-main {
   display: grid;
-  gap: 20px;
+  gap: 18px;
   min-width: 0;
+}
+
+.profile-overview-topgrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+  gap: 18px;
 }
 
 .profile-card,
@@ -244,6 +269,10 @@
     0 24px 60px rgba(0, 0, 0, 0.38),
     inset 0 1px 0 rgba(255, 255, 255, 0.08);
   backdrop-filter: blur(18px);
+  transition:
+    transform 180ms ease,
+    border-color 180ms ease,
+    box-shadow 180ms ease;
 }
 
 .profile-card::before,
@@ -268,6 +297,15 @@
   padding: 20px;
 }
 
+.profile-main .profile-card:hover {
+  border-color: rgba(88, 220, 255, 0.28);
+  box-shadow:
+    0 28px 64px rgba(0, 0, 0, 0.42),
+    0 0 24px rgba(88, 220, 255, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  transform: translateY(-2px);
+}
+
 .profile-state-card {
   width: min(590px, calc(100vw - 32px));
   margin: 20vh auto 0;
@@ -283,9 +321,10 @@
   display: grid;
   justify-items: center;
   gap: 18px;
+  align-self: start;
   position: sticky;
-  top: 18px;
-  min-height: 500px;
+  top: 16px;
+  min-height: 0;
   padding: 26px 22px;
   text-align: center;
   border-color: rgba(88, 220, 255, 0.28);
@@ -470,6 +509,8 @@
   max-width: 100%;
   margin: 0;
   overflow-wrap: anywhere;
+  font-family: var(--profile-title-font);
+  font-weight: 800;
   font-size: clamp(1.8rem, 5vw, 2.6rem);
   line-height: 1;
   text-transform: uppercase;
@@ -485,6 +526,7 @@
   color: #100e05;
   background: linear-gradient(90deg, #fff2a0, var(--profile-gold));
   box-shadow: 0 0 24px rgba(255, 232, 112, 0.32);
+  font-family: var(--profile-title-font);
 }
 
 .profile-xp-block {
@@ -557,6 +599,8 @@
 }
 
 .profile-section-heading h2 {
+  font-family: var(--profile-title-font);
+  font-weight: 700;
   font-size: 1.2rem;
   letter-spacing: 0;
   text-transform: uppercase;
@@ -584,6 +628,18 @@
     ),
     rgba(0, 0, 0, 0.26);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  transition:
+    transform 160ms ease,
+    border-color 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.profile-stat-tile:hover {
+  transform: translateY(-2px);
+  border-color: rgba(88, 220, 255, 0.34);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    0 12px 24px rgba(0, 0, 0, 0.26);
 }
 
 .profile-stat-tile span {
@@ -595,6 +651,8 @@
 
 .profile-stat-tile strong {
   overflow-wrap: anywhere;
+  font-family: var(--profile-title-font);
+  font-weight: 700;
   font-size: clamp(1.25rem, 2.4vw, 2.05rem);
   line-height: 1;
 }
@@ -784,6 +842,8 @@
 
 .profile-character-heading h3 {
   overflow-wrap: anywhere;
+  font-family: var(--profile-title-font);
+  font-weight: 700;
   font-size: 1.16rem;
   line-height: 1.08;
   text-transform: uppercase;
@@ -878,6 +938,8 @@
 
 .profile-history-heading h2 {
   margin: 0;
+  font-family: var(--profile-title-font);
+  font-weight: 700;
   font-size: 1.35rem;
   text-transform: uppercase;
 }
@@ -977,6 +1039,8 @@
 .profile-history-matchup h3 {
   margin: 3px 0 12px;
   overflow-wrap: anywhere;
+  font-family: var(--profile-title-font);
+  font-weight: 700;
   font-size: 1.12rem;
 }
 
@@ -1114,6 +1178,8 @@
 
 .profile-avatar-modal-header h2 {
   margin: 0;
+  font-family: var(--profile-title-font);
+  font-weight: 700;
   font-size: 1.45rem;
   text-transform: uppercase;
 }
@@ -1280,7 +1346,8 @@
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 8px;
   padding: 0 16px;
-  font-weight: 900;
+  font-weight: 700;
+  font-family: var(--profile-title-font);
   letter-spacing: 0;
   text-transform: uppercase;
   cursor: pointer;
@@ -1328,6 +1395,14 @@
 }
 
 @media (max-width: 980px) {
+  .profile-shell {
+    width: min(100vw - 24px, 1220px);
+  }
+
+  .profile-overview-topgrid {
+    grid-template-columns: 1fr;
+  }
+
   .profile-layout {
     grid-template-columns: 1fr;
   }
@@ -1353,11 +1428,15 @@
     justify-content: space-between;
     text-align: left;
   }
+
+  .profile-main .profile-card:hover {
+    transform: none;
+  }
 }
 
 @media (max-width: 680px) {
   .profile-shell {
-    width: min(100vw - 20px, 1220px);
+    width: min(100vw - 18px, 1220px);
     padding-top: 14px;
   }
 
@@ -1367,7 +1446,12 @@
   }
 
   .profile-header-controls {
+    flex-wrap: wrap;
     justify-content: space-between;
+    width: 100%;
+  }
+
+  .profile-header-controls .profile-secondary-button {
     width: 100%;
   }
 
@@ -1482,5 +1566,47 @@
   .profile-avatar-actions {
     display: grid;
     grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 420px) {
+  .profile-shell {
+    width: min(100vw - 14px, 1220px);
+  }
+
+  .profile-header {
+    padding: 12px;
+  }
+
+  .profile-header h1,
+  .profile-state-card h1 {
+    font-size: clamp(1.6rem, 10vw, 2.1rem);
+  }
+
+  .profile-card {
+    padding: 13px;
+  }
+
+  .profile-avatar-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .profile-history-fighter-frame {
+    width: 54px;
+    height: 54px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .profile-shell,
+  .profile-main .profile-card,
+  .profile-character-card,
+  .profile-stat-tile,
+  .profile-avatar-button,
+  .profile-primary-button,
+  .profile-secondary-button,
+  .profile-avatar-option {
+    animation: none !important;
+    transition: none !important;
   }
 }
