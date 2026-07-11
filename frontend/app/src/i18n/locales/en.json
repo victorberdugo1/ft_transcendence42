@@ -1,7 +1,7 @@
 {
   "auth": {
     "title": "Sign in to play",
-    "tabLogin": "Login",
+    "tabLogin": "Sign in",
     "tabRegister": "Register",
     "privacy": "Privacy Policy",
     "terms": "Terms of Service",
