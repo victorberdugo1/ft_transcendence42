@@ -86,76 +86,10 @@ input {
 }
 
 .auth-language-row {
-  position: relative;
-  display: flex;
-  justify-content: flex-end;
-  margin-bottom: 14px;
-}
-
-.auth-language-trigger {
-  width: 42px;
-  height: 42px;
-  display: grid;
-  place-items: center;
-  font-size: 1.25rem;
-  border-radius: 999px;
-  border: 1px solid rgba(236, 213, 175, 0.3);
-  background: rgba(255, 255, 255, 0.06);
-  color: #f6f1e9;
-  cursor: pointer;
-  transition:
-    transform 0.15s ease,
-    border-color 0.2s ease;
-}
-
-.auth-language-trigger:hover {
-  border-color: rgba(236, 213, 175, 0.6);
-  transform: translateY(-1px);
-}
-
-.auth-language-trigger:focus-visible {
-  outline: 2px solid rgba(215, 194, 154, 0.45);
-  outline-offset: 2px;
-}
-
-.auth-language-menu {
-  position: absolute;
-  top: 48px;
-  right: 0;
-  min-width: 170px;
-  padding: 8px;
-  border-radius: 14px;
-  border: 1px solid rgba(236, 213, 175, 0.28);
-  background: rgba(8, 12, 20, 0.96);
-  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.3);
-  z-index: 8;
-}
-
-.auth-language-option {
-  width: 100%;
-  border: 0;
-  border-radius: 10px;
-  background: transparent;
-  color: #f6f1e9;
-  padding: 8px 10px;
   display: flex;
   align-items: center;
-  gap: 10px;
-  text-align: left;
-  cursor: pointer;
-}
-
-.auth-language-option:hover {
-  background: rgba(255, 255, 255, 0.07);
-}
-
-.auth-language-option-active {
-  background: rgba(215, 194, 154, 0.22);
-}
-
-.auth-language-flag {
-  font-size: 1.1rem;
-  line-height: 1;
+  justify-content: flex-end;
+  margin-bottom: 14px;
 }
 
 .auth-tabs {

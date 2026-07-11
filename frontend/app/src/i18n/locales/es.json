@@ -41,9 +41,191 @@
     "en": "English"
   },
   "manual": {
-    "backToLobby": "Volver al Lobby",
-    "coverEyebrow": "TOMO DE COMBATE · CODICE OFICIAL",
-    "coverSub": "Temporada 01 · Manual de instrucciones"
+    "backToLobby": "Volver al lobby",
+    "hero": {
+      "eyebrow": "Operaciones // Manual de combate",
+      "title": "Manual táctico de combate",
+      "subtitle": "Todo lo esencial para entrar al escenario con criterio y sin improvisar.",
+      "description": "El ritmo del juego se decide por control de espacio, lectura del rival y uso inteligente del dash. Esta página resume lo importante con una presentación limpia y consistente con el resto del juego."
+    },
+    "quickFacts": [
+      {
+        "value": "3",
+        "label": "vidas por combate"
+      },
+      {
+        "value": "2",
+        "label": "saltos por vida"
+      },
+      {
+        "value": "1.65x",
+        "label": "empuje del dash attack"
+      },
+      {
+        "value": "0 HP",
+        "label": "sin barra, solo voltaje"
+      }
+    ],
+    "tocLabel": "En esta página",
+    "sections": {
+      "objective": {
+        "num": "I",
+        "title": "Objetivo",
+        "paragraphs": [
+          "Tu objetivo es expulsar al rival del escenario. Cada jugador empieza con 3 vidas; cuando pierde la tercera, la partida termina.",
+          "Aquí no existe barra de vida. Cada golpe recibido aumenta el voltaje que rodea tu retrato. Cuanto más sube ese arco, más lejos sales despedido con el siguiente impacto. A voltaje bajo sobrevives; en rojo, casi cualquier error te manda fuera."
+        ]
+      },
+      "arena": {
+        "num": "II",
+        "title": "Arena",
+        "intro": [
+          "Todos los mapas tienen una plataforma principal y, según el escenario, apoyos flotantes para extender rutas, resets o confirmaciones de combo."
+        ],
+        "stageBadge": "Diseños de escenario",
+        "boundaryLabels": {
+          "left": "Vacío",
+          "right": "Vacío",
+          "bottom": "Abismo"
+        },
+        "stageNames": [
+          "Karnamru",
+          "Surya",
+          "Vayusvara",
+          "Daat"
+        ],
+        "outro": [
+          "Las líneas rojas marcan los límites del vacío. Si cruzas lateral o inferiormente, pierdes una vida. Las plataformas flotantes se atraviesan desde abajo, así que sirven tanto para escapar como para tender trampas."
+        ]
+      },
+      "controls": {
+        "num": "III",
+        "title": "Controles",
+        "helper": "Estas son las entradas base del sistema. Domínalas primero; todo el juego sale de aquí.",
+        "or": "o",
+        "dashNote": "doble toque",
+        "items": {
+          "move": "Moverse",
+          "jump": "Saltar",
+          "attackBlock": "Atacar / bloquear",
+          "dash": "Dash",
+          "crouch": "Agacharse"
+        }
+      },
+      "attacks": {
+        "num": "IV",
+        "title": "Ataques",
+        "intro": "Una pulsación de SPACE lanza un golpe. Si vuelves a pulsar justo después de conectar, encadenas hasta tres impactos. Si dejas demasiado espacio entre ellos, la cadena se reinicia.",
+        "moves": [
+          {
+            "input": "SPACE",
+            "name": "Ataque normal",
+            "description": "Golpe base. Encadena hasta 3 impactos si repites la entrada al ritmo correcto después de cada conexión."
+          },
+          {
+            "input": "SPACE en el aire",
+            "name": "Ataque aéreo",
+            "description": "Golpe mientras estás suspendido. Rompe la cadena actual, pero es excelente para cortar saltos o cerrar recuperaciones."
+          },
+          {
+            "input": "↓ + SPACE",
+            "name": "Ataque agachado",
+            "description": "Impacto bajo para castigar rivales que se cubren o juegan a ras de suelo. También rompe el combo actual."
+          },
+          {
+            "input": "→→ y luego SPACE",
+            "name": "Dash attack",
+            "description": "La herramienta más explosiva del kit. Tiene más alcance, aplica 1.65x de knockback y solo puedes usarla una vez por dash."
+          }
+        ],
+        "combo": {
+          "label": "Combo",
+          "hits": [
+            "Golpe 1",
+            "Golpe 2",
+            "Golpe 3"
+          ],
+          "note": "pulsa otra vez justo al conectar para mantener la cadena"
+        },
+        "outro": "Cada hit de combo también empuja el voltaje del intercambio. A medida que ambos jugadores acumulan carga, una secuencia limpia pasa de presión ligera a amenaza real de expulsión."
+      },
+      "dash": {
+        "num": "V",
+        "title": "Dash",
+        "paragraphs": [
+          "El dash se activa con doble toque lateral. Es una ráfaga corta, rápida y muy decisiva porque cancela el knockback en el instante en que se dispara.",
+          "Eso lo convierte en tu mejor recurso defensivo cuando estás siendo arrastrado o cuando necesitas recolocarte para volver a pelear con iniciativa."
+        ],
+        "bullets": [
+          "Necesita una breve recarga entre usos.",
+          "No puedes bloquear inmediatamente al terminarlo; hay una pequeña ventana de vulnerabilidad.",
+          "Si atacas justo al salir del dash conviertes esa movilidad en la jugada más fuerte del juego."
+        ]
+      },
+      "block": {
+        "num": "VI",
+        "title": "Bloqueo",
+        "paragraphs": [
+          "Mantén SPACE un instante para entrar en guardia. El bloqueo reduce mucho la distancia a la que sales despedido y suaviza la subida de voltaje.",
+          "No inmoviliza por completo al personaje: sigues moviéndote despacio, así que puedes reposicionarte mientras absorbes presión."
+        ],
+        "bullets": [
+          "No puedes bloquear en el aire.",
+          "No puedes bloquear justo después de un dash.",
+          "No puedes bloquear mientras estás atacando.",
+          "Con el arco completamente rojo, la guardia queda deshabilitada y solo te quedan salto y dash."
+        ],
+        "tip": "Mantener la guardia drena voltaje poco a poco. Es útil para salir de la zona roja, pero cada segundo bloqueando es un segundo cediendo iniciativa al rival."
+      },
+      "voltage": {
+        "num": "VII",
+        "title": "Voltaje",
+        "paragraphs": [
+          "El arco alrededor de tu retrato es toda la información crítica del combate. Empieza azul, pasa a amarillo conforme recibes presión y entra en rojo cuando estás realmente en peligro.",
+          "La progresión no es lineal: los primeros golpes suben rápido, luego el riesgo se acumula de forma más estratégica. Cuando el estado crítico aparece, el margen para fallar prácticamente desaparece."
+        ],
+        "states": [
+          {
+            "tone": "safe",
+            "label": "Azul",
+            "caption": "seguro"
+          },
+          {
+            "tone": "warn",
+            "label": "Amarillo",
+            "caption": "peligro"
+          },
+          {
+            "tone": "critical",
+            "label": "Rojo",
+            "caption": "crítico"
+          }
+        ]
+      },
+      "tips": {
+        "num": "VIII",
+        "title": "Consejos pro",
+        "items": [
+          {
+            "title": "Guarda el dash attack",
+            "text": "No lo gastes por inercia. Cuando el rival ya está en amarillo fuerte o rojo, ese golpe es el que más convierte presión en expulsión."
+          },
+          {
+            "title": "Piensa en el segundo salto",
+            "text": "Tienes dos saltos y ambos se resetean al tocar suelo. El segundo salto es recuperación, mix-up y corrección de spacing a la vez."
+          },
+          {
+            "title": "Bloquea antes, no tarde",
+            "text": "La guardia no entra instantáneamente. Si esperas a ver el golpe encima, normalmente ya llegas tarde al intercambio."
+          },
+          {
+            "title": "Usa el choque de cuerpos",
+            "text": "Cuando los jugadores se empujan entre sí, la colisión cambia spacing y ángulos. Aprende a leer ese rebote porque regala confirmaciones inesperadas."
+          }
+        ]
+      }
+    },
+    "footer": "Enuma Fighter · Manual operativo rev 2.0"
   },
   "legal": {
     "back": "Volver",
