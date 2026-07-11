@@ -227,6 +227,48 @@
     },
     "footer": "Enuma Fighter · Operational manual rev 2.0"
   },
+  "lobby": {
+    "a11y": {
+      "mainHub": "Main hub",
+      "logo": "Enuma Fighter logo"
+    },
+    "status": {
+      "ready": "Ready"
+    },
+    "soon": "Soon",
+    "logout": "Logout",
+    "logoutAria": "Log out {{playerName}}",
+    "footer": {
+      "arena": "Worldwide Arena",
+      "season": "Season 01"
+    },
+    "menu": {
+      "fight": {
+        "label": "Fight",
+        "kicker": "Smash"
+      },
+      "profile": {
+        "label": "Profile",
+        "kicker": "Fighter"
+      },
+      "achievements": {
+        "label": "Achievements",
+        "kicker": "Rewards"
+      },
+      "chat": {
+        "label": "Chat",
+        "kicker": "Social"
+      },
+      "friends": {
+        "label": "Friends",
+        "kicker": "Crew"
+      },
+      "manual": {
+        "label": "Manual",
+        "kicker": "Codex"
+      }
+    }
+  },
   "legal": {
     "back": "Back",
     "appName": "Enuma Fighter",

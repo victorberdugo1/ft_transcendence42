@@ -227,6 +227,48 @@
     },
     "footer": "Enuma Fighter · Manual operatiu rev 2.0"
   },
+  "lobby": {
+    "a11y": {
+      "mainHub": "Hub principal",
+      "logo": "Logotip d'Enuma Fighter"
+    },
+    "status": {
+      "ready": "A punt"
+    },
+    "soon": "Aviat",
+    "logout": "Tancar sessio",
+    "logoutAria": "Tanca la sessio de {{playerName}}",
+    "footer": {
+      "arena": "Arena global",
+      "season": "Temporada 01"
+    },
+    "menu": {
+      "fight": {
+        "label": "Fight",
+        "kicker": "Smash"
+      },
+      "profile": {
+        "label": "Perfil",
+        "kicker": "Fighter"
+      },
+      "achievements": {
+        "label": "Assoliments",
+        "kicker": "Rewards"
+      },
+      "chat": {
+        "label": "Xat",
+        "kicker": "Social"
+      },
+      "friends": {
+        "label": "Amics",
+        "kicker": "Crew"
+      },
+      "manual": {
+        "label": "Manual",
+        "kicker": "Codex"
+      }
+    }
+  },
   "legal": {
     "back": "Enrere",
     "appName": "Enuma Fighter",
