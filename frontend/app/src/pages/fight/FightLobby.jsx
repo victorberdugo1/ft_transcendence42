@@ -1,5 +1,6 @@
 import LanguageSelector from "@src/components/LanguageSelector.jsx";
 import PageBackButton from "@src/components/ui/PageBackButton.jsx";
+import { apiFetchJson } from "@src/utils/http.js";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -19,15 +20,6 @@ const MODES = [
   { id: "spectate" },
 ];
 const DEFAULT_AVATAR_URL = "/avatars/default.png";
-
-async function apiFetch(path, opts = {}) {
-  const res = await fetch(path, { credentials: "include", ...opts });
-  if (!res.ok) {
-    const body = await res.json().catch(() => ({}));
-    throw new Error(body.error || `HTTP ${res.status}`);
-  }
-  return res.json();
-}
 
 // ── UserCard ───────────────────────────────────────────────────────────────────
 
@@ -456,7 +448,7 @@ function ModeSpectator({ onEnterGame }) {
 
   async function load() {
     try {
-      const data = await apiFetch("/api/sessions");
+      const data = await apiFetchJson("/api/sessions");
       setSessions(data.sessions ?? []);
       setError("");
     } catch (e) {
