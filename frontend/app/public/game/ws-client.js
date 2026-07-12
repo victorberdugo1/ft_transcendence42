@@ -72,7 +72,7 @@ window.addEventListener('keydown', e => {
 setInterval(() => {
     if (window._myClientId === -1) { Object.assign(frameEvents, EMPTY_FRAME); return; }
 
-    sendInput({
+    let frame = {
         moveX:      (keys['KeyD'] || keys['ArrowRight'] ? 1 : 0) - (keys['KeyA'] || keys['ArrowLeft'] ? 1 : 0),
         jump:       frameEvents.jump,
         attack:     frameEvents.attack,
@@ -81,10 +81,16 @@ setInterval(() => {
         crouch:     !!(keys['KeyS'] || keys['ArrowDown']),
         block:      !!(keys[ACTION_KEY] || keys[ACTION_KEY_ALT]),
         dashAttack: frameEvents.dashAttack,
-    });
+    };
+    if (window._touchControls) frame = window._touchControls.applyToFrame(frame);
+    sendInput(frame);
 
     Object.assign(frameEvents, EMPTY_FRAME);
 }, 1000 / 60);
+
+window.addEventListener('ws_init_received', () => {
+    if (window._touchControls) { window._touchControls.hideControls(); window._touchControls.reset(); }
+});
 
 window.addEventListener('beforeunload', (e) => {
     if (window._programmaticReload) return;
@@ -438,6 +444,7 @@ function connectWS() {
             }
 
         } else if (msg.type === 'match_start') {
+            if (window._touchControls) { window._touchControls.showControls(); }
             if (Array.isArray(msg.players) && msg.players.length > 0 &&
                 !msg.players.includes(window._myClientId) &&
                 window._myClientId !== -1) {
@@ -517,6 +524,7 @@ function connectWS() {
             }, window._victoryOverlayDelayMs ?? 3000);
 
         } else if (msg.type === 'match_finished') {
+            if (window._touchControls) { window._touchControls.hideControls(); window._touchControls.reset(); }
             try { SSS_KEYS.forEach(k => sessionStorage.removeItem(k)); } catch {}
             Object.assign(window, {
                 _myClientId:          -1,
