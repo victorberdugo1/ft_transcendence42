@@ -56,6 +56,16 @@ export default function GameShell({
     leaveAckPendingRef.current = leaveAckPending;
   }, [leaveAckPending]);
 
+  // Disparar evento de touch-controls cuando el match comienza/termina
+  useEffect(() => {
+    if (matchStarted && window._touchControls) {
+      window._touchControls.showControls();
+    } else if (!matchStarted && window._touchControls) {
+      window._touchControls.hideControls();
+      window._touchControls.reset();
+    }
+  }, [matchStarted]);
+
   function handleBackToLobby() {
     if (
       lobbyPairedRef.current &&

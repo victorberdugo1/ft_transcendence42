@@ -1,0 +1,245 @@
+/* ─────────────────────────────────────────────────────────────────── */
+/* Controles Táctiles para Mobile                                      */
+/* ─────────────────────────────────────────────────────────────────── */
+
+#touch-controls-container {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 40;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    padding: 12px;
+    background: linear-gradient(to top, rgba(8, 12, 20, 0.95), rgba(8, 12, 20, 0.7), transparent);
+    pointer-events: none;
+    opacity: 1;
+    transition: opacity 0.3s ease;
+    height: auto;
+    max-height: 28vh;
+}
+
+#touch-controls-container.touch-controls-hidden {
+    opacity: 0;
+    pointer-events: none;
+    display: none;
+}
+
+#touch-controls-container.touch-controls-visible {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+#touch-controls-container > * {
+    pointer-events: auto;
+}
+
+/* ─────────────────────────────────────────────────────────────────── */
+/* D-Pad (Movimiento + Agacharse)                                      */
+/* ─────────────────────────────────────────────────────────────────── */
+
+.touch-dpad-section {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+}
+
+.touch-dpad {
+    position: relative;
+    width: 140px;
+    height: 140px;
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    grid-template-rows: 1fr 1fr 1fr;
+    gap: 4px;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(215, 194, 154, 0.2);
+    border-radius: 16px;
+    padding: 8px;
+    overflow: hidden;
+}
+
+.touch-dpad-btn {
+    border: 1px solid rgba(215, 194, 154, 0.25);
+    border-radius: 12px;
+    background: rgba(215, 194, 154, 0.08);
+    color: #d7c29a;
+    cursor: pointer;
+    font-size: 0;
+    overflow: hidden;
+    transition:
+        background 0.1s ease,
+        border-color 0.1s ease,
+        box-shadow 0.1s ease;
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.touch-dpad-btn:not(.touch-center):not(:disabled):active,
+.touch-dpad-btn:not(.touch-center):not(:disabled).active {
+    background: rgba(215, 194, 154, 0.25);
+    border-color: rgba(215, 194, 154, 0.6);
+    box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.4),
+                0 0 8px rgba(215, 194, 154, 0.3);
+}
+
+.touch-dpad-btn.touch-center {
+    cursor: default;
+    pointer-events: none;
+    background: transparent;
+    border: none;
+}
+
+.touch-up    { grid-column: 2; grid-row: 1; }
+.touch-left  { grid-column: 1; grid-row: 2; }
+.touch-center { grid-column: 2; grid-row: 2; }
+.touch-right { grid-column: 3; grid-row: 2; }
+.touch-down  { grid-column: 2; grid-row: 3; }
+
+/* Iconos ASCII para los botones del D-Pad */
+.touch-up::before    { content: '▲'; font-size: 1.4rem; }
+.touch-left::before  { content: '◄'; font-size: 1.4rem; }
+.touch-right::before { content: '►'; font-size: 1.4rem; }
+.touch-down::before  { content: '▼'; font-size: 1.4rem; }
+
+/* ─────────────────────────────────────────────────────────────────── */
+/* Boton de Accion unico (tap=ataque, hold=bloqueo, doble tap=dash)    */
+/* ─────────────────────────────────────────────────────────────────── */
+
+.touch-action-section {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    flex: 1;
+}
+
+.touch-action-btn {
+    width: 90px;
+    height: 90px;
+    border-radius: 50%;
+    border: 2px solid rgba(255, 100, 100, 0.4);
+    background: linear-gradient(135deg,
+        rgba(255, 100, 100, 0.15),
+        rgba(255, 100, 100, 0.05));
+    color: #ff6464;
+    font-family: 'Arial Black', Impact, sans-serif;
+    font-size: 1.6rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition:
+        background 0.1s ease,
+        border-color 0.1s ease,
+        box-shadow 0.1s ease,
+        transform 0.08s ease;
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+}
+
+.touch-action-btn::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.15), transparent);
+    pointer-events: none;
+}
+
+.touch-action-btn:active,
+.touch-action-btn.active {
+    background: linear-gradient(135deg,
+        rgba(255, 100, 100, 0.3),
+        rgba(255, 100, 100, 0.18));
+    border-color: rgba(255, 100, 100, 0.8);
+    box-shadow: 0 0 16px rgba(255, 100, 100, 0.45),
+                inset 0 2px 4px rgba(0, 0, 0, 0.3);
+    transform: scale(0.94);
+}
+
+.touch-btn-label {
+    display: block;
+    line-height: 1;
+}
+
+/* ─────────────────────────────────────────────────────────────────── */
+/* Responsive                                                           */
+/* ─────────────────────────────────────────────────────────────────── */
+
+@media (max-height: 600px) {
+    #touch-controls-container {
+        gap: 8px;
+        padding: 8px;
+        max-height: 24vh;
+    }
+
+    .touch-dpad {
+        width: 120px;
+        height: 120px;
+    }
+
+    .touch-dpad-btn {
+        border-radius: 10px;
+    }
+
+    .touch-action-btn {
+        width: 72px;
+        height: 72px;
+        font-size: 1.3rem;
+    }
+}
+
+@media (max-width: 480px) {
+    #touch-controls-container {
+        gap: 8px;
+        max-height: 26vh;
+        padding: 8px;
+    }
+
+    .touch-dpad {
+        width: 110px;
+        height: 110px;
+    }
+
+    .touch-action-btn {
+        width: 64px;
+        height: 64px;
+        font-size: 1.2rem;
+    }
+}
+
+/* ─────────────────────────────────────────────────────────────────── */
+/* Animación de indicador de que el juego está activo                  */
+/* ─────────────────────────────────────────────────────────────────── */
+
+@keyframes pulse-border {
+    0%, 100% {
+        border-color: rgba(215, 194, 154, 0.2);
+    }
+    50% {
+        border-color: rgba(215, 194, 154, 0.35);
+    }
+}
+
+#touch-controls-container.touch-controls-visible {
+    animation: pulse-border 3s ease-in-out infinite;
+}
+
+/* ─────────────────────────────────────────────────────────────────── */
+/* Ocultar en desktop                                                   */
+/* ─────────────────────────────────────────────────────────────────── */
+
+@media (min-width: 769px) {
+    #touch-controls-container {
+        display: none !important;
+    }
+}
