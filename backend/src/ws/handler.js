@@ -503,6 +503,7 @@ async function onConnection(ws, req) {
     ws.on('message', async (raw) => {
         let msg;
         try { msg = JSON.parse(raw); } catch { return; }
+        if (!msg || typeof msg !== 'object') return;
         // Registrar cuándo llegó el primer mensaje de este WS.
         // disconnectPlayer usa este timestamp para no cerrar conexiones recientes
         // (evita matar un WS nuevo que tomó el slot justo antes de que el
