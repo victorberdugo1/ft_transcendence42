@@ -74,12 +74,24 @@ function applyCharDef(p, charId) {
     p.attackRange     = def.attackRange;
 }
 
+// Clamps a client-supplied axis value to a finite number in [-1, 1].
+// Guards physics.js (which multiplies this directly into velocity and feeds
+// it to Math.sign) against NaN/Infinity/strings/huge values from malformed
+// or malicious 'input' messages.
+function sanitizeAxis(value) {
+    const n = Number(value);
+    if (!Number.isFinite(n)) return 0;
+    if (n > 1) return 1;
+    if (n < -1) return -1;
+    return n;
+}
+
 function applyInput(p, msg) {
-    p.input.moveX      = msg.moveX      ?? 0;
+    p.input.moveX      = sanitizeAxis(msg.moveX);
     p.input.jump       = !!msg.jump;
     p.input.attack     = !!msg.attack;
     p.input.dash       = !!msg.dash;
-    p.input.dashDir    = msg.dashDir    ?? 0;
+    p.input.dashDir    = sanitizeAxis(msg.dashDir);
     p.input.crouch     = !!msg.crouch;
     p.input.block      = !!msg.block;
     p.input.dashAttack = !!msg.dashAttack;

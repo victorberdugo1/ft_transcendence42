@@ -193,43 +193,47 @@ app.get('/api/spectators/:sessionId', requireAuth, async (req, res) => {
 });
 
 // ─── Dev-only endpoints ───────────────────────────────────────────────────────
+// No auth required by design (local testing convenience) — must never be
+// reachable outside development, so the whole block is gated by NODE_ENV.
 
-app.post('/api/dev/duel', (req, res) => {
-    const { players, playerSession, startDuel } = gameSession;
-    const free = Object.values(players).filter(p => !playerSession.has(p.id)).map(p => p.id);
-    if (free.length < 2)
-        return res.status(400).json({ error: 'Need at least 2 players not already in a session' });
-    const sessions = [];
-    for (let i = 0; i + 1 < free.length; i += 2) sessions.push(startDuel(free[i], free[i + 1]).id);
-    res.json({ sessions });
-});
+if (process.env.NODE_ENV !== 'production') {
+    app.post('/api/dev/duel', (req, res) => {
+        const { players, playerSession, startDuel } = gameSession;
+        const free = Object.values(players).filter(p => !playerSession.has(p.id)).map(p => p.id);
+        if (free.length < 2)
+            return res.status(400).json({ error: 'Need at least 2 players not already in a session' });
+        const sessions = [];
+        for (let i = 0; i + 1 < free.length; i += 2) sessions.push(startDuel(free[i], free[i + 1]).id);
+        res.json({ sessions });
+    });
 
-app.post('/api/dev/training', (req, res) => {
-    const { players, playerSession, startTraining } = gameSession;
-    const { clientId, cpuCharId, cpuCharIds, stageId = 0 } = req.body ?? {};
-    if (!clientId || !players[clientId])
-        return res.status(404).json({ error: 'Player not connected' });
-    if (playerSession.has(clientId))
-        return res.status(409).json({ error: 'Player already in a session' });
-    const charIds = Array.isArray(cpuCharIds) && cpuCharIds.length
-        ? cpuCharIds
-        : [cpuCharId ?? 'qui'];
-    const session = startTraining(clientId, charIds, stageId);
-    res.json({ sessionId: session.id, cpuIds: session.cpuIds, cpuId: session.cpuId });
-});
+    app.post('/api/dev/training', (req, res) => {
+        const { players, playerSession, startTraining } = gameSession;
+        const { clientId, cpuCharId, cpuCharIds, stageId = 0 } = req.body ?? {};
+        if (!clientId || !players[clientId])
+            return res.status(404).json({ error: 'Player not connected' });
+        if (playerSession.has(clientId))
+            return res.status(409).json({ error: 'Player already in a session' });
+        const charIds = Array.isArray(cpuCharIds) && cpuCharIds.length
+            ? cpuCharIds
+            : [cpuCharId ?? 'qui'];
+        const session = startTraining(clientId, charIds, stageId);
+        res.json({ sessionId: session.id, cpuIds: session.cpuIds, cpuId: session.cpuId });
+    });
 
-app.post('/api/dev/tournament', async (req, res) => {
-    const { players, startTournament } = gameSession;
-    const free = Object.values(players).filter(p => !playerSession.has(p.id)).map(p => p.id);
-    if (free.length < 2)
-        return res.status(400).json({ error: 'Need at least 2 players not already in a session' });
-    try {
-        const tournamentId = await startTournament(free, req.user?.user_id ?? null);
-        res.json({ tournamentId });
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
-});
+    app.post('/api/dev/tournament', async (req, res) => {
+        const { players, startTournament } = gameSession;
+        const free = Object.values(players).filter(p => !playerSession.has(p.id)).map(p => p.id);
+        if (free.length < 2)
+            return res.status(400).json({ error: 'Need at least 2 players not already in a session' });
+        try {
+            const tournamentId = await startTournament(free, req.user?.user_id ?? null);
+            res.json({ tournamentId });
+        } catch (err) {
+            res.status(500).json({ error: err.message });
+        }
+    });
+}
 
 // ─── WebSocket ────────────────────────────────────────────────────────────────
 
