@@ -110,6 +110,7 @@ static void Skybox_Load(int stageId) {
     if (g_sky.loaded) {
         UnloadModel(g_sky.model);
         UnloadTexture(g_sky.cubemap);
+        UnloadShader(g_sky.shader);
         g_sky.loaded = false;
     }
 
@@ -142,6 +143,7 @@ static void Skybox_Unload(void) {
     if (!g_sky.loaded) return;
     UnloadModel(g_sky.model);
     UnloadTexture(g_sky.cubemap);
+    UnloadShader(g_sky.shader);
     g_sky.loaded      = false;
     g_sky.loadedStage = -1;
 }

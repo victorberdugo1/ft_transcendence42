@@ -468,6 +468,15 @@ async function onConnection(ws, req) {
             }
         }
 
+        // Server at capacity: redirect to spectator overflow instead of
+        // growing `players` unboundedly (that object is iterated every tick
+        // at 60 Hz by the physics/broadcast loop for every connected client).
+        if (Object.keys(players).length >= MAX_PLAYERS) {
+            console.warn(`[SERVER] Player cap reached (${MAX_PLAYERS}) — redirecting client ${clientId} to spectator overflow`);
+            await ensureSpectatorReady('overflow', null);
+            return;
+        }
+
         kickDuplicateDbUser(clientId, dbUserId);
 
         players[clientId] = createPlayer(clientId, saved, ws);

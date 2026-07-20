@@ -59,14 +59,27 @@ function compareBestCharacter(a, b) {
         a.charId.localeCompare(b.charId);
 }
 
+// Schema shape doesn't change at runtime — cache the result (as an in-flight
+// promise, so concurrent callers share one query) instead of hitting
+// information_schema on every /api/profile/me request.
+let _matchCharacterColumnsCache = null;
+
 async function hasMatchCharacterColumns() {
-    const { rows } = await db.query(
-        `SELECT column_name
-         FROM information_schema.columns
-         WHERE table_name = 'matches'
-           AND column_name IN ('player1_char_id', 'player2_char_id')`
-    );
-    return new Set(rows.map(row => row.column_name)).size === 2;
+    if (_matchCharacterColumnsCache === null) {
+        _matchCharacterColumnsCache = (async () => {
+            const { rows } = await db.query(
+                `SELECT column_name
+                 FROM information_schema.columns
+                 WHERE table_name = 'matches'
+                   AND column_name IN ('player1_char_id', 'player2_char_id')`
+            );
+            return new Set(rows.map(row => row.column_name)).size === 2;
+        })().catch((err) => {
+            _matchCharacterColumnsCache = null;
+            throw err;
+        });
+    }
+    return _matchCharacterColumnsCache;
 }
 
 async function getCharacterStatsRows(userId) {

@@ -6142,28 +6142,58 @@ static inline void DrawAnimatedCharacterTransformed(AnimatedCharacter* character
     int hc = character->renderHeadsCount;
     int tc = character->renderTorsosCount;
 
-    BoneRenderData*   bonesCopy  = bc > 0 ? malloc(sizeof(BoneRenderData)  * bc) : NULL;
-    HeadRenderData*   headsCopy  = hc > 0 ? malloc(sizeof(HeadRenderData)  * hc) : NULL;
-    TorsoRenderData*  torsosCopy = tc > 0 ? malloc(sizeof(TorsoRenderData) * tc) : NULL;
+    // World-space scratch copies used below are function-local `static`
+    // buffers, grown on demand (never shrunk) and reused frame-to-frame
+    // instead of malloc()/free() on every single character/frame — that was
+    // causing heap churn/fragmentation at 60 FPS (see LOW-008 in the audit).
+    // Safe as non-reentrant statics: this function is only ever called
+    // sequentially, one character fully drawn (buffers consumed) before the
+    // next call reuses them.
+    static BoneRenderData*  s_xformBones     = NULL;
+    static int              s_xformBonesCap  = 0;
+    static HeadRenderData*  s_xformHeads     = NULL;
+    static int              s_xformHeadsCap  = 0;
+    static TorsoRenderData* s_xformTorsos    = NULL;
+    static int              s_xformTorsosCap = 0;
+    static AnimationFrame*  s_xformFrame     = NULL;
 
-    if (bonesCopy && bc > 0)  memcpy(bonesCopy,  character->renderBones,  sizeof(BoneRenderData)  * bc);
-    if (headsCopy && hc > 0)  memcpy(headsCopy,  character->renderHeads,  sizeof(HeadRenderData)  * hc);
-    if (torsosCopy && tc > 0) memcpy(torsosCopy, character->renderTorsos, sizeof(TorsoRenderData) * tc);
+    if (bc > s_xformBonesCap) {
+        BoneRenderData* grown = realloc(s_xformBones, sizeof(BoneRenderData) * bc);
+        if (grown) { s_xformBones = grown; s_xformBonesCap = bc; }
+    }
+    if (hc > s_xformHeadsCap) {
+        HeadRenderData* grown = realloc(s_xformHeads, sizeof(HeadRenderData) * hc);
+        if (grown) { s_xformHeads = grown; s_xformHeadsCap = hc; }
+    }
+    if (tc > s_xformTorsosCap) {
+        TorsoRenderData* grown = realloc(s_xformTorsos, sizeof(TorsoRenderData) * tc);
+        if (grown) { s_xformTorsos = grown; s_xformTorsosCap = tc; }
+    }
+    if (!s_xformFrame) s_xformFrame = malloc(sizeof(AnimationFrame));
+
+    // Same fallback semantics as the old malloc()-based code: if a buffer
+    // isn't (yet) large enough, its *Copy pointer stays NULL and callers
+    // below fall back to the character's untransformed local-space arrays.
+    BoneRenderData*   bonesCopy  = (bc > 0 && s_xformBonesCap  >= bc) ? s_xformBones  : NULL;
+    HeadRenderData*   headsCopy  = (hc > 0 && s_xformHeadsCap  >= hc) ? s_xformHeads  : NULL;
+    TorsoRenderData*  torsosCopy = (tc > 0 && s_xformTorsosCap >= tc) ? s_xformTorsos : NULL;
+
+    if (bonesCopy)  memcpy(bonesCopy,  character->renderBones,  sizeof(BoneRenderData)  * bc);
+    if (headsCopy)  memcpy(headsCopy,  character->renderHeads,  sizeof(HeadRenderData)  * hc);
+    if (torsosCopy) memcpy(torsosCopy, character->renderTorsos, sizeof(TorsoRenderData) * tc);
 
     AnimationFrame* transformedFrame = NULL;
-    if (tc > 0 && character->animation.isLoaded &&
+    if (tc > 0 && s_xformFrame && character->animation.isLoaded &&
         character->currentFrame >= 0 && character->currentFrame < character->animation.frameCount)
     {
-        transformedFrame = malloc(sizeof(AnimationFrame));
-        if (transformedFrame) {
-            *transformedFrame = character->animation.frames[character->currentFrame];
-            for (int p = 0; p < transformedFrame->personCount; p++) {
-                Person* person = &transformedFrame->persons[p];
-                for (int b = 0; b < person->boneCount; b++) {
-                    Bone* bone = &person->bones[b];
-                    if (bone->position.valid)
-                        bone->position.position = RotatePointAroundPivot(bone->position.position, pivot, worldPosition, rot);
-                }
+        transformedFrame = s_xformFrame;
+        *transformedFrame = character->animation.frames[character->currentFrame];
+        for (int p = 0; p < transformedFrame->personCount; p++) {
+            Person* person = &transformedFrame->persons[p];
+            for (int b = 0; b < person->boneCount; b++) {
+                Bone* bone = &person->bones[b];
+                if (bone->position.valid)
+                    bone->position.position = RotatePointAroundPivot(bone->position.position, pivot, worldPosition, rot);
             }
         }
     }
@@ -6283,7 +6313,8 @@ static inline void DrawAnimatedCharacterTransformed(AnimatedCharacter* character
     DrawModel3DWithDepthOrder(&character->model3dAttachments, rf, pid,
         character->worldPosition, character->worldPivot, rot, true, camera, transformedCenter, false);
 
-    free(bonesCopy); free(headsCopy); free(torsosCopy); free(transformedFrame);
+    // No free() here: bonesCopy/headsCopy/torsosCopy/transformedFrame are the
+    // persistent static scratch buffers allocated above, reused next frame.
     character->renderer->camera = origCam;
 
     bool hasLiveTrail = false;
