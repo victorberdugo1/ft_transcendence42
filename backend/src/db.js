@@ -7,6 +7,14 @@ const db = new Pool({
     database: process.env.DB_NAME     || 'transcendence_db',
     user:     process.env.DB_USER     || 'postgres',
     password: process.env.DB_PASSWORD || 'postgres',
+    // Without these, `pg` waits forever by default. A hiccup acquiring a
+    // connection or running a query (e.g. a first-boot DNS/network blip on a
+    // freshly created Docker network) would hang an `await` indefinitely
+    // instead of rejecting — and resolveMatchWinner's try/catch only catches
+    // rejections, not hangs, so match_end would never get broadcast and the
+    // client would be stuck on the game screen forever.
+    connectionTimeoutMillis: 10000,
+    query_timeout: 15000,
 });
 
 db.connect()
