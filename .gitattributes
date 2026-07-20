@@ -1,0 +1,14 @@
+# Normalize line endings for all text files to LF in the repo,
+# regardless of the OS/editor that checked them out (avoids Docker/WSL
+# bind mounts flipping every tracked file to CRLF and showing as "modified").
+* text=auto eol=lf
+
+# Explicit binary types — never touch line endings or diff as text.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.svg binary
+*.ico binary
+*.wasm binary
+*.data binary
+*.anim binary
