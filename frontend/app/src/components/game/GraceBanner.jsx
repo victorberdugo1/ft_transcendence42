@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 
 export default function GraceBanner({ grace, myClientId, onRejoin }) {
+  const { t } = useTranslation();
   const [secsLeft, setSecsLeft] = useState(null);
   const [defeated, setDefeated] = useState(false);
 
@@ -50,8 +52,8 @@ export default function GraceBanner({ grace, myClientId, onRejoin }) {
     return (
       <div className="grace-defeat-screen">
         <div className="grace-defeat-icon">💀</div>
-        <div className="grace-defeat-title">Defeat</div>
-        <div className="grace-defeat-copy">Returning to the lobby…</div>
+        <div className="grace-defeat-title">{t("grace.defeatTitle")}</div>
+        <div className="grace-defeat-copy">{t("grace.defeatSubtitle")}</div>
       </div>
     );
   }
@@ -68,8 +70,8 @@ export default function GraceBanner({ grace, myClientId, onRejoin }) {
     >
       <span>
         {isMe
-          ? `You have ${secsLeft}s to return to the fight or lose the match.`
-          : `Your rival has ${secsLeft}s to reconnect\u2026`}
+          ? t("grace.waitingSelf", { seconds: secsLeft })
+          : t("grace.waitingOpponent", { seconds: secsLeft })}
       </span>
       {isMe && (
         <button
@@ -77,7 +79,7 @@ export default function GraceBanner({ grace, myClientId, onRejoin }) {
           className="grace-rejoin-button"
           onClick={onRejoin}
         >
-          Rejoin fight
+          {t("grace.rejoinButton")}
         </button>
       )}
     </div>

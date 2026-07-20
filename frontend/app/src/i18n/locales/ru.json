@@ -21,7 +21,16 @@
     "needAccount": "Нет аккаунта?",
     "createOne": "Создать",
     "haveAccount": "Уже есть аккаунт?",
-    "switchToSignIn": "Войти"
+    "switchToSignIn": "Войти",
+    "checkingSession": "Проверка сессии",
+    "checkingSessionSubtitle": "Приложение спрашивает у сервера, действительна ли ещё ваша сессия."
+  },
+  "grace": {
+    "defeatTitle": "Поражение",
+    "defeatSubtitle": "Возврат в лобби…",
+    "waitingSelf": "У вас есть {{seconds}} с, чтобы вернуться в бой, иначе поражение.",
+    "waitingOpponent": "У соперника есть {{seconds}} с на переподключение…",
+    "rejoinButton": "Вернуться в бой"
   },
   "validation": {
     "emailPasswordRequired": "Эл. почта и пароль обязательны.",
@@ -39,7 +48,8 @@
     "ca": "Каталанский",
     "es": "Испанский",
     "en": "Английский",
-    "ru": "Русский"
+    "ru": "Русский",
+    "fr": "Французский"
   },
   "manual": {
     "backToLobby": "Вернуться в лобби",

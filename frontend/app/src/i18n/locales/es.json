@@ -21,7 +21,16 @@
     "needAccount": "Necesitas una cuenta?",
     "createOne": "Crear una",
     "haveAccount": "Ya tienes cuenta?",
-    "switchToSignIn": "Inicia sesion"
+    "switchToSignIn": "Inicia sesion",
+    "checkingSession": "Comprobando sesion",
+    "checkingSessionSubtitle": "La app esta comprobando con el servidor si tu sesion sigue siendo valida."
+  },
+  "grace": {
+    "defeatTitle": "Derrota",
+    "defeatSubtitle": "Volviendo al lobby...",
+    "waitingSelf": "Tienes {{seconds}}s para volver a la pelea o perderas la partida.",
+    "waitingOpponent": "Tu rival tiene {{seconds}}s para reconectar...",
+    "rejoinButton": "Volver a la pelea"
   },
   "validation": {
     "emailPasswordRequired": "Correo y contrasena son obligatorios.",
@@ -39,7 +48,8 @@
     "ca": "Catala",
     "es": "Espanol",
     "en": "English",
-    "ru": "Русский"
+    "ru": "Русский",
+    "fr": "Frances"
   },
   "manual": {
     "backToLobby": "Volver al lobby",

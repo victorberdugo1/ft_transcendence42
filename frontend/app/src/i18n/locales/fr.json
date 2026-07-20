@@ -1,0 +1,850 @@
+{
+  "auth": {
+    "title": "Connecte-toi pour jouer",
+    "tabLogin": "Connexion",
+    "tabRegister": "Inscription",
+    "privacy": "Politique de confidentialité",
+    "terms": "Conditions d'utilisation",
+    "email": "E-mail",
+    "password": "Mot de passe",
+    "username": "Nom d'utilisateur",
+    "confirmPassword": "Confirmer le mot de passe",
+    "emailPlaceholder": "toi@exemple.com",
+    "passwordPlaceholder": "Ton mot de passe",
+    "registerPasswordPlaceholder": "Au moins 8 caractères",
+    "confirmPasswordPlaceholder": "Répète ton mot de passe",
+    "usernamePlaceholder": "Choisis un nom d'utilisateur",
+    "signIn": "Se connecter",
+    "signingIn": "Connexion...",
+    "createAccount": "Créer un compte",
+    "creatingAccount": "Création du compte...",
+    "needAccount": "Besoin d'un compte ?",
+    "createOne": "En créer un",
+    "haveAccount": "Tu as déjà un compte ?",
+    "switchToSignIn": "Se connecter",
+    "checkingSession": "Vérification de la session",
+    "checkingSessionSubtitle": "L'application demande au serveur si ta session est toujours valide."
+  },
+  "grace": {
+    "defeatTitle": "Défaite",
+    "defeatSubtitle": "Retour au lobby…",
+    "waitingSelf": "Il te reste {{seconds}}s pour revenir au combat, sinon tu perds la partie.",
+    "waitingOpponent": "Ton adversaire a {{seconds}}s pour se reconnecter…",
+    "rejoinButton": "Revenir au combat"
+  },
+  "validation": {
+    "emailPasswordRequired": "L'e-mail et le mot de passe sont obligatoires.",
+    "invalidEmail": "Merci de saisir une adresse e-mail valide.",
+    "loginFailed": "Échec de la connexion.",
+    "serverUnreachable": "Impossible de contacter le serveur. Réessaie.",
+    "allFieldsRequired": "Tous les champs sont obligatoires.",
+    "usernameMin": "Le nom d'utilisateur doit comporter au moins 3 caractères.",
+    "passwordMin": "Le mot de passe doit comporter au moins 8 caractères.",
+    "passwordMismatch": "Les mots de passe ne correspondent pas.",
+    "registerFailed": "Échec de l'inscription."
+  },
+  "language": {
+    "label": "Langue",
+    "ca": "Catalan",
+    "es": "Espagnol",
+    "en": "Anglais",
+    "ru": "Русский",
+    "fr": "Français"
+  },
+  "manual": {
+    "backToLobby": "Retour au lobby",
+    "hero": {
+      "eyebrow": "Opérations // Manuel de combat",
+      "title": "Manuel de combat tactique",
+      "subtitle": "L'essentiel pour entrer sur scène avec une intention claire plutôt que de l'improvisation.",
+      "description": "Le jeu repose sur le contrôle de l'espace, la lecture de l'adversaire et un timing de dash intelligent. Cette page présente les règles et le déroulement des combats de manière claire, rapide et visuellement cohérente avec le reste du jeu."
+    },
+    "quickFacts": [
+      {
+        "value": "3",
+        "label": "stocks par partie"
+      },
+      {
+        "value": "2",
+        "label": "sauts par vie"
+      },
+      {
+        "value": "1.65x",
+        "label": "recul de l'attaque en dash"
+      },
+      {
+        "value": "0 PV",
+        "label": "pas de barre de vie, seulement la tension"
+      }
+    ],
+    "tocLabel": "Sur cette page",
+    "sections": {
+      "objective": {
+        "num": "I",
+        "title": "Objectif",
+        "paragraphs": [
+          "Ton objectif est d'éjecter l'adversaire hors de la scène. Chaque joueur commence avec 3 stocks ; perds le troisième et la partie est terminée.",
+          "Il n'y a pas de barre de vie. Chaque coup encaissé fait monter l'arc de tension autour de ton portrait. Plus cet arc monte, plus le prochain coup t'envoie loin. Une tension basse reste gérable. Une tension rouge signifie que la moindre erreur peut te coûter un stock."
+        ]
+      },
+      "arena": {
+        "num": "II",
+        "title": "Arène",
+        "intro": [
+          "Chaque scène possède une plateforme principale et, selon la carte, des plateformes flottantes qui ouvrent des trajectoires supplémentaires, des resets et des extensions de combo."
+        ],
+        "stageBadge": "Configurations des scènes",
+        "boundaryLabels": {
+          "left": "Vide",
+          "right": "Vide",
+          "bottom": "Abîme"
+        },
+        "stageNames": [
+          "Karnamru",
+          "Surya",
+          "Vayusvara",
+          "Daat"
+        ],
+        "outro": [
+          "Les marqueurs rouges indiquent les limites du vide. Franchis les lignes latérales ou du bas et tu perds un stock. Les plateformes flottantes sont traversables par en dessous, ce qui compte à la fois pour fuir et pour tendre des pièges."
+        ]
+      },
+      "controls": {
+        "num": "III",
+        "title": "Commandes",
+        "helper": "Ce sont les commandes fondamentales du système. Apprends-les en premier ; tout le reste est construit dessus.",
+        "or": "ou",
+        "dashNote": "double appui",
+        "items": {
+          "move": "Se déplacer",
+          "jump": "Sauter",
+          "attackBlock": "Attaquer / bloquer",
+          "dash": "Dash",
+          "crouch": "S'accroupir"
+        }
+      },
+      "attacks": {
+        "num": "IV",
+        "title": "Attaques",
+        "intro": "Appuie une fois sur ESPACE pour frapper. Appuie de nouveau juste après avoir touché pour enchaîner une séquence de trois coups. Si tu attends trop longtemps, la séquence se réinitialise.",
+        "moves": [
+          {
+            "input": "ESPACE",
+            "name": "Attaque normale",
+            "description": "Ton coup au sol standard. Il s'enchaîne jusqu'à 3 frappes si tu réappuies au bon rythme après chaque impact."
+          },
+          {
+            "input": "ESPACE en l'air",
+            "name": "Attaque aérienne",
+            "description": "Attaque en l'air. Elle interrompt ton enchaînement en cours, mais elle est très efficace pour intercepter des sauts ou sceller des retours sur scène."
+          },
+          {
+            "input": "↓ + ESPACE",
+            "name": "Attaque accroupie",
+            "description": "Une frappe basse pour surprendre les adversaires au sol ou punir un jeu défensif accroupi. Elle interrompt aussi la séquence de combo en cours."
+          },
+          {
+            "input": "→→ puis ESPACE",
+            "name": "Attaque en dash",
+            "description": "L'outil le plus explosif de l'arsenal. Elle a plus de portée, applique un recul de 1.65x et n'est disponible qu'une fois par dash."
+          }
+        ],
+        "combo": {
+          "label": "Combo",
+          "hits": [
+            "Coup 1",
+            "Coup 2",
+            "Coup 3"
+          ],
+          "note": "appuie de nouveau juste après l'impact pour garder l'enchaînement actif"
+        },
+        "outro": "Chaque coup du combo augmente aussi la pression de l'échange. À mesure que les deux combattants accumulent de la tension, une séquence propre transforme rapidement une pression légère en une véritable menace d'éjection."
+      },
+      "dash": {
+        "num": "V",
+        "title": "Dash",
+        "paragraphs": [
+          "Le dash se déclenche avec un double appui à gauche ou à droite. C'est une impulsion courte et rapide avec un vrai poids tactique, car elle annule le recul dès l'instant où elle commence.",
+          "Cela en fait ton meilleur outil d'échappée quand tu subis un enchaînement aérien, et l'un des meilleurs moyens de réinitialiser la distance avant de forcer le prochain échange."
+        ],
+        "bullets": [
+          "Il nécessite un court temps de recharge entre deux utilisations.",
+          "Tu ne peux pas bloquer immédiatement après, il y a une courte fenêtre de récupération.",
+          "Si tu attaques juste à la fin du dash, la mobilité se transforme en le coup le plus puissant du jeu."
+        ]
+      },
+      "block": {
+        "num": "VI",
+        "title": "Blocage",
+        "paragraphs": [
+          "Maintiens ESPACE un instant pour entrer en position de garde. Le blocage réduit fortement la distance d'éjection et ralentit la montée de la tension.",
+          "Cela ne fige pas le personnage. Tu continues à te déplacer lentement, ce qui te permet de te repositionner tout en absorbant la pression."
+        ],
+        "bullets": [
+          "Tu ne peux pas bloquer en l'air.",
+          "Tu ne peux pas bloquer immédiatement après un dash.",
+          "Tu ne peux pas bloquer en attaquant.",
+          "Quand l'arc est entièrement rouge, la garde est désactivée et il ne reste que le saut ou le dash."
+        ],
+        "tip": "Maintenir la garde réduit la tension au fil du temps. Cela peut te sortir d'un état critique, mais chaque seconde passée à bloquer est une seconde d'initiative offerte à ton adversaire."
+      },
+      "voltage": {
+        "num": "VII",
+        "title": "Tension",
+        "paragraphs": [
+          "L'arc autour de ton portrait est l'indicateur clé du combat. Il commence en bleu, passe au jaune à mesure que la pression augmente, et devient rouge quand tu es en danger réel.",
+          "Sa progression n'est pas linéaire : les premiers coups la font grimper rapidement, puis le risque devient plus une question d'élan et de timing. Une fois l'état critique atteint, la marge d'erreur est quasi nulle."
+        ],
+        "states": [
+          {
+            "tone": "safe",
+            "label": "Bleu",
+            "caption": "sûr"
+          },
+          {
+            "tone": "warn",
+            "label": "Jaune",
+            "caption": "danger"
+          },
+          {
+            "tone": "critical",
+            "label": "Rouge",
+            "caption": "critique"
+          }
+        ]
+      },
+      "tips": {
+        "num": "VIII",
+        "title": "Astuces de pro",
+        "items": [
+          {
+            "title": "Garde l'attaque en dash",
+            "text": "Ne la gaspille pas sans réfléchir. Quand l'adversaire est déjà bien avancé en jaune ou en rouge, ce coup est le moyen le plus rapide de transformer la pression en stock."
+          },
+          {
+            "title": "Pense avec le deuxième saut",
+            "text": "Tu as deux sauts et les deux se réinitialisent à l'atterrissage. Le deuxième saut sert à la fois à te sauver, à varier tes options et à corriger ta distance."
+          },
+          {
+            "title": "Bloque tôt, pas tard",
+            "text": "La garde n'est pas instantanée. Si tu attends que le coup soit déjà sur toi, l'échange est généralement perdu."
+          },
+          {
+            "title": "Utilise la collision des corps",
+            "text": "Quand les combattants se poussent, la collision modifie la distance et les angles. Apprends ce rebond, car il crée des enchaînements qui semblent accidentels mais ne le sont pas."
+          }
+        ]
+      }
+    },
+    "footer": "Enuma Fighter · Manuel opérationnel rev 2.0"
+  },
+  "lobby": {
+    "a11y": {
+      "mainHub": "Hub principal",
+      "logo": "Logo Enuma Fighter"
+    },
+    "status": {
+      "ready": "Prêt"
+    },
+    "soon": "Bientôt",
+    "logout": "Déconnexion",
+    "logoutAria": "Déconnecter {{playerName}}",
+    "footer": {
+      "arena": "Arène mondiale",
+      "season": "Saison 01"
+    },
+    "menu": {
+      "fight": {
+        "label": "Combat",
+        "kicker": "Smash"
+      },
+      "profile": {
+        "label": "Profil",
+        "kicker": "Combattant"
+      },
+      "achievements": {
+        "label": "Succès",
+        "kicker": "Récompenses"
+      },
+      "social": {
+        "label": "Social",
+        "kicker": "Réseau"
+      },
+      "chat": {
+        "label": "Chat",
+        "kicker": "Social"
+      },
+      "friends": {
+        "label": "Amis",
+        "kicker": "Équipe"
+      },
+      "manual": {
+        "label": "Manuel",
+        "kicker": "Codex"
+      }
+    }
+  },
+  "socialHub": {
+    "kicker": "Réseau opérationnel",
+    "title": "Hub social",
+    "subtitle": "Coordonne des matchs, réponds aux demandes et reste à jour avec l'activité sociale en direct de {{playerName}}.",
+    "backToLobby": "← Retour au lobby",
+    "summary": {
+      "onlineFriends": "Amis en ligne",
+      "unread": "Non lus",
+      "pending": "Demandes"
+    },
+    "tabs": {
+      "label": "Sections sociales",
+      "global": "Global",
+      "direct": "Direct",
+      "friends": "Amis",
+      "requests": "Demandes"
+    },
+    "sideTitles": {
+      "global": "Canaux actifs",
+      "direct": "Conversations récentes",
+      "friends": "Équipe connectée",
+      "requests": "Demandes reçues"
+    },
+    "mainKickers": {
+      "channel": "Canal global",
+      "direct": "Ligne privée",
+      "friend": "Contact",
+      "request": "Demande",
+      "empty": "Panneau"
+    },
+    "presence": {
+      "online": "En ligne",
+      "offline": "Hors ligne",
+      "in_lobby": "Dans le lobby",
+      "in_match": "En match",
+      "in_tournament_room": "En tournoi",
+      "spectating": "En spectateur"
+    },
+    "channelKicker": "Lobby",
+    "requestKicker": "En attente",
+    "friendMeta": "Prêt à coordonner",
+    "you": "Toi",
+    "noMessagesYet": "Aucun message pour l'instant",
+    "loadingThread": "Chargement de la conversation...",
+    "emptyThread": "Aucun message n'est encore arrivé dans cette conversation.",
+    "emptySidebar": "Rien n'est encore disponible dans cette section.",
+    "composerLabel": "Canal sortant",
+    "messagesCount": "{{count}} messages dans cette conversation",
+    "messagePlaceholder": "Écris une note tactique, une invitation ou une réponse rapide...",
+    "send": "Envoyer",
+    "sending": "Envoi...",
+    "threadState": {
+      "live": "Activité en direct",
+      "private": "Ligne privée",
+      "channelHint": "Partagé avec tous les joueurs connectés au canal du lobby.",
+      "directHint": "Visible uniquement par toi et le contact sélectionné."
+    },
+    "context": {
+      "global": "Canal ouvert pour coordonner, saluer et suivre l'activité dans le lobby principal.",
+      "direct": "Ligne persistante avec {{playerName}} pour coordonner des matchs, répondre rapidement et assurer le suivi.",
+      "friend": "Consulte l'état actuel de {{playerName}} et lance une action directe sur ce contact.",
+      "request": "Gère la demande en attente de {{playerName}} sans quitter le hub social."
+    },
+    "friendCardKicker": "Joueur allié",
+    "friendDescription": "{{playerName}} fait partie de ton réseau social actif. Depuis ici, tu peux ouvrir un chat direct ou supprimer la relation si elle n'est plus nécessaire.",
+    "requestDescription": "{{playerName}} souhaite rejoindre ton réseau social. Accepte pour débloquer les messages privés persistants et la synchronisation de présence en direct.",
+    "empty": {
+      "title": "Sélectionne un canal ou un contact pour commencer",
+      "description": "Utilise les onglets pour naviguer entre le canal global, les messages directs, les amis et les demandes en attente."
+    },
+    "actions": {
+      "openChat": "Ouvrir le chat",
+      "removeFriend": "Supprimer l'ami",
+      "working": "En cours...",
+      "accept": "Accepter",
+      "dismiss": "Ignorer",
+      "message": "Message",
+      "addFriend": "Ajouter un ami"
+    },
+    "discovery": {
+      "title": "Découvrir des joueurs",
+      "label": "Rechercher par nom d'utilisateur",
+      "placeholder": "ex. quimbur",
+      "searching": "Recherche de profils...",
+      "noResults": "Aucun joueur ne correspond à cette recherche.",
+      "outgoing": "Demande envoyée",
+      "incoming": "T'a envoyé une demande"
+    },
+    "overview": {
+      "title": "Aperçu rapide",
+      "channels": "Canaux",
+      "direct": "Chats directs",
+      "friends": "Amis"
+    },
+    "errors": {
+      "loadHub": "Le hub social n'a pas pu être chargé.",
+      "loadThread": "La conversation sélectionnée n'a pas pu être chargée.",
+      "sendMessage": "Le message n'a pas pu être envoyé.",
+      "acceptRequest": "La demande n'a pas pu être acceptée.",
+      "dismissRequest": "La demande n'a pas pu être ignorée.",
+      "sendRequest": "La demande d'ami n'a pas pu être envoyée.",
+      "removeFriend": "L'amitié n'a pas pu être supprimée."
+    }
+  },
+  "achievementsPage": {
+    "kicker": "Palmarès du combattant",
+    "title": "Succès",
+    "backToLobby": "← Retour au lobby",
+    "hero": {
+      "chip": "Progression active",
+      "title": "Tableau des succès de {{playerName}}",
+      "description": "Consulte chaque étape débloquée, la progression actuelle des objectifs en cours et la prochaine récompense compétitive sur ce profil de joueur."
+    },
+    "summary": {
+      "unlocked": "Débloqués",
+      "completion": "Progression",
+      "wins": "Victoires",
+      "bestStreak": "Meilleure série"
+    },
+    "loading": {
+      "title": "Chargement des succès...",
+      "text": "Synchronisation des récompenses d'arène et de la progression compétitive."
+    },
+    "error": {
+      "title": "Les succès n'ont pas pu être chargés"
+    },
+    "errors": {
+      "loadFailed": "Le tableau des succès n'a pas pu être chargé."
+    },
+    "status": {
+      "unlocked": "Débloqué",
+      "locked": "Verrouillé"
+    },
+    "filters": {
+      "label": "Filtres des succès",
+      "all": "Tous",
+      "unlocked": "Débloqués",
+      "locked": "En attente"
+    },
+    "labels": {
+      "featured": "En vedette",
+      "nextTarget": "Prochain objectif",
+      "catalog": "Catalogue",
+      "catalogCount": "{{count}} entrées visibles",
+      "progressWins": "{{current}} sur {{total}} victoires",
+      "progressStreak": "{{current}} sur {{total}} victoires consécutives",
+      "progressBinary": "{{current}} sur {{total}} objectif",
+      "notEarnedYet": "Pas encore obtenu",
+      "genericHint": "Débloque cet objectif en jouant une partie.",
+      "allUnlockedTitle": "Collection complète",
+      "allUnlockedText": "Tu possèdes déjà tous les succès actuellement disponibles cette saison."
+    },
+    "definitions": {
+      "first_win": {
+        "name": "Première victoire",
+        "description": "Brise la glace dans l'arène et obtiens ta première victoire.",
+        "hint": "Gagne {{goal}} match pour le débloquer."
+      },
+      "veteran": {
+        "name": "Vétéran",
+        "description": "Montre ta régularité compétitive en accumulant un vrai capital de victoires.",
+        "hint": "Atteins {{goal}} victoires pour le débloquer."
+      },
+      "hot_streak": {
+        "name": "Série chaude",
+        "description": "Enchaîne trois victoires d'affilée et prouve que le lobby t'appartient pour l'instant.",
+        "hint": "Atteins une série de {{goal}} victoires pour le débloquer."
+      },
+      "combo_master": {
+        "name": "Maître du combo",
+        "description": "Réussis une séquence de combo complète dans un match que tu remportes.",
+        "hint": "Termine un match après avoir réussi un combo complet."
+      },
+      "untouchable": {
+        "name": "Intouchable",
+        "description": "Gagne sans subir de dégâts et quitte l'arène sans une égratignure.",
+        "hint": "Gagne un match sans subir de dégâts."
+      },
+      "clean_sweep": {
+        "name": "Nettoyage parfait",
+        "description": "Termine la manche en conservant tes trois stocks.",
+        "hint": "Gagne en conservant tes 3 stocks de départ intacts."
+      },
+      "speedrunner": {
+        "name": "Speedrunner",
+        "description": "Termine le combat avant même que la foule ne s'installe.",
+        "hint": "Gagne en 45 secondes ou moins."
+      },
+      "bracket_breaker": {
+        "name": "Briseur de tableau",
+        "description": "Élimine ton premier adversaire de tournoi sur le tableau officiel.",
+        "hint": "Gagne un match de tournoi."
+      },
+      "tournament_champion": {
+        "name": "Champion du tournoi",
+        "description": "Survis à tout le tableau et repars avec le titre.",
+        "hint": "Gagne un tournoi entier."
+      },
+      "social": {
+        "name": "Social",
+        "description": "Ouvre ta fiche d'équipe et établis ton premier lien d'amitié.",
+        "hint": "Accepte ou obtiens ta première amitié."
+      }
+    }
+  },
+  "fight": {
+    "header": {
+      "title": "Lobby de combat"
+    },
+    "actions": {
+      "back": "← Retour",
+      "logout": "Se déconnecter"
+    },
+    "legal": {
+      "privacy": "Politique de confidentialité",
+      "terms": "Conditions d'utilisation"
+    },
+    "status": {
+      "waiting": "En attente…",
+      "availableIn": "Disponible dans {{seconds}}s…",
+      "serverRelease": "⏳ En attente que le serveur libère ta partie précédente…"
+    },
+    "userCard": {
+      "defaultInitials": "J",
+      "playerFallback": "Joueur",
+      "avatarAlt": "Avatar de {{playerName}}",
+      "stats": {
+        "winsShort": "V",
+        "lossesShort": "D",
+        "levelShort": "Niv"
+      }
+    },
+    "modes": {
+      "versus": {
+        "tab": "Versus",
+        "description": "Joue un 1 contre 1 en direct face à un autre joueur connecté. Une fois entré, le matchmaking se fermera automatiquement dès qu'un second joueur arrive.",
+        "cta": "Trouver un match"
+      },
+      "training": {
+        "tab": "vs IA",
+        "description": "Entraîne-toi contre des adversaires contrôlés par l'IA. Choisis entre 1 et 4 ennemis et sélectionne une scène.",
+        "enemiesLabel": "Ennemis · touche pour activer/désactiver",
+        "stageLabel": "Scène",
+        "enemiesSelected": "{{count}} ennemis",
+        "cta": "Commencer l'entraînement contre {{enemyLabel}}"
+      },
+      "tournament": {
+        "tab": "Tournoi",
+        "description": "Rejoins la salle d'attente du tournoi. Jusqu'à 8 joueurs peuvent y entrer et n'importe qui peut lancer le tableau une fois prêt. Les joueurs éliminés continuent en tant que spectateurs.",
+        "joinCta": "Rejoindre la salle de tournoi",
+        "spectateCta": "Tournoi en cours · regarder à la place",
+        "leaveCta": "← Quitter la salle"
+      },
+      "spectate": {
+        "tab": "Spectateur",
+        "description": "Regarde n'importe quelle session active en direct. La liste se rafraîchit toutes les 3 secondes.",
+        "cta": "Regarder"
+      }
+    },
+    "tournament": {
+      "waitingLine": "🏟️ {{playerCount}}/{{maxPlayers}} en attente{{suffix}}",
+      "inProgressSuffix": "· tournoi en cours",
+      "roomStatus": "Salle d'attente · {{playerCount}}/{{maxPlayers}}{{suffix}}",
+      "startedSuffix": "· le tournoi a commencé",
+      "playerFallback": "Joueur {{clientId}}",
+      "youMarker": "← toi",
+      "botLabel": "Bot (IA)",
+      "autofill": "remplissage auto",
+      "needPlayersTitle": "Il faut au moins 2 joueurs pour commencer",
+      "starting": "Démarrage…",
+      "waitingPlayers": "En attente de joueurs…",
+      "startWithBots": "Démarrer le tournoi ({{playerCount}} joueurs + {{botCount}} bots)",
+      "startPlayersOnly": "Démarrer le tournoi ({{playerCount}} joueurs)",
+      "errors": {
+        "alreadyStarted": "Le tournoi a déjà commencé. Tu peux le regarder à la place.",
+        "roomFull": "La salle est pleine (8 joueurs max).",
+        "notAuthenticated": "Tu dois être connecté pour rejoindre.",
+        "notInRoom": "Tu n'es pas dans la salle.",
+        "notConnected": "Pas encore connecté au serveur. Merci de patienter un instant."
+      }
+    },
+    "spectate": {
+      "loading": "Chargement des sessions…",
+      "empty": "Aucune session active pour le moment. Reviens bientôt.",
+      "playerCount": "{{count}} joueurs",
+      "spectators": "👁 {{count}}",
+      "tournamentTag": "Tournoi #{{tournamentId}}",
+      "modeLabels": {
+        "oneVsOne": "1v1",
+        "brawl": "Bagarre",
+        "tournament": "Tournoi"
+      }
+    }
+  },
+  "profile": {
+    "kicker": "Profil",
+    "player": "Joueur",
+    "loading": {
+      "title": "Chargement du profil...",
+      "text": "Récupération de ton dernier palmarès d'arène."
+    },
+    "error": {
+      "title": "Impossible de charger le profil"
+    },
+    "errors": {
+      "sessionExpired": "Session expirée. Merci de te reconnecter.",
+      "loadFailed": "Le profil n'a pas pu être chargé.",
+      "avatarSaveFailed": "L'avatar n'a pas pu être enregistré."
+    },
+    "actions": {
+      "retry": "Réessayer",
+      "backToLobby": "Retour au lobby"
+    },
+    "header": {
+      "kicker": "Données du combattant",
+      "title": "Profil du joueur"
+    },
+    "tabs": {
+      "aria": "Sections du profil",
+      "overview": "Aperçu",
+      "history": "Historique"
+    },
+    "stats": {
+      "experience": "Expérience",
+      "xpProgress": "Progression XP {{percent}} pour cent",
+      "wins": "Victoires",
+      "losses": "Défaites",
+      "draws": "Matchs nuls",
+      "matches": "Matchs",
+      "winRate": "Taux de victoire",
+      "xp": "XP",
+      "level": "Niveau"
+    },
+    "sections": {
+      "globalStats": "Statistiques globales",
+      "bestCharacter": "Meilleur personnage",
+      "characterStats": "Statistiques par personnage"
+    },
+    "characters": {
+      "bestBadge": "Meilleur personnage",
+      "unknownCharacter": "Personnage"
+    },
+    "history": {
+      "kicker": "Archives des matchs",
+      "recentMatches": "Matchs récents",
+      "opponent": "Adversaire",
+      "vs": "vs",
+      "unknownPlayer": "Joueur inconnu",
+      "you": "Toi",
+      "rival": "Rival",
+      "unknownDate": "Date inconnue",
+      "gameTypes": {
+        "unknown": "Inconnu",
+        "brawler": "Bagarre",
+        "tournament": "Tournoi"
+      },
+      "results": {
+        "win": "VICTOIRE",
+        "loss": "DÉFAITE",
+        "draw": "NUL",
+        "unknown": "INCONNU"
+      }
+    },
+    "avatar": {
+      "alt": "Avatar du profil",
+      "change": "Changer d'avatar",
+      "identity": "Identité du joueur",
+      "choose": "Choisir un avatar",
+      "closeSelector": "Fermer le sélecteur d'avatar",
+      "selected": "Sélectionné",
+      "cancel": "Annuler",
+      "saving": "Enregistrement...",
+      "save": "Enregistrer l'avatar",
+      "options": {
+        "logo": "Logo",
+        "miniLogo": "Mini logo"
+      }
+    },
+    "empty": {
+      "bestCharacterTitle": "Pas encore de meilleur personnage",
+      "bestCharacterText": "Joue des matchs pour découvrir ton meilleur personnage",
+      "characterStatsTitle": "Pas encore de statistiques par personnage",
+      "characterStatsText": "Les nouveaux matchs avec suivi de personnage apparaîtront ici.",
+      "matchHistoryTitle": "Pas encore d'historique de matchs",
+      "matchHistoryText": "Joue des matchs contre des humains pour construire ton historique"
+    },
+    "common": {
+      "unknown": "Inconnu",
+      "notAvailable": "n/d"
+    }
+  },
+  "legal": {
+    "back": "Retour",
+    "appName": "Enuma Fighter",
+    "termsTitle": "Conditions d'utilisation",
+    "termsIntro": "Les présentes Conditions Générales s'appliquent à l'application web Enuma Fighter et aux services associés exploités par aprenafe, isegura-, mmarinov, vberdugo, fcela-ga (le « Prestataire de services »). En accédant à l'Application ou en l'utilisant, tu acceptes ces Conditions. En vigueur à compter du 2026-06-05.",
+    "termsSections": [
+      {
+        "title": "Licence d'utilisation de l'Application",
+        "body": [
+          "Le Prestataire de services t'accorde une licence limitée, non exclusive, non transférable et révocable pour utiliser l'Application à des fins personnelles ou professionnelles internes.",
+          "Tu ne peux pas reproduire, distribuer, modifier, créer des œuvres dérivées, faire de l'ingénierie inverse, décompiler ou désassembler l'Application, sauf lorsque la loi applicable l'autorise expressément."
+        ]
+      },
+      {
+        "title": "Propriété intellectuelle",
+        "body": [
+          "Le Prestataire de services conserve tous les droits de propriété intellectuelle sur l'Application, y compris son code source, son design, ses marques commerciales, marques de service, noms commerciaux, logos et identité visuelle.",
+          "Rien dans ces Conditions ne t'accorde de droit de propriété ou de licence d'utilisation de la propriété intellectuelle du Prestataire de services, sauf mention expresse."
+        ]
+      },
+      {
+        "title": "Résiliation",
+        "body": [
+          "Le Prestataire de services peut suspendre ou résilier ton accès en cas de manquement substantiel à ces Conditions.",
+          "Dans la mesure du raisonnable, tu recevras un préavis écrit de quatorze (14) jours pour remédier au manquement avant résiliation.",
+          "Une suspension immédiate peut intervenir lorsque la loi l'exige ou lorsque ton comportement menace la sécurité, l'intégrité ou le fonctionnement de l'Application."
+        ]
+      },
+      {
+        "title": "Éligibilité",
+        "body": [
+          "Tu dois avoir au moins 16 ans pour utiliser l'Application.",
+          "En accédant à l'Application, tu déclares être légalement autorisé à l'utiliser dans ta juridiction.",
+          "Si tu as moins de 16 ans, un parent ou tuteur légal doit examiner et accepter ces Conditions en ton nom."
+        ]
+      },
+      {
+        "title": "Contenu généré par les utilisateurs et usage acceptable",
+        "body": [
+          "Tu t'engages à ne pas télécharger, publier ou transmettre de contenu illégal, abusif, menaçant, diffamatoire, discriminatoire, trompeur, frauduleux, relevant du spam, du hameçonnage (phishing) ou autrement nuisible.",
+          "Tu ne dois pas porter atteinte à la vie privée, à la propriété intellectuelle ou à d'autres droits légaux de tiers.",
+          "Le Prestataire de services se réserve le droit de supprimer tout contenu enfreignant ces règles, de suspendre ou d'exclure les récidivistes, et de coopérer avec les autorités compétentes lorsque la loi l'exige.",
+          "En soumettant du contenu, tu accordes au Prestataire de services une licence non exclusive, mondiale et libre de redevance pour utiliser, reproduire, distribuer et afficher ce contenu uniquement aux fins d'exploitation, d'amélioration et de fourniture de l'Application.",
+          "Tu déclares et garantis que tu détiens ou contrôles tous les droits nécessaires pour soumettre un tel contenu."
+        ]
+      },
+      {
+        "title": "Limitation de responsabilité",
+        "body": [
+          "Dans toute la mesure permise par la loi applicable, le Prestataire de services ne pourra être tenu responsable des dommages indirects, accessoires, consécutifs, spéciaux ou punitifs découlant de ton utilisation de l'Application.",
+          "Rien dans ces Conditions n'exclut ni ne limite la responsabilité en cas de décès ou de dommage corporel causé par négligence, fraude, fausse déclaration frauduleuse, ou toute autre responsabilité ne pouvant être légalement exclue."
+        ]
+      },
+      {
+        "title": "Indemnisation",
+        "body": [
+          "Dans la mesure permise par la loi, tu acceptes d'indemniser et de dégager de toute responsabilité le Prestataire de services, ses filiales, dirigeants, administrateurs, employés et agents contre toute réclamation découlant de ta violation de ces Conditions ou de ton usage intentionnellement abusif de l'Application.",
+          "Cette obligation ne s'applique pas aux réclamations résultant de la propre négligence ou du comportement illégal du Prestataire de services."
+        ]
+      },
+      {
+        "title": "Droit applicable et juridiction",
+        "body": [
+          "Ces Conditions sont régies par les lois de la juridiction dans laquelle le Prestataire de services est établi, à l'exclusion des règles de conflit de lois.",
+          "Rien dans ces Conditions ne limite les droits impératifs des consommateurs prévus par la loi applicable."
+        ]
+      },
+      {
+        "title": "Conformité au DSA (règlement sur les services numériques)",
+        "body": [
+          "Lorsque l'Application est qualifiée de service intermédiaire au sens du Règlement (UE) 2022/2065 (Digital Services Act), le Prestataire de services maintient un point de contact approprié pour les utilisateurs et les autorités compétentes.",
+          "Les décisions de modération de contenu incluront un exposé des motifs lorsque la loi l'exige, et les utilisateurs pourront exercer les mécanismes de recours ou de règlement des litiges disponibles."
+        ]
+      },
+      {
+        "title": "Modifications de ces Conditions",
+        "body": [
+          "Le Prestataire de services peut mettre à jour ces Conditions de temps à autre.",
+          "Toute modification prendra effet dès sa publication, accompagnée d'une date d'entrée en vigueur mise à jour.",
+          "Les versions antérieures pourront être mises à disposition sur demande raisonnable lorsque la loi l'exige."
+        ]
+      },
+      {
+        "title": "Nous contacter",
+        "body": [
+          "Si tu as des questions ou suggestions concernant ces Conditions, merci de contacter le Prestataire de services : aprenafe, isegura-, mmarinov, vberdugo, fcela-ga."
+        ]
+      }
+    ]
+  },
+  "privacyTitle": "Politique de confidentialité",
+  "privacyIntro": "Cette Politique de confidentialité s'applique à l'application web Enuma Fighter et aux services associés exploités par aprenafe, isegura-, mmarinov, vberdugo et fcela-ga (le « Prestataire de services »). En vigueur à compter du 2026-06-05.",
+  "privacySections": [
+    {
+      "title": "Collecte et utilisation des informations",
+      "body": [
+        "L'Application collecte des informations lorsque tu l'utilises. Ces informations peuvent inclure l'adresse IP (Internet Protocol) de ton appareil, les pages que tu visites, le temps passé sur ces pages et ton système d'exploitation."
+      ]
+    },
+    {
+      "title": "Cookies et technologies de suivi",
+      "body": [
+        "L'Application ou ses SDK tiers peuvent utiliser des cookies, des SDK, des pixels et des technologies similaires pour fournir des fonctionnalités, des analyses et la prestation du service. Lorsque la loi applicable l'exige, le Prestataire de services obtiendra ton consentement avant d'utiliser des technologies de suivi non essentielles."
+      ]
+    },
+    {
+      "title": "Tes droits",
+      "body": [
+        "Tu peux demander l'accès, la correction ou la suppression de tes données personnelles détenues par le Prestataire de services. Pour exercer ces droits ou retirer ton consentement lorsque le traitement est fondé sur le consentement, merci de contacter le Prestataire de services : aprenafe, isegura-, mmarinov, vberdugo et fcela-ga."
+      ]
+    },
+    {
+      "title": "Droits à la confidentialité en Californie (CCPA/CPRA)",
+      "body": [
+        "Si tu résides en Californie, tu as le droit de savoir quelles informations personnelles sont collectées, de demander leur suppression, de t'opposer à la vente ou au partage de tes informations personnelles, et de ne pas subir de discrimination pour avoir exercé ces droits. Pour exercer tes droits, merci de contacter le Prestataire de services."
+      ]
+    },
+    {
+      "title": "Accès des tiers",
+      "body": [
+        "Seules des données agrégées et anonymisées sont transmises périodiquement à des services externes pour aider le Prestataire de services à améliorer l'Application. Le Prestataire de services peut divulguer des informations lorsque la loi l'exige, pour protéger des droits ou la sécurité, enquêter sur une fraude ou répondre à des demandes d'autorités publiques, et peut partager des informations avec des prestataires de confiance liés par cette Politique de confidentialité."
+      ]
+    },
+    {
+      "title": "Transferts internationaux de données",
+      "body": [
+        "Le Prestataire de services ou ses sous-traitants peuvent transférer des données personnelles vers des pays situés en dehors de ton pays de résidence, y compris des pays situés en dehors de l'Espace économique européen (EEE). Lorsque la loi l'exige, des clauses contractuelles types, des décisions d'adéquation ou d'autres garanties légalement reconnues seront utilisées."
+      ]
+    },
+    {
+      "title": "Droits de retrait",
+      "body": [
+        "Tu peux cesser de fournir des informations en arrêtant d'utiliser le site. Pour demander la suppression de tes données personnelles ou retirer ton consentement, merci de contacter le Prestataire de services."
+      ]
+    },
+    {
+      "title": "Conservation des données",
+      "body": [
+        "Les données fournies par l'utilisateur seront conservées pendant la durée de ton utilisation de l'Application, plus 12 mois supplémentaires. Les données collectées automatiquement seront conservées jusqu'à 24 mois après leur collecte. Les données agrégées et anonymisées peuvent être conservées indéfiniment. Les données nécessaires au respect d'obligations légales seront conservées aussi longtemps que la loi applicable l'exige."
+      ]
+    },
+    {
+      "title": "Enfants",
+      "body": [
+        "L'Application n'est pas destinée aux enfants de moins de 16 ans. Le Prestataire de services ne collecte pas sciemment d'informations permettant d'identifier des enfants. Si tu penses qu'un enfant a fourni des informations personnelles, merci de contacter le Prestataire de services."
+      ]
+    },
+    {
+      "title": "Sécurité",
+      "body": [
+        "Le Prestataire de services met en œuvre des mesures de protection physiques, électroniques et organisationnelles pour protéger les informations qu'il traite et stocke. En cas de violation de données affectant tes données personnelles, tu seras informé conformément à la loi applicable."
+      ]
+    },
+    {
+      "title": "Modifications de cette Politique de confidentialité",
+      "body": [
+        "Le Prestataire de services peut mettre à jour cette Politique de confidentialité de temps à autre et informera les utilisateurs des changements significatifs en publiant la version mise à jour accompagnée de sa date d'entrée en vigueur. Les versions antérieures seront disponibles sur demande."
+      ]
+    },
+    {
+      "title": "Ton consentement",
+      "body": [
+        "Lorsque le traitement des données est fondé sur ton consentement, tu fournis ce consentement par une action affirmative. Tu peux retirer ton consentement à tout moment sans que cela n'affecte la licéité du traitement effectué avant ce retrait."
+      ]
+    },
+    {
+      "title": "Nous contacter",
+      "body": [
+        "Si tu as des questions concernant cette Politique de confidentialité ou le traitement de tes données personnelles, merci de contacter le Prestataire de services : aprenafe, isegura-, mmarinov, vberdugo et fcela-ga."
+      ]
+    }
+  ]
+}

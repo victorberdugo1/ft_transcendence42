@@ -7,6 +7,7 @@ const LANGUAGE_OPTIONS = [
   { code: "es", flag: "🇪🇸" },
   { code: "en", flag: "🇬🇧" },
   { code: "ru", flag: "🇷🇺" },
+  { code: "fr", flag: "🇫🇷" },
 ];
 
 export default function LanguageSelector({ variant = "manual", compact = false }) {

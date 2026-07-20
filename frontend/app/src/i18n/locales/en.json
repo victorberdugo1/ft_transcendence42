@@ -21,7 +21,16 @@
     "needAccount": "Need an account?",
     "createOne": "Create one",
     "haveAccount": "Already have an account?",
-    "switchToSignIn": "Sign in"
+    "switchToSignIn": "Sign in",
+    "checkingSession": "Checking session",
+    "checkingSessionSubtitle": "The app is asking the backend whether your session is still valid."
+  },
+  "grace": {
+    "defeatTitle": "Defeat",
+    "defeatSubtitle": "Returning to the lobby…",
+    "waitingSelf": "You have {{seconds}}s to return to the fight or lose the match.",
+    "waitingOpponent": "Your rival has {{seconds}}s to reconnect…",
+    "rejoinButton": "Rejoin fight"
   },
   "validation": {
     "emailPasswordRequired": "Email and password are required.",
@@ -39,7 +48,8 @@
     "ca": "Catalan",
     "es": "Spanish",
     "en": "English",
-    "ru": "Русский"
+    "ru": "Русский",
+    "fr": "French"
   },
   "manual": {
     "backToLobby": "Back to lobby",

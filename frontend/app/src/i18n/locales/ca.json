@@ -21,7 +21,16 @@
     "needAccount": "Necessites un compte?",
     "createOne": "Crea'n un",
     "haveAccount": "Ja tens compte?",
-    "switchToSignIn": "Inicia sessio"
+    "switchToSignIn": "Inicia sessio",
+    "checkingSession": "Comprovant sessio",
+    "checkingSessionSubtitle": "L'app esta comprovant amb el servidor si la teva sessio encara es valida."
+  },
+  "grace": {
+    "defeatTitle": "Derrota",
+    "defeatSubtitle": "Tornant al lobby...",
+    "waitingSelf": "Tens {{seconds}}s per tornar a la baralla o perdras la partida.",
+    "waitingOpponent": "El teu rival te {{seconds}}s per reconnectar...",
+    "rejoinButton": "Tornar a la baralla"
   },
   "validation": {
     "emailPasswordRequired": "Correu i contrasenya son obligatoris.",
@@ -39,7 +48,8 @@
     "ca": "Catala",
     "es": "Espanyol",
     "en": "English",
-    "ru": "Русский"
+    "ru": "Русский",
+    "fr": "Frances"
   },
   "manual": {
     "backToLobby": "Tornar al lobby",
