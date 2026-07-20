@@ -215,8 +215,21 @@ export default function GameShell({
     onBackToLobby();
   }
 
+  // handleBackToLobby closes over `gameMode` (and window.* state) from the
+  // render it was created in. onRegisterBack below only runs once on mount,
+  // so without this ref indirection the parent would keep calling a closure
+  // frozen at the very first render forever — e.g. always treating the game
+  // as "versus" even after switching to training/spectate/tournament, which
+  // broke the browser back button outside Versus mode.
+  const handleBackToLobbyRef = useRef(handleBackToLobby);
   useEffect(() => {
-    if (typeof onRegisterBack === "function") onRegisterBack(handleBackToLobby);
+    handleBackToLobbyRef.current = handleBackToLobby;
+  });
+
+  useEffect(() => {
+    if (typeof onRegisterBack === "function") {
+      onRegisterBack(() => handleBackToLobbyRef.current());
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

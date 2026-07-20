@@ -717,7 +717,10 @@ async function resolveMatchWinner(session, winnerClientId, loserClientId) {
     session.finished = true;
 
     const winner = players[winnerClientId];
-    const winnerDbId = winner?.dbUserId ?? null;
+    // winner can be gone from `players` if they disconnected in the window
+    // between the deciding hit and landing (pendingWinner) — fall back to the
+    // dbUserId snapshotted in createSession() so the win still counts.
+    const winnerDbId = winner?.dbUserId ?? session.dbUserIds?.[winnerClientId] ?? null;
     const winnerStocks = winner?.stocks ?? 0;
     const loserDbId = session.loserDbId ?? null;
     const loserStocks = session.loserStocks ?? 0;
