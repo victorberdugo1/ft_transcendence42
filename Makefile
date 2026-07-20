@@ -52,19 +52,16 @@ logs: ## Follow logs for all services
 logs-%: ## Follow logs for one service, e.g. make logs-backend
 	docker compose logs -f $*
 
-clean: ## Remove containers + volumes, prune dangling system resources
-	docker compose down -v
-	docker system prune -a -f
+# NOTE: 'clean'/'destroy' are scoped to THIS project's compose resources only
+# (docker compose down ...). They deliberately avoid `docker system/builder
+# prune` and unfiltered `docker ps/images/volume ls` — those operate on the
+# entire Docker daemon and would delete containers/images/volumes belonging
+# to other, unrelated projects on the same machine.
+clean: ## Remove this project's containers, volumes and networks
+	docker compose down --volumes --remove-orphans
 
-destroy: ## Nuke this project: containers, volumes, images, orphans
+destroy: ## Nuke this project only: its containers, volumes, images and orphans
 	docker compose down --volumes --remove-orphans --rmi all || true
-	@if [ -n "$$(docker ps -aq)" ]; then docker stop $$(docker ps -aq); fi
-	@if [ -n "$$(docker ps -aq)" ]; then docker rm -f $$(docker ps -aq); fi
-	@if [ -n "$$(docker images -aq)" ]; then docker rmi -f $$(docker images -aq); fi
-	@if [ -n "$$(docker volume ls -q)" ]; then docker volume rm $$(docker volume ls -q); fi
-	docker builder prune -a -f || true
-	docker buildx prune -a -f || true
-	docker system prune -a --volumes -f || true
 
 delete: destroy ## Alias for destroy
 
