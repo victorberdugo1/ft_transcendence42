@@ -714,6 +714,13 @@ async function onConnection(ws, req) {
             if (players[requestedId]) {
                 clientId = requestedId;
                 if (clientId >= gameSession.nextClientId) gameSession.nextClientId = clientId + 1;
+                const oldWs = players[clientId].ws;
+                if (oldWs && oldWs !== ws && oldWs.readyState === WebSocket.OPEN) {
+                    try {
+                        oldWs.send(JSON.stringify({ type: 'kicked', reason: 'reconnected_in_another_tab' }));
+                        oldWs.close(4001, 'Reconnected elsewhere');
+                    } catch {}
+                }
                 players[clientId].ws = ws;
                 players[clientId].dbUserId = dbUserId ?? players[clientId].dbUserId;
                 isSpectator = false; mode = 'player';
