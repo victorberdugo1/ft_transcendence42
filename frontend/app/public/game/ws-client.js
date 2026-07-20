@@ -524,6 +524,13 @@ function connectWS() {
             }, window._victoryOverlayDelayMs ?? 3000);
 
         } else if (msg.type === 'match_finished') {
+            // Cancel the match_end fallback reload (below): match_finished arriving
+            // means this same page already has the real victory state, so let this
+            // handler's own reload logic run instead of racing a second, blind one.
+            if (window._matchEndReloadTimeout) {
+                clearTimeout(window._matchEndReloadTimeout);
+                window._matchEndReloadTimeout = null;
+            }
             if (window._touchControls) { window._touchControls.hideControls(); window._touchControls.reset(); }
             try { SSS_KEYS.forEach(k => sessionStorage.removeItem(k)); } catch {}
             Object.assign(window, {
@@ -564,6 +571,14 @@ function connectWS() {
 
             if (window._matchEndReloadTimeout) clearTimeout(window._matchEndReloadTimeout);
 
+            // Fallback only: the server always follows match_end with match_finished
+            // ~6000ms later (see session.js), which cancels this timer and reloads
+            // itself with the correct victory state. This just covers the case where
+            // match_finished never arrives (dropped message, disconnect). The delay
+            // must stay longer than the server's match_finished delay, otherwise this
+            // fires first, reloads with no victory state yet, and match_finished then
+            // reloads a second time on the fresh page — the double "checking
+            // connection" screen bug this comment is guarding against.
             window._matchEndReloadTimeout = setTimeout(() => {
                 try {
                     sessionStorage.setItem('matchmakingSafeAt', String(Date.now() + 5000));
@@ -571,7 +586,7 @@ function connectWS() {
                 } catch (_) {}
                 window._programmaticReload = true;
                 window.location.reload();
-            }, 4500);
+            }, 8000);
 
         } else if (msg.type === 'state_spectator') {
             window._gameState = msg;
