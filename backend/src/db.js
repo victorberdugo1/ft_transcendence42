@@ -16,4 +16,11 @@ db.connect()
   })
   .catch(err => console.error('[DB] Error de conexión:', err.message));
 
+// Sin este listener, un error en un cliente inactivo del pool (p.ej. el
+// contenedor de Postgres reiniciándose) se relanza como excepción no
+// capturada y tumba todo el proceso, incluidas las partidas en curso.
+db.on('error', (err) => {
+    console.error('[DB] Error inesperado en cliente inactivo del pool:', err.message);
+});
+
 module.exports = db;
