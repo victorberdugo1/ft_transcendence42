@@ -141,6 +141,7 @@ function connectWS() {
 
     ws.addEventListener('open', () => {
         setStatus('⬤ Connected');
+        window._lastWsMessageAt = Date.now();
 
         const wasF5        = sessionStorage.getItem('f5Reload') === '1';
         const postMatch    = sessionStorage.getItem('postMatchReload') === '1';
@@ -215,6 +216,7 @@ function connectWS() {
     });
 
     ws.addEventListener('message', ({ data }) => {
+        window._lastWsMessageAt = Date.now();
         let msg;
         try { msg = JSON.parse(data); } catch { return; }
 
@@ -676,6 +678,25 @@ window.reconnectWS = function () {
     if (window._ws) { try { window._ws.close(); } catch (_) {} }
     setTimeout(connectWS, 80);
 };
+
+// Watchdog for zombie connections: if the network dies without a clean close
+// (server-side ping/pong catches this from the server's end — see
+// backend/src/ws/handler.js — but the socket can still look OPEN to THIS
+// browser indefinitely), a player mid-match would otherwise never receive
+// match_end/match_finished and stay stuck on the game screen forever. During
+// an active match the server streams state continuously, so a long silence
+// on an apparently-open socket means the connection is actually dead.
+const WS_STALE_MS = 20000;
+setInterval(() => {
+    if (window._matchSession == null || window._isSpectator) return;
+    if (!window._ws || window._ws.readyState !== WebSocket.OPEN) return;
+    if (Date.now() - (window._lastWsMessageAt ?? 0) < WS_STALE_MS) return;
+
+    console.warn('[WS] connection looks stale during an active match — forcing reconnect');
+    window._manualReconnect = true;
+    try { window._ws.close(); } catch (_) {}
+    setTimeout(connectWS, 80);
+}, 5000);
 
 function sendInput(frame) {
     if (!window._ws || window._ws.readyState !== WebSocket.OPEN) return;

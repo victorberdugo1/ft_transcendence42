@@ -23,7 +23,9 @@
     "haveAccount": "Already have an account?",
     "switchToSignIn": "Sign in",
     "checkingSession": "Checking session",
-    "checkingSessionSubtitle": "The app is asking the backend whether your session is still valid."
+    "checkingSessionSubtitle": "The app is asking the backend whether your session is still valid.",
+    "returningToLobby": "Returning to lobby",
+    "returningToLobbySubtitle": "The match just ended — you'll be back in the lobby in a moment."
   },
   "grace": {
     "defeatTitle": "Defeat",

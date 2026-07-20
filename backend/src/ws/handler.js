@@ -57,12 +57,33 @@ function removeFromTournamentRoom(dbUserId) {
     console.log(`[TOURNAMENT-ROOM] ${dbUserId} removed — ${tournamentRoom.players.length}/${tournamentRoom.maxPlayers}`);
 }
 
+const HEARTBEAT_INTERVAL_MS = 20000;
+
 function setupWebSocket(server, wss) {
     server.on('upgrade', (req, socket, head) => {
         if (req.url === '/ws') wss.handleUpgrade(req, socket, head, ws => wss.emit('connection', ws, req));
         else socket.destroy();
     });
     wss.on('connection', onConnection);
+
+    // Without this, a connection that dies without a clean TCP close (wifi
+    // switch, laptop sleep, phone screen lock, a NAT dropping an idle socket)
+    // stays `readyState === OPEN` forever: no 'close' event ever fires, so
+    // none of the grace/forfeit/cleanup logic below ever runs for that
+    // player, and match_end/match_finished get broadcast into the void.
+    // Pinging and terminating unresponsive sockets forces a real 'close'
+    // event, routing dead connections into the existing disconnect handling.
+    const heartbeat = setInterval(() => {
+        for (const ws of wss.clients) {
+            if (ws.isAlive === false) {
+                ws.terminate();
+                continue;
+            }
+            ws.isAlive = false;
+            ws.ping();
+        }
+    }, HEARTBEAT_INTERVAL_MS);
+    wss.on('close', () => clearInterval(heartbeat));
 }
 
 function applyCharDef(p, charId) {
@@ -323,6 +344,8 @@ function resolveGraceExpiry(session, clientId, fallbackDbId) {
 
 async function onConnection(ws, req) {
     ws._connectedAt = Date.now();   // timestamp para que disconnectPlayer no mate WS recientes
+    ws.isAlive = true;
+    ws.on('pong', () => { ws.isAlive = true; });
     let clientId    = null;
     let dbUserId    = null;
     let isSpectator = false;

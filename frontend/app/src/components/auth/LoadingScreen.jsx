@@ -1,5 +1,14 @@
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import logoImage from "../../../assets/logo.png";
+
+function readPostMatchReloadFlag() {
+  try {
+    return sessionStorage.getItem("postMatchReload") === "1";
+  } catch (_) {
+    return false;
+  }
+}
 
 function AuthHeader({ title, subtitle }) {
   return (
@@ -34,13 +43,17 @@ function LegalFooter({ onPrivacy, onTerms, t }) {
 
 export default function LoadingScreen({ onPrivacy, onTerms }) {
   const { t } = useTranslation();
+  // Captured once at mount: a full reload right after a match sets this flag
+  // just before reloading, but ws-client.js clears it once the socket
+  // reopens, so we snapshot it here instead of re-reading on every render.
+  const [isPostMatchReload] = useState(readPostMatchReloadFlag);
 
   return (
     <div className="auth-page">
       <div className="auth-card">
         <AuthHeader
-          title={t("auth.checkingSession")}
-          subtitle={t("auth.checkingSessionSubtitle")}
+          title={t(isPostMatchReload ? "auth.returningToLobby" : "auth.checkingSession")}
+          subtitle={t(isPostMatchReload ? "auth.returningToLobbySubtitle" : "auth.checkingSessionSubtitle")}
         />
         <LegalFooter onPrivacy={onPrivacy} onTerms={onTerms} t={t} />
       </div>

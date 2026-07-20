@@ -23,7 +23,9 @@
     "haveAccount": "Уже есть аккаунт?",
     "switchToSignIn": "Войти",
     "checkingSession": "Проверка сессии",
-    "checkingSessionSubtitle": "Приложение спрашивает у сервера, действительна ли ещё ваша сессия."
+    "checkingSessionSubtitle": "Приложение спрашивает у сервера, действительна ли ещё ваша сессия.",
+    "returningToLobby": "Возвращение в лобби",
+    "returningToLobbySubtitle": "Матч только что завершился — через мгновение вы вернётесь в лобби."
   },
   "grace": {
     "defeatTitle": "Поражение",

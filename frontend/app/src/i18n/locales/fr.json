@@ -23,7 +23,9 @@
     "haveAccount": "Tu as déjà un compte ?",
     "switchToSignIn": "Se connecter",
     "checkingSession": "Vérification de la session",
-    "checkingSessionSubtitle": "L'application demande au serveur si ta session est toujours valide."
+    "checkingSessionSubtitle": "L'application demande au serveur si ta session est toujours valide.",
+    "returningToLobby": "Retour au lobby",
+    "returningToLobbySubtitle": "Le combat vient de se terminer — tu seras de retour dans le lobby dans un instant."
   },
   "grace": {
     "defeatTitle": "Défaite",

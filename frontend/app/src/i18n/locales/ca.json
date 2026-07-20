@@ -23,7 +23,9 @@
     "haveAccount": "Ja tens compte?",
     "switchToSignIn": "Inicia sessio",
     "checkingSession": "Comprovant sessio",
-    "checkingSessionSubtitle": "L'app esta comprovant amb el servidor si la teva sessio encara es valida."
+    "checkingSessionSubtitle": "L'app esta comprovant amb el servidor si la teva sessio encara es valida.",
+    "returningToLobby": "Tornant al lobby",
+    "returningToLobbySubtitle": "La partida ha acabat, en un moment tornaras al lobby."
   },
   "grace": {
     "defeatTitle": "Derrota",
