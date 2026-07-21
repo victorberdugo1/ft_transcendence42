@@ -1,11 +1,13 @@
 {
-  "name": "jump",
-  "fps": 30,
+  "name": "dance",
+  "fps": 70,
   "start_frame": 0,
   "end_frame": 120,
-  "loop": false,
+  "loop": true,
   "events": [
-    {"time": 2.0, "type": "texture", "bone": "Head", "variant": "blink"},
-    {"time": 2.2, "type": "texture", "bone": "Head", "variant": "idle"}
+    {"time": 0.2, "type": "texture", "bone": "Head", "variant": "idle"},
+    {"time": 1.2, "type": "texture", "bone": "Head", "variant": "blink"},
+    {"time": 0.2, "type": "texture", "bone": "Chest", "variant": "idle"},
+    {"time": 1.2, "type": "texture", "bone": "Chest", "variant": "blink"}
   ]
 }
