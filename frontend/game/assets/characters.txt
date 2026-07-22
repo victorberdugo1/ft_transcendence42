@@ -1,8 +1,8 @@
 # Character profiles configuration
 # Format: name texture_config texture_sets animations_path
 
-Default assets/textures/default/bone_textures.txt assets/textures/default/texture_sets.txt assets/animations/default/
 Eldwin assets/textures/eld/bone_textures.txt assets/textures/eld/texture_sets.txt assets/animations/eld/
+Default assets/textures/default/bone_textures.txt assets/textures/default/texture_sets.txt assets/animations/default/
 Hilda assets/textures/hil/bone_textures.txt assets/textures/hil/texture_sets.txt assets/animations/hil/
 Quimbur assets/textures/qui/bone_textures.txt assets/textures/qui/texture_sets.txt assets/animations/qui/
 Gabriel assets/textures/gab/bone_textures.txt assets/textures/gab/texture_sets.txt assets/animations/gab/
