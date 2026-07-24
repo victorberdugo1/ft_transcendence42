@@ -9,6 +9,31 @@ export function useWsNavigationGuards({
   cleanupMatchState,
 }) {
   useEffect(() => {
+    function onResumedMatch(event) {
+      const detail = event.detail || {};
+      if (!detail.resumed || pageRef.current === "game") return;
+
+      const resumedMode = detail.spectatorSync
+        ? "spectate"
+        : detail.mode === "1v1" || detail.mode === "brawl"
+          ? "versus"
+          : detail.mode;
+
+      setGrace(null);
+      setGameMode(resumedMode || "versus");
+      setGameOpts(
+        detail.spectatorSync && detail.sessionId
+          ? { sessionId: detail.sessionId }
+          : {},
+      );
+      setPage("game");
+    }
+
+    window.addEventListener("match_start", onResumedMatch);
+    return () => window.removeEventListener("match_start", onResumedMatch);
+  }, [pageRef, setGameMode, setGameOpts, setGrace, setPage]);
+
+  useEffect(() => {
     function onKickedResume() {
       setGrace(null);
       setGameMode("versus");

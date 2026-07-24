@@ -48,8 +48,6 @@ export default function GameShell({
   const [lobbyPaired, setLobbyPaired] = useState(false);
   const lobbyPairedRef = useRef(false);
 
-  const COUNTDOWN_MS = 3000;
-
   const [leaveAckPending, setLeaveAckPending] = useState(false);
   const leaveAckPendingRef = useRef(false);
   useEffect(() => {
@@ -189,6 +187,8 @@ export default function GameShell({
       _victoryConsumed: true,
       _hitstopState: null,
       _countdownStart: null,
+      _countdownEndsAt: null,
+      _countdownDurationMs: 0,
       _countdownDone: false,
       _confirmedStageId: undefined,
       _isHost: undefined,
@@ -310,6 +310,8 @@ export default function GameShell({
           _victoryConsumed: true,
           _hitstopState: null,
           _countdownStart: null,
+          _countdownEndsAt: null,
+          _countdownDurationMs: 0,
           _countdownDone: false,
         });
         window._ws.send(
@@ -377,7 +379,8 @@ export default function GameShell({
       }
     }, 50);
 
-    const onStart = () => {
+    const onStart = (event) => {
+      setSessionErr("");
       setStatus("");
       setMatchStarted(true);
       matchStartedRef.current = true;
@@ -386,14 +389,31 @@ export default function GameShell({
       lobbyPairedRef.current = false;
       setPaired(true);
       pairedRef.current = true;
-      setLeaveLocked(true);
-      leaveLockedRef.current = true;
+      const countdownRemainingMs = Math.max(
+        0,
+        Number(event.detail?.countdownRemainingMs) || 0,
+      );
+      const countdownActive = countdownRemainingMs > 0;
+      setLeaveLocked(countdownActive);
+      leaveLockedRef.current = countdownActive;
 
       if (leaveLockTimerRef.current) clearTimeout(leaveLockTimerRef.current);
-      leaveLockTimerRef.current = setTimeout(() => {
-        setLeaveLocked(false);
-        leaveLockedRef.current = false;
-      }, COUNTDOWN_MS + 200);
+      if (countdownActive) {
+        leaveLockTimerRef.current = setTimeout(() => {
+          setLeaveLocked(false);
+          leaveLockedRef.current = false;
+          leaveLockTimerRef.current = null;
+        }, countdownRemainingMs + 100);
+      } else {
+        leaveLockTimerRef.current = null;
+      }
+    };
+
+    const onTrainingStartError = (event) => {
+      setStatus("");
+      setSessionErr(
+        event.detail?.error || "Could not start the training session",
+      );
     };
 
     let enteredAsVoluntarySpectator = false;
@@ -471,6 +491,7 @@ export default function GameShell({
     };
 
     window.addEventListener("match_start", onStart);
+    window.addEventListener("training_start_error", onTrainingStartError);
     window.addEventListener("spectator_mode", onSpectateMode);
     window.addEventListener("match_finished", onMatchFinished);
     window.addEventListener("victory_spectator", onVictorySpectator);
@@ -489,6 +510,7 @@ export default function GameShell({
         leaveLockTimerRef.current = null;
       }
       window.removeEventListener("match_start", onStart);
+      window.removeEventListener("training_start_error", onTrainingStartError);
       window.removeEventListener("spectator_mode", onSpectateMode);
       window.removeEventListener("match_finished", onMatchFinished);
       window.removeEventListener("victory_spectator", onVictorySpectator);

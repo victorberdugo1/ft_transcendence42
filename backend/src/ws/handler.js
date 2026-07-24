@@ -8,7 +8,7 @@ const {
     players, spectators, spectatorsBySession, lastState,
     gameSessions, playerSession, playerCharSelected,
     broadcastState, broadcastToSession, broadcastToAll,
-    sendStateToSpectator, listActiveSessions,
+    sendStateToSpectator, listActiveSessions, buildSessionSnapshot,
     buildCharSelectAck, sendAllCharSelectsTo,
     createPlayer, startDuel, startTournament, tryAutoMatch,
     fillTournamentBots,
@@ -218,6 +218,46 @@ function kickDuplicateDbUser(incomingClientId, incomingDbUserId) {
     }
 }
 
+function sendSessionSync(ws, clientId, session) {
+    if (ws.readyState !== WebSocket.OPEN) return;
+
+    const serverNow = Date.now();
+    if (!session || session.finished) {
+        ws.send(JSON.stringify({
+            type: 'session_sync',
+            active: false,
+            clientId,
+            serverNow,
+        }));
+        return;
+    }
+
+    const startsAt = session.startsAt ?? serverNow;
+    const phase = session.fightStarted || serverNow >= startsAt
+        ? 'fighting'
+        : 'countdown';
+
+    ws.send(JSON.stringify({
+        type: 'session_sync',
+        active: true,
+        clientId,
+        serverNow,
+        phase,
+        sessionId: session.id,
+        mode: session.mode,
+        tournamentId: session.tournamentId ?? null,
+        round: session.round ?? null,
+        stageId: session.stageId ?? -1,
+        players: [...session.playerIds],
+        startsAt,
+        state: {
+            type: 'state',
+            frameId: 0,
+            players: buildSessionSnapshot(session),
+        },
+    }));
+}
+
 function sendWelcomeToPlayer(ws, clientId) {
     ws.send(JSON.stringify({
         type: 'init', clientId,
@@ -270,6 +310,8 @@ function sendWelcomeToPlayer(ws, clientId) {
     broadcastHostStatus();
     const savedChar = playerCharSelected.get(clientId);
     if (savedChar) ws.send(JSON.stringify(buildCharSelectAck(savedChar, clientId, 0)));
+
+    sendSessionSync(ws, clientId, session);
 
     // If this player is already in the tournament room, send them the current
     // room state immediately so the frontend doesn't need a round-trip join.
@@ -424,12 +466,15 @@ async function onConnection(ws, req) {
 
         if (session && !session.finished) {
             const _syncStageId = session.stageId ?? gameSession.confirmedStageId ?? -1;
+            const _serverNow = Date.now();
             ws.send(JSON.stringify({
                 type: 'spectator_match_sync',
                 mode: session.mode,
                 sessionId: session.id,
                 players: [...session.playerIds],
-                countdown: false,
+                countdown: !session.fightStarted && _serverNow < (session.startsAt ?? _serverNow),
+                serverNow: _serverNow,
+                startsAt: session.startsAt ?? _serverNow,
                 stageId: _syncStageId >= 0 ? _syncStageId : undefined,
             }));
         }
@@ -553,6 +598,20 @@ async function onConnection(ws, req) {
         // (evita matar un WS nuevo que tomó el slot justo antes de que el
         // endpoint HTTP de login procesara su llamada a disconnectPlayer).
         if (!ws._firstMsgAt) ws._firstMsgAt = Date.now();
+
+        if (msg.type === 'session_sync_request') {
+            if (clientId === null || spectators[clientId]) return;
+            const sid = playerSession.get(clientId) ?? null;
+            const session = sid ? gameSessions.get(sid) : null;
+            // Never allow a client to use this recovery path to inspect another
+            // session. The optional id only protects against a stale HTTP reply.
+            if (msg.sessionId != null && String(msg.sessionId) !== String(sid)) {
+                sendSessionSync(ws, clientId, null);
+                return;
+            }
+            sendSessionSync(ws, clientId, session);
+            return;
+        }
 
         if (msg.type === 'join') {
             if (dbUserId) {
@@ -1236,6 +1295,12 @@ async function onConnection(ws, req) {
             if (clientId === null) return;
             if (spectators[clientId]) return;
             if (!players[clientId]) { await promoteToPlayer(msg); return; }
+            const inputSessionId = playerSession.get(clientId);
+            const inputSession = inputSessionId ? gameSessions.get(inputSessionId) : null;
+            if (inputSession && !inputSession.fightStarted &&
+                Date.now() < (inputSession.startsAt ?? Infinity)) {
+                return;
+            }
             applyInput(players[clientId], msg);
             return;
         }

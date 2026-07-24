@@ -149,6 +149,16 @@ function buildPlayerSnapshot(p) {
     };
 }
 
+function buildSessionSnapshot(session) {
+    const snapshot = {};
+    if (!session) return snapshot;
+    for (const cid of session.playerIds) {
+        const p = players[cid];
+        if (p) snapshot[cid] = buildPlayerSnapshot(p);
+    }
+    return snapshot;
+}
+
 function broadcastState() {
     const sessionSnapshots = new Map();
     for (const p of Object.values(players)) {
@@ -162,13 +172,7 @@ function broadcastState() {
         }
         if (!sessionSnapshots.has(sid)) {
             const session = gameSessions.get(sid);
-            const snapshot = {};
-            if (session) {
-                for (const cid of session.playerIds) {
-                    const sp = players[cid];
-                    if (sp) snapshot[cid] = buildPlayerSnapshot(sp);
-                }
-            }
+            const snapshot = buildSessionSnapshot(session);
             sessionSnapshots.set(sid, JSON.stringify({ type: 'state', frameId: ++frameId, players: snapshot }));
         }
         p.ws.send(sessionSnapshots.get(sid));
@@ -350,6 +354,7 @@ function createSession(mode, playerIds, extra = {}) {
         loserDbId: null, loserStocks: 0, playerFlags: {},
         eliminationLog: [],
         fightStarted: false,
+        startsAt: null,
         ...extra,
     };
     for (const cid of playerIds) {
@@ -376,15 +381,33 @@ function createSession(mode, playerIds, extra = {}) {
 }
 
 function armFightStartTimer(session, delayMs = FIGHT_START_DELAY_MS) {
-    setTimeout(() => {
-        if (session && !session.finished) session.fightStarted = true;
-    }, delayMs);
+    if (!session) return null;
+    session.startsAt = Date.now() + delayMs;
+    session.fightStarted = false;
+    for (const cid of session.playerIds) {
+        const input = players[cid]?.input;
+        if (!input) continue;
+        Object.assign(input, {
+            moveX: 0,
+            jump: false,
+            attack: false,
+            dash: false,
+            dashDir: 0,
+            crouch: false,
+            block: false,
+            dashAttack: false,
+        });
+    }
+    return session.startsAt;
 }
 
 function startBrawl(clientIds) {
     const session = createSession('brawl', clientIds);
-    broadcastToSession(session, { type: 'match_start', mode: 'brawl', sessionId: session.id, players: clientIds, countdown: true });
-    armFightStartTimer(session);
+    const startsAt = armFightStartTimer(session);
+    broadcastToSession(session, {
+        type: 'match_start', mode: 'brawl', sessionId: session.id,
+        players: clientIds, countdown: true, serverNow: Date.now(), startsAt,
+    });
     for (const spec of Object.values(spectators)) {
         if (spec.watchingSession !== null) continue;
         setSpectatorSession(spec, session.id);
@@ -407,8 +430,12 @@ function startDuel(clientId1, clientId2) {
             break;
         }
     }
-    broadcastToSession(session, { type: 'match_start', mode: '1v1', sessionId: session.id, countdown: true, stageId: session.stageId ?? -1, players: [clientId1, clientId2] });
-    armFightStartTimer(session);
+    const startsAt = armFightStartTimer(session);
+    broadcastToSession(session, {
+        type: 'match_start', mode: '1v1', sessionId: session.id,
+        countdown: true, serverNow: Date.now(), startsAt,
+        stageId: session.stageId ?? -1, players: [clientId1, clientId2],
+    });
     console.log(`[GAME] 1v1 started: session ${session.id} — ${clientId1} vs ${clientId2}`);
     return session;
 }
@@ -467,12 +494,12 @@ async function startTournament(clientIds, creatorDbId) {
         broadcastToSession(session, botsAck);
     }
 
+    const startsAt = armFightStartTimer(session, FIGHT_START_DELAY_TOURNAMENT_MS);
     broadcastToSession(session, {
         type: 'match_start', mode: 'tournament', sessionId: session.id,
         tournamentId, round: 1, countdown: true, stageId,
-        players: clientIds,
+        players: clientIds, serverNow: Date.now(), startsAt,
     });
-    armFightStartTimer(session, FIGHT_START_DELAY_TOURNAMENT_MS);
 
     console.log(`[TOURNAMENT] Survivor started: id=${tournamentId} session=${session.id} — ${clientIds.length} players stage=${stageId}`);
     return tournamentId;
@@ -496,10 +523,11 @@ function startTraining(humanClientId, cpuCharIds = ['eld'], stageId = 0) {
         cpusEliminated: new Set(),
     });
     for (const cpu of cpus) cpu.stocks = 3;
-    armFightStartTimer(session, FIGHT_START_DELAY_TRAINING_MS);
+    const startsAt = armFightStartTimer(session, FIGHT_START_DELAY_TRAINING_MS);
     broadcastToSession(session, {
         type: 'match_start', mode: 'training', sessionId: session.id,
         countdown: true, cpuIds, cpuId: cpuIds[0], stageId,
+        players: allIds, serverNow: Date.now(), startsAt,
     });
     console.log(`[GAME] Training started: session ${session.id} — player ${humanClientId} vs CPUs [${cpuCharIds.join(', ')}] stage=${stageId}`);
     return session;
@@ -984,6 +1012,10 @@ function tick() {
 
     for (const session of gameSessions.values()) {
         if (session.finished) continue;
+        if (!session.fightStarted) {
+            if (session.startsAt == null || Date.now() < session.startsAt) continue;
+            session.fightStarted = true;
+        }
 
         const sessPlayers = [...session.playerIds]
             .map(cid => players[cid])
@@ -1052,6 +1084,7 @@ function tick() {
     for (const session of gameSessions.values()) {
         if (session.finished) continue;
         if (session.mode !== '1v1' && session.mode !== 'tournament' && session.mode !== 'training') continue;
+        if (!session.fightStarted) continue;
         if (session.pendingWinner) continue;
         if (session._soloGuardFired) continue;
         if (Date.now() - session.startedAt.getTime() < 3000) continue;
@@ -1299,6 +1332,7 @@ module.exports = {
     get nextSessionId() { return nextSessionId; },
     get confirmedStageId() { return confirmedStageId; },
     broadcastToSession, broadcastToAll, broadcastState, sendStateToSpectator,
+    buildSessionSnapshot,
     listActiveSessions, buildCharSelectAck, sendAllCharSelectsTo,
     createPlayer, startBrawl, startDuel, startTournament, startTraining,
     fillTournamentBots,

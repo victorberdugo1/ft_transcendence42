@@ -25,6 +25,8 @@ export function cleanupMatchState() {
     _victoryConsumed: true,
     _hitstopState: null,
     _countdownStart: null,
+    _countdownEndsAt: null,
+    _countdownDurationMs: 0,
     _countdownDone: false,
     _confirmedStageId: undefined,
     _isHost: undefined,

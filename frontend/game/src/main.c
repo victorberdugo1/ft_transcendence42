@@ -434,16 +434,27 @@ EM_JS(int, ws_get_hitstop_is_dash_attack, (int targetId), {
     return hs.isDashAttack ? 1 : 0;
 });
 EM_JS(int, ws_get_countdown, (void), {
-    if (!window._countdownStart || window._countdownDone) return 0;
-    var elapsed = (performance.now() - window._countdownStart) / 1000.0;
-    if (elapsed < 1.2) return 1;
-    if (elapsed < 2.2) return 2;
-    window._countdownDone = true;
-    return 0;
+    if (!window._countdownEndsAt || window._countdownDone) return 0;
+    var remaining = window._countdownEndsAt - performance.now();
+    if (remaining <= 0) {
+        window._countdownStart = null;
+        window._countdownEndsAt = null;
+        window._countdownDurationMs = 0;
+        window._countdownDone = true;
+        return 0;
+    }
+    if (remaining > 1000) return 1;
+    return 2;
 });
 EM_JS(float, ws_get_countdown_elapsed, (void), {
-    if (!window._countdownStart || window._countdownDone) return 0.0;
-    return (performance.now() - window._countdownStart) / 1000.0;
+    if (!window._countdownEndsAt || window._countdownDone) return 0.0;
+    var remaining = Math.max(0, window._countdownEndsAt - performance.now());
+    var duration = Math.max(1, window._countdownDurationMs || remaining);
+    if (remaining > 1000) {
+        var readyDuration = Math.max(1, duration - 1000);
+        return 1.2 * Math.min(1, (duration - remaining) / readyDuration);
+    }
+    return 1.2 + (1000 - remaining) / 1000;
 });
 EM_JS(int, ws_get_player, (int idx, char *buf, int len), {
     if (!window._gameState || !window._gameState.players) return 0;
@@ -762,7 +773,7 @@ EM_JS(void, ws_send_fight_ready, (void), {
     if (typeof window.sendFightReady === 'function') window.sendFightReady();
 });
 EM_JS(int, ws_match_started, (void), {
-    return (window._countdownStart != null || window._countdownDone === true) ? 1 : 0;
+    return window._matchSession != null ? 1 : 0;
 });
 EM_JS(int, ws_get_saved_char_id, (char *buf, int len), {
     buf = buf | 0;

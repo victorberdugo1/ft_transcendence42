@@ -11,6 +11,9 @@ window._myClientId     = -1;
 window._ws             = null;
 window._charSelectData = null;
 
+let wsConnectionGeneration = 0;
+let wsReconnectTimer = null;
+
 const ACTION_KEY     = 'Space';
 const ACTION_KEY_ALT = 'KeyG';
 const DASH_TAP_MS    = 300;
@@ -129,10 +132,99 @@ function _sssClear() {
     } catch (_) {}
 }
 
+function applyAuthoritativeCountdown(msg) {
+    const now = performance.now();
+    const serverNow = Number(msg.serverNow);
+    const startsAt = Number(msg.startsAt);
+    const hasServerClock = Number.isFinite(serverNow) && Number.isFinite(startsAt);
+    const remainingMs = hasServerClock
+        ? Math.max(0, startsAt - serverNow)
+        : (msg.countdown ? 3000 : 0);
+
+    window._countdownStart = remainingMs > 0 ? now : null;
+    window._countdownEndsAt = remainingMs > 0 ? now + remainingMs : null;
+    window._countdownDurationMs = remainingMs;
+    window._countdownDone = remainingMs <= 0;
+    return remainingMs;
+}
+
+function applyMatchLifecycle(msg, { spectatorSync = false, resumed = false } = {}) {
+    if (!spectatorSync &&
+        Array.isArray(msg.players) && msg.players.length > 0 &&
+        !msg.players.includes(window._myClientId) &&
+        window._myClientId !== -1) {
+        console.warn('[WS] match lifecycle ignored: not in player list', msg.players, 'myId=', window._myClientId);
+        return false;
+    }
+
+    if (!spectatorSync &&
+        (msg.mode === '1v1' || msg.mode === 'tournament') &&
+        Array.isArray(msg.players) && msg.players.length < 2) {
+        console.warn('[WS] invalid match lifecycle with <2 players — ejecting to lobby', msg);
+        try { SSS_KEYS.forEach(k => sessionStorage.removeItem(k)); } catch (_) {}
+        Object.assign(window, {
+            _matchSession: null, _myClientId: -1,
+            _charSelectData: null, _charSelectConfirmed: false,
+            _confirmedStageId: undefined, _isHost: false,
+        });
+        window.dispatchEvent(new CustomEvent('ws_lobby_ejected'));
+        return false;
+    }
+
+    if (!spectatorSync && window._touchControls) window._touchControls.showControls();
+    if (!spectatorSync) {
+        window._victoryActive = false;
+        window._victoryState = null;
+        window._victoryConsumed = resumed;
+        window._eliminatedFromSession = null;
+    }
+    window._hitstopState = null;
+
+    const countdownRemainingMs = applyAuthoritativeCountdown(msg);
+    window._matchSession = {
+        sessionId: msg.sessionId,
+        mode: msg.mode,
+        tournamentId: msg.tournamentId ?? null,
+        round: msg.round ?? null,
+        stageId: msg.stageId ?? -1,
+        startsAt: msg.startsAt ?? null,
+        countdownRemainingMs,
+        resumed,
+    };
+
+    if (msg.stageId !== undefined && msg.stageId >= 0) {
+        window._confirmedStageId = msg.stageId;
+        try { sessionStorage.setItem('confirmedStageId', String(msg.stageId)); } catch (_) {}
+        window.dispatchEvent(new CustomEvent('stage_confirmed', { detail: { stageId: msg.stageId } }));
+    }
+
+    window._hadMatchSessionOnOpen = false;
+    window.dispatchEvent(new CustomEvent('match_start', {
+        detail: { ...window._matchSession, spectatorSync },
+    }));
+    return true;
+}
+
 function connectWS() {
+    if (wsReconnectTimer) {
+        clearTimeout(wsReconnectTimer);
+        wsReconnectTimer = null;
+    }
+
+    const previousWs = window._ws;
+    const generation = ++wsConnectionGeneration;
+    window._ws = null;
+    if (previousWs &&
+        (previousWs.readyState === WebSocket.CONNECTING ||
+         previousWs.readyState === WebSocket.OPEN)) {
+        try { previousWs.close(1000, 'Superseded connection'); } catch (_) {}
+    }
+
     const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
     const ws       = new WebSocket(`${protocol}//${location.host}/ws`);
     window._ws     = ws;
+    const isCurrentSocket = () =>
+        generation === wsConnectionGeneration && window._ws === ws;
 
     function setStatus(text) {
         const el = document.getElementById('status');
@@ -140,6 +232,10 @@ function connectWS() {
     }
 
     ws.addEventListener('open', () => {
+        if (!isCurrentSocket()) {
+            try { ws.close(1000, 'Superseded connection'); } catch (_) {}
+            return;
+        }
         setStatus('⬤ Connected');
         window._lastWsMessageAt = Date.now();
 
@@ -216,6 +312,7 @@ function connectWS() {
     });
 
     ws.addEventListener('message', ({ data }) => {
+        if (!isCurrentSocket()) return;
         window._lastWsMessageAt = Date.now();
         let msg;
         try { msg = JSON.parse(data); } catch { return; }
@@ -270,6 +367,8 @@ function connectWS() {
                     _victoryConsumed:       true,
                     _hitstopState:          null,
                     _countdownStart:        null,
+                    _countdownEndsAt:       null,
+                    _countdownDurationMs:   0,
                     _countdownDone:         false,
                     _confirmedStageId:      undefined,
                     _isHost:               false,
@@ -306,24 +405,7 @@ function connectWS() {
                 sessionStorage.removeItem('gameState');
                 sessionStorage.removeItem('confirmedStageId');
             } catch (_) {}
-            Object.assign(window, {
-                _matchSession:    null,
-                _victoryActive:   false,
-                _victoryConsumed: true,
-                _hitstopState:    null,
-                _countdownStart:  null,
-                _countdownDone:   false,
-            });
-
             window.dispatchEvent(new CustomEvent('ws_init_received'));
-
-            const _isTrainingOrTournament = !!(window._pendingTraining ||
-                window._pendingGameMode === 'training' ||
-                window._pendingTournament);
-            if (!_isTrainingOrTournament && window._hadMatchSessionOnOpen) {
-                window.dispatchEvent(new CustomEvent('ws_lobby_ejected'));
-            }
-            window._hadMatchSessionOnOpen = false;
 
             if (window._pendingTraining) {
                 const trainingOpts = window._pendingTraining;
@@ -338,7 +420,25 @@ function connectWS() {
                     credentials: 'include',
                     body: JSON.stringify({ clientId: msg.clientId, cpuCharIds, stageId }),
                 }).then(r => r.json()).then(d => {
-                    if (d.error) console.error('[WS] training start error:', d.error);
+                    if (d.error) {
+                        console.error('[WS] training start error:', d.error);
+                        window.dispatchEvent(new CustomEvent('training_start_error', {
+                            detail: { error: d.error },
+                        }));
+                        return;
+                    }
+
+                    // match_start and the HTTP response travel over independent
+                    // connections. If the WS message crosses a reconnect boundary,
+                    // recover the authoritative lifecycle and state explicitly.
+                    setTimeout(() => {
+                        if (!isCurrentSocket() || ws.readyState !== WebSocket.OPEN) return;
+                        if (String(window._matchSession?.sessionId) === String(d.sessionId)) return;
+                        ws.send(JSON.stringify({
+                            type: 'session_sync_request',
+                            sessionId: String(d.sessionId),
+                        }));
+                    }, 250);
                 }).catch(e => console.error('[WS] training fetch error:', e));
             }
             if (window._pendingTournament) {
@@ -348,6 +448,37 @@ function connectWS() {
             } else if (sessionStorage.getItem('inTournamentRoom') === '1') {
                 ws.send(JSON.stringify({ type: 'tournament_join' }));
                 window.dispatchEvent(new CustomEvent('ws_tournament_joined_this_session'));
+            }
+
+        } else if (msg.type === 'session_sync') {
+            if (!msg.active) {
+                const hadActiveSession = !!(window._hadMatchSessionOnOpen || window._matchSession);
+                Object.assign(window, {
+                    _matchSession: null,
+                    _victoryActive: false,
+                    _victoryConsumed: true,
+                    _hitstopState: null,
+                    _countdownStart: null,
+                    _countdownEndsAt: null,
+                    _countdownDurationMs: 0,
+                    _countdownDone: false,
+                });
+                window._hadMatchSessionOnOpen = false;
+
+                const isStartingStandaloneMode = !!(
+                    window._pendingTraining ||
+                    window._pendingGameMode === 'training' ||
+                    window._pendingTournament
+                );
+                if (hadActiveSession && !isStartingStandaloneMode) {
+                    window.dispatchEvent(new CustomEvent('ws_lobby_ejected'));
+                }
+            } else {
+                if (msg.state?.players) window._gameState = msg.state;
+                applyMatchLifecycle({
+                    ...msg,
+                    countdown: msg.phase === 'countdown',
+                }, { resumed: true });
             }
 
         } else if (msg.type === 'char_select_ack') {
@@ -445,64 +576,10 @@ function connectWS() {
             }
 
         } else if (msg.type === 'match_start') {
-            if (window._touchControls) { window._touchControls.showControls(); }
-            if (Array.isArray(msg.players) && msg.players.length > 0 &&
-                !msg.players.includes(window._myClientId) &&
-                window._myClientId !== -1) {
-                console.warn('[WS] match_start ignored: not in player list', msg.players, 'myId=', window._myClientId);
-                return;
-            }
-
-            if ((msg.mode === '1v1' || msg.mode === 'tournament') &&
-                Array.isArray(msg.players) && msg.players.length < 2) {
-                console.warn('[WS] match_start', msg.mode, 'with <2 players — ejecting to lobby', msg.players);
-                try { SSS_KEYS.forEach(k => sessionStorage.removeItem(k)); } catch (_) {}
-                Object.assign(window, {
-                    _matchSession: null, _myClientId: -1,
-                    _charSelectData: null, _charSelectConfirmed: false,
-                    _confirmedStageId: undefined, _isHost: false,
-                });
-                window.dispatchEvent(new CustomEvent('ws_lobby_ejected'));
-                return;
-            }
-            window._victoryState    = null;
-            window._victoryConsumed = false;
-            window._hitstopState    = null;
-            window._matchSession    = {
-                sessionId:    msg.sessionId,
-                mode:         msg.mode,
-                tournamentId: msg.tournamentId ?? null,
-                round:        msg.round ?? null,
-                stageId:      msg.stageId ?? -1,
-            };
-            if (msg.stageId !== undefined && msg.stageId >= 0) {
-                window._confirmedStageId = msg.stageId;
-                try { sessionStorage.setItem('confirmedStageId', String(msg.stageId)); } catch (_) {}
-                window.dispatchEvent(new CustomEvent('stage_confirmed', { detail: { stageId: msg.stageId } }));
-            }
-            if (msg.countdown) {
-                window._countdownStart = performance.now();
-                window._countdownDone  = false;
-            } else {
-                window._countdownStart = null;
-                window._countdownDone  = true;
-            }
-            window.dispatchEvent(new CustomEvent('match_start', { detail: window._matchSession }));
+            applyMatchLifecycle(msg);
 
         } else if (msg.type === 'spectator_match_sync') {
-            window._matchSession = {
-                sessionId:    msg.sessionId,
-                mode:         msg.mode,
-                tournamentId: msg.tournamentId ?? null,
-                round:        msg.round ?? null,
-            };
-            window._countdownStart = null;
-            window._countdownDone  = true;
-            if (msg.stageId !== undefined && msg.stageId >= 0) {
-                window._confirmedStageId = msg.stageId;
-                try { sessionStorage.setItem('confirmedStageId', String(msg.stageId)); } catch (_) {}
-            }
-            window.dispatchEvent(new CustomEvent('match_start', { detail: { ...window._matchSession, spectatorSync: true } }));
+            applyMatchLifecycle(msg, { spectatorSync: true, resumed: true });
 
         } else if (msg.type === 'victory') {
             const isWinner = !window._isSpectator && msg.winner === window._myClientId;
@@ -541,6 +618,10 @@ function connectWS() {
                 _victoryConsumed:     true,
                 _confirmedStageId:    undefined,
                 _isHost:              false,
+                _countdownStart:      null,
+                _countdownEndsAt:     null,
+                _countdownDurationMs: 0,
+                _countdownDone:       true,
             });
             window.dispatchEvent(new CustomEvent('match_finished', { detail: { sessionId: msg.sessionId } }));
 
@@ -655,16 +736,29 @@ function connectWS() {
     });
 
     ws.addEventListener('close', () => {
+        if (!isCurrentSocket()) return;
         window._myClientId    = -1;
         window._isSpectator   = false;
         window._spectatorMode = null;
         if (!window._manualReconnect) {
-            setTimeout(connectWS, 2000);
+            scheduleWsConnect(2000);
         }
-        window._manualReconnect = false;
     });
 
-    ws.addEventListener('error', err => { console.error('[WS] Error:', err); ws.close(); });
+    ws.addEventListener('error', err => {
+        if (!isCurrentSocket()) return;
+        console.error('[WS] Error:', err);
+        ws.close();
+    });
+}
+
+function scheduleWsConnect(delayMs) {
+    if (wsReconnectTimer) clearTimeout(wsReconnectTimer);
+    wsReconnectTimer = setTimeout(() => {
+        wsReconnectTimer = null;
+        window._manualReconnect = false;
+        connectWS();
+    }, delayMs);
 }
 connectWS();
 
@@ -674,8 +768,19 @@ window.reconnectWS = function () {
     window._isSpectator     = false;
     window._spectatorMode   = null;
     try { SSS_KEYS.forEach(k => sessionStorage.removeItem(k)); } catch (_) {}
-    if (window._ws) { try { window._ws.close(); } catch (_) {} }
-    setTimeout(connectWS, 80);
+    if (wsReconnectTimer) {
+        clearTimeout(wsReconnectTimer);
+        wsReconnectTimer = null;
+    }
+    const oldWs = window._ws;
+    window._ws = null;
+    wsConnectionGeneration++;
+    if (oldWs) { try { oldWs.close(1000, 'Client reconnect'); } catch (_) {} }
+    // The old socket can finish closing after the replacement is already open:
+    // generation checks make its late events harmless. Connecting immediately
+    // also prevents a mode transition (notably training) from being left with
+    // no socket if a delayed reconnect is superseded or cancelled.
+    connectWS();
 };
 
 // Watchdog for zombie connections: if the network dies without a clean close
@@ -693,14 +798,22 @@ setInterval(() => {
 
     console.warn('[WS] connection looks stale during an active match — forcing reconnect');
     window._manualReconnect = true;
-    try { window._ws.close(); } catch (_) {}
-    setTimeout(connectWS, 80);
+    const oldWs = window._ws;
+    window._ws = null;
+    wsConnectionGeneration++;
+    try { oldWs.close(1000, 'Stale connection'); } catch (_) {}
+    scheduleWsConnect(80);
 }, 5000);
 
 function sendInput(frame) {
     if (!window._ws || window._ws.readyState !== WebSocket.OPEN) return;
     if (window._isSpectator || window._victoryActive) return;
-    if (window._countdownStart && !window._countdownDone) return;
+    if (window._countdownEndsAt && performance.now() < window._countdownEndsAt) return;
+    if (window._countdownEndsAt && !window._countdownDone) {
+        window._countdownDone = true;
+        window._countdownStart = null;
+        window._countdownEndsAt = null;
+    }
 
     window._ws.send(JSON.stringify({
         type:       'input',
