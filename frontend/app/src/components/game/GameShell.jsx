@@ -363,10 +363,21 @@ export default function GameShell({
       window._myClientId,
     );
 
+    // Da tiempo al WASM a pintar al menos un frame real antes de revelar el
+    // canvas — si se revela en el mismo instante en que llegan los datos,
+    // a veces se alcanza a ver un frame negro sin dibujar.
+    const revealCanvas = () => {
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          setVisible(true);
+          setStatus("");
+        });
+      });
+    };
+
     const poll = setInterval(() => {
       if (window._isSpectator && window._myClientId > 0) {
-        setVisible(true);
-        setStatus("");
+        revealCanvas();
         clearInterval(poll);
         return;
       }
@@ -378,8 +389,7 @@ export default function GameShell({
           "players=",
           Object.keys(window._gameState.players),
         );
-        setVisible(true);
-        setStatus("");
+        revealCanvas();
         clearInterval(poll);
       }
     }, 50);
@@ -411,8 +421,7 @@ export default function GameShell({
 
     let enteredAsVoluntarySpectator = false;
     const onSpectateMode = (e) => {
-      setVisible(true);
-      setStatus("");
+      revealCanvas();
       enteredAsVoluntarySpectator = !e.detail?.eliminated;
     };
 
@@ -587,7 +596,12 @@ export default function GameShell({
       )}
 
       <div className="game-frame">
-        <canvas ref={canvasRef} id="canvas" className="game-canvas" />
+        <canvas
+          ref={canvasRef}
+          id="canvas"
+          className="game-canvas"
+          style={{ opacity: visible ? 1 : 0 }}
+        />
       </div>
     </div>
   );
