@@ -512,6 +512,30 @@ static const StageDef STAGES[] = {
 };
 #define STAGES_COUNT 4
 
+// --- Puntero unificado (raton en desktop, dedo en movil/WASM) ---------------
+// En WASM no podemos depender de que el touch genere eventos de "raton
+// sintetico": si hay alguna capa/controles tactiles por encima del canvas,
+// o si el navegador hace preventDefault en touchstart, esos eventos nunca
+// llegan. Por eso comprobamos directamente GetTouchPointCount()/GetTouchPosition
+// y solo caemos al raton si no hay ningun dedo tocando la pantalla.
+static Vector2 GetPointerPosition(void)
+{
+    if (GetTouchPointCount() > 0) return GetTouchPosition(0);
+    return GetMousePosition();
+}
+
+// "Pulsado" en este frame, ya sea con el boton izquierdo del raton o con
+// el primer dedo que toque la pantalla (flanco de subida, no nivel).
+static bool IsPointerPressed(void)
+{
+    static bool wasDown = false;
+    bool isDown = (GetTouchPointCount() > 0) || IsMouseButtonDown(MOUSE_LEFT_BUTTON);
+    bool pressed = isDown && !wasDown;
+    wasDown = isDown;
+    return pressed;
+}
+// -----------------------------------------------------------------------
+
 typedef enum { SSS_SELECTING, SSS_WAITING, SSS_DONE } SssPhase;
 
 static struct {
@@ -628,7 +652,7 @@ static bool SSS_UpdateAndDraw(void) {
     if (startY + cardH > sh - hintAreaH - 4) startY = sh - hintAreaH - 4 - cardH;
     if (startY < titleY + titleSz + 8)       startY = titleY + titleSz + 8;
 
-    Vector2 mouse = GetMousePosition();
+    Vector2 mouse = GetPointerPosition();
 
     if (g_sss.phase == SSS_SELECTING) {
         for (int i = 0; i < STAGES_COUNT; i++) {
@@ -689,7 +713,7 @@ static bool SSS_UpdateAndDraw(void) {
                  sh - (int)(sh * 0.05f), hintSz, GRAY);
 
         Rectangle hcard = { startX + g_sss.hovered*(cardW+gap), startY, cardW, cardH };
-        bool click = IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && CheckCollisionPointRec(mouse, hcard);
+        bool click = IsPointerPressed() && CheckCollisionPointRec(mouse, hcard);
         bool enter = IsKeyPressed(KEY_ENTER) || IsKeyPressed(KEY_SPACE);
         if (click || enter) {
             g_sss.selected = g_sss.hovered;
@@ -2245,7 +2269,7 @@ static bool CSS_UpdateAndDraw(void) {
     if (startY + cardH > bottomLimit) startY = bottomLimit - cardH;
     if (startY < titleY + titleSz + 8) startY = titleY + titleSz + 8;
 
-    Vector2 mouse = GetMousePosition();
+    Vector2 mouse = GetPointerPosition();
     if (g_css.phase == CSS_SELECTING) {
         for (int i = 0; i < CHARS_SELECTABLE; i++) {
             Rectangle card = { startX + i*(cardW+gap), startY, cardW, cardH };
@@ -2294,7 +2318,7 @@ static bool CSS_UpdateAndDraw(void) {
         DrawText(hint, (sw - MeasureText(hint, hintSz)) / 2, sh - (int)(sh * 0.05f), hintSz, GRAY);
 
         Rectangle hcard = { startX + g_css.hovered*(cardW+gap), startY, cardW, cardH };
-        bool click = IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && CheckCollisionPointRec(mouse, hcard);
+        bool click = IsPointerPressed() && CheckCollisionPointRec(mouse, hcard);
         bool enter = IsKeyPressed(KEY_ENTER) || IsKeyPressed(KEY_SPACE);
         if (click || enter) {
             g_css.selected     = g_css.hovered;
