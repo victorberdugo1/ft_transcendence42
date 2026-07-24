@@ -339,7 +339,6 @@ function connectWS() {
                     body: JSON.stringify({ clientId: msg.clientId, cpuCharIds, stageId }),
                 }).then(r => r.json()).then(d => {
                     if (d.error) console.error('[WS] training start error:', d.error);
-                    else console.log('[WS] training session started:', d.sessionId, 'cpuIds:', d.cpuIds);
                 }).catch(e => console.error('[WS] training fetch error:', e));
             }
             if (window._pendingTournament) {

@@ -6291,9 +6291,6 @@ static inline bool ParseHairpieceLine(const char* line, HairPiece* out) {
         out->tint = (Color){255, 255, 255, 255};
     }
 
-    printf("[HAIR] Nombre=%s, widthFactor=%.2f, length=%.2f, ancho visible=%.2f\n",
-           out->name, out->widthFactor, out->length, out->widthFactor * out->length);
-
     out->enabled = true;
     out->visible = true;
     out->textureIndex = -1;
