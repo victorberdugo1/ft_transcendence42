@@ -2478,7 +2478,7 @@ static void MainLoop(void) {
 int main(void) {
     memset(players, 0, sizeof(players));
 
-    SetTraceLogLevel(LOG_WARNING);
+    SetTraceLogLevel(LOG_ERROR);
     InitWindow(SCREEN_W, SCREEN_H, "Enuma Fighter");
     SetTargetFPS(0);
 

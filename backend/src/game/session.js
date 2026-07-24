@@ -670,6 +670,14 @@ function cleanupSession(session, winnerClientId) {
         playerSession.delete(cid);
         playerCharSelected.delete(cid);
         const p = players[cid];
+        // CPU players (training bots / tournament-padding bots) are created
+        // fresh per session and never reconnect — unlike humans they must be
+        // fully removed here, or they linger in `players{}` forever and
+        // silently eat into MAX_PLAYERS on every training/tournament run.
+        if (p?.isCpu) {
+            delete players[cid];
+            continue;
+        }
         if (p) {
             delete p._pendingStageId;
             p.stocks = 3;
@@ -1043,7 +1051,7 @@ function tick() {
 
     for (const session of gameSessions.values()) {
         if (session.finished) continue;
-        if (session.mode !== '1v1' && session.mode !== 'tournament') continue;
+        if (session.mode !== '1v1' && session.mode !== 'tournament' && session.mode !== 'training') continue;
         if (session.pendingWinner) continue;
         if (session._soloGuardFired) continue;
         if (Date.now() - session.startedAt.getTime() < 3000) continue;
@@ -1120,6 +1128,20 @@ function tick() {
                         cleanupSession(session, null);
                     }, 200);
                 }
+            }
+        } else if (session.mode === 'training') {
+            // Training sessions only ever have one human slot (humanId) plus
+            // CPU-only opponents. If that human disconnects without a clean
+            // 'leave' (tab closed, network drop, etc.) the CPUs are left
+            // ticking against a null target forever and the session never
+            // gets cleaned up. Same abandonment check as 1v1, just simpler:
+            // no connected human left → close and clean up immediately.
+            if (connected.length === 0) {
+                session._soloGuardFired = true;
+                session.finished = true;
+                console.log(`[SOLO-GUARD] training session ${session.id}: no human connected — closing (only CPU players remained)`);
+                broadcastToSession(session, { type: 'match_finished', sessionId: session.id });
+                cleanupSession(session, null);
             }
         }
     }

@@ -286,10 +286,6 @@ export default function GameShell({
         cpuCharIds: ["eld"],
         stageId: 0,
       };
-      console.log(
-        "[GameShell] training: calling reconnectWS, pendingTraining=",
-        JSON.stringify(window._pendingTraining),
-      );
       if (typeof window.reconnectWS === "function") window.reconnectWS();
       return;
     }
@@ -356,41 +352,32 @@ export default function GameShell({
   useEffect(() => {
     if (inLobby) return;
 
-    console.log(
-      "[GameShell] poll started — gameMode:",
-      gameMode,
-      "_myClientId:",
-      window._myClientId,
-    );
+    // Da tiempo al WASM a pintar al menos un frame real antes de revelar el
+    // canvas — si se revela en el mismo instante en que llegan los datos,
+    // a veces se alcanza a ver un frame negro sin dibujar.
+    const revealCanvas = () => {
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          setVisible(true);
+          setStatus("");
+        });
+      });
+    };
 
     const poll = setInterval(() => {
       if (window._isSpectator && window._myClientId > 0) {
-        setVisible(true);
-        setStatus("");
+        revealCanvas();
         clearInterval(poll);
         return;
       }
       const id = window._myClientId;
       if (id > 0 && window._gameState?.players?.[id]) {
-        console.log(
-          "[GameShell] poll: visible! id=",
-          id,
-          "players=",
-          Object.keys(window._gameState.players),
-        );
-        setVisible(true);
-        setStatus("");
+        revealCanvas();
         clearInterval(poll);
       }
     }, 50);
 
     const onStart = () => {
-      console.log(
-        "[GameShell] match_start received — myClientId:",
-        window._myClientId,
-        "matchSession:",
-        window._matchSession,
-      );
       setStatus("");
       setMatchStarted(true);
       matchStartedRef.current = true;
@@ -411,8 +398,7 @@ export default function GameShell({
 
     let enteredAsVoluntarySpectator = false;
     const onSpectateMode = (e) => {
-      setVisible(true);
-      setStatus("");
+      revealCanvas();
       enteredAsVoluntarySpectator = !e.detail?.eliminated;
     };
 
@@ -587,7 +573,12 @@ export default function GameShell({
       )}
 
       <div className="game-frame">
-        <canvas ref={canvasRef} id="canvas" className="game-canvas" />
+        <canvas
+          ref={canvasRef}
+          id="canvas"
+          className="game-canvas"
+          style={{ opacity: visible ? 1 : 0 }}
+        />
       </div>
     </div>
   );
