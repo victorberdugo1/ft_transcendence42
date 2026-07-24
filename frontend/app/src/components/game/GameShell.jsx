@@ -215,12 +215,7 @@ export default function GameShell({
     onBackToLobby();
   }
 
-  // handleBackToLobby closes over `gameMode` (and window.* state) from the
-  // render it was created in. onRegisterBack below only runs once on mount,
-  // so without this ref indirection the parent would keep calling a closure
-  // frozen at the very first render forever — e.g. always treating the game
-  // as "versus" even after switching to training/spectate/tournament, which
-  // broke the browser back button outside Versus mode.
+  // Avoid a stale closure that caused the back button to always behave as Versus mode.
   const handleBackToLobbyRef = useRef(handleBackToLobby);
   useEffect(() => {
     handleBackToLobbyRef.current = handleBackToLobby;
@@ -363,9 +358,6 @@ export default function GameShell({
       window._myClientId,
     );
 
-    // Da tiempo al WASM a pintar al menos un frame real antes de revelar el
-    // canvas — si se revela en el mismo instante en que llegan los datos,
-    // a veces se alcanza a ver un frame negro sin dibujar.
     const revealCanvas = () => {
       requestAnimationFrame(() => {
         requestAnimationFrame(() => {
@@ -579,7 +571,7 @@ export default function GameShell({
       )}
       {pairDissolved && !matchStarted && (
         <div className="game-status-overlay">
-          <p>⚠️ Your partner left — select stage and character again</p>
+          <p>Your partner left — select stage and character again</p>
         </div>
       )}
       {sessionErr && (
