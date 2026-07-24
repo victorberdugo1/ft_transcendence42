@@ -1848,7 +1848,8 @@ static void DrawGame(void) {
                 tsz[0] = (float)p->character->renderer->textures[0].width;
                 tsz[1] = (float)p->character->renderer->textures[0].height;
             }
-            float sz = 9.0f;
+            const float REF_TEX_RES = 1024.0f;
+            float sz = 9.0f * (tsz[0] / REF_TEX_RES);
             SetShaderValue(g_shdrOutline, g_outlineSizeLoc,  &sz,  SHADER_UNIFORM_FLOAT);
             SetShaderValue(g_shdrOutline, g_outlineColorLoc,  col,  SHADER_UNIFORM_VEC4);
             SetShaderValue(g_shdrOutline, g_textureSizeLoc,   tsz,  SHADER_UNIFORM_VEC2);
