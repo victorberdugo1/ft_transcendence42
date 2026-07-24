@@ -2,11 +2,27 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <title>Enuma Fighter</title>
     <style>
       * { margin: 0; padding: 0; box-sizing: border-box; }
-      html, body { overflow: hidden; width: 100%; height: 100%; background: #000; }
+      html, body {
+        overflow: hidden;
+        width: 100%;
+        height: 100%;
+        background: #000;
+        /* Evita que el navegador haga scroll, pull-to-refresh o zoom con el
+           dedo por encima del juego. Esto es lo que realmente debe frenar
+           los gestos por defecto, no forzar los listeners a passive. */
+        touch-action: none;
+        overscroll-behavior: none;
+        -webkit-user-select: none;
+        user-select: none;
+        -webkit-touch-callout: none;
+      }
+      canvas {
+        touch-action: none;
+      }
     </style>
     <script>
       // ── Polyfill 1: Element.setCapture() is deprecated.
@@ -21,27 +37,6 @@
         };
         document.releaseCapture = function () {};
       }
-
-      // ── Polyfill 2: Non-passive scroll-blocking event listeners.
-      // Emscripten (GLFW + html5 API) registers touchstart, touchmove, wheel and
-      // mousewheel without { passive: true }, triggering browser violations.
-      // Since the game runs fullscreen with overflow:hidden, there is no scroll to
-      // prevent, so forcing passive:true on these events is safe.
-      (function () {
-        var SCROLL_EVENTS = new Set(['touchstart', 'touchmove', 'wheel', 'mousewheel']);
-        var orig = EventTarget.prototype.addEventListener;
-        EventTarget.prototype.addEventListener = function (type, fn, options) {
-          if (SCROLL_EVENTS.has(type)) {
-            if (typeof options === 'object' && options !== null) {
-              options = Object.assign({}, options, { passive: true });
-            } else {
-              // options was a boolean capture flag or undefined
-              options = { capture: !!options, passive: true };
-            }
-          }
-          return orig.call(this, type, fn, options);
-        };
-      })();
     </script>
   </head>
   <body>
