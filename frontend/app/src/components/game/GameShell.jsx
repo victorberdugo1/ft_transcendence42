@@ -183,6 +183,7 @@ export default function GameShell({
       _isSpectator: false,
       _spectatorMode: null,
       _matchSession: null,
+      _endingSessionId: null,
       _victoryActive: false,
       _victoryConsumed: true,
       _hitstopState: null,

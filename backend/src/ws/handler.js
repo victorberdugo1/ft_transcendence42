@@ -356,6 +356,10 @@ function sendWelcomeToPlayer(ws, clientId) {
 
 function resolveGraceExpiry(session, clientId, fallbackDbId) {
     delete session.pendingEliminations[clientId];
+    if (playerSession.get(clientId) !== session.id) {
+        console.log(`[SERVER] Ignored stale grace expiry for client ${clientId} from session ${session.id}`);
+        return;
+    }
     const p2          = players[clientId];
     const leavingDbId = p2?.dbUserId ?? fallbackDbId;
     delete players[clientId];

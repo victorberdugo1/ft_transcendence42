@@ -148,6 +148,20 @@ function applyAuthoritativeCountdown(msg) {
     return remainingMs;
 }
 
+function sameSessionId(left, right) {
+    return left != null && right != null && String(left) === String(right);
+}
+
+function lifecycleSessionMatches(msg) {
+    const incomingId = msg?.sessionId;
+    const activeId = window._matchSession?.sessionId;
+    const endingId = window._endingSessionId;
+    if (incomingId == null) return activeId == null && endingId == null;
+    if (activeId != null) return sameSessionId(incomingId, activeId);
+    if (endingId != null) return sameSessionId(incomingId, endingId);
+    return true;
+}
+
 function applyMatchLifecycle(msg, { spectatorSync = false, resumed = false } = {}) {
     if (!spectatorSync &&
         Array.isArray(msg.players) && msg.players.length > 0 &&
@@ -179,6 +193,11 @@ function applyMatchLifecycle(msg, { spectatorSync = false, resumed = false } = {
         window._eliminatedFromSession = null;
     }
     window._hitstopState = null;
+    window._endingSessionId = null;
+    if (window._matchEndReloadTimeout) {
+        clearTimeout(window._matchEndReloadTimeout);
+        window._matchEndReloadTimeout = null;
+    }
 
     const countdownRemainingMs = applyAuthoritativeCountdown(msg);
     window._matchSession = {
@@ -582,6 +601,11 @@ function connectWS() {
             applyMatchLifecycle(msg, { spectatorSync: true, resumed: true });
 
         } else if (msg.type === 'victory') {
+            if (!lifecycleSessionMatches(msg)) {
+                console.warn('[WS] stale victory ignored for session', msg.sessionId);
+                return;
+            }
+            const victorySessionId = msg.sessionId ?? window._matchSession?.sessionId ?? null;
             const isWinner = !window._isSpectator && msg.winner === window._myClientId;
             window._victoryWinner   = msg.winner | 0;
             window._victoryIsWinner = isWinner;
@@ -589,6 +613,7 @@ function connectWS() {
             window._victoryConsumed = false;
             window._victoryState    = {
                 winner: msg.winner, loser: msg.loser, isWinner,
+                sessionId: victorySessionId,
                 reloadRequired: msg.reloadRequired ?? true,
             };
             if (window._isSpectator && window._eliminatedFromSession) {
@@ -596,12 +621,26 @@ function connectWS() {
                     winner: msg.winner, loser: msg.loser, isWinner: false, spectating: true,
                 }}));
             }
+            const victoryState = window._victoryState;
             setTimeout(() => {
+                const stillRelevant =
+                    sameSessionId(victorySessionId, window._matchSession?.sessionId) ||
+                    sameSessionId(victorySessionId, window._endingSessionId);
+                if (!stillRelevant || window._victoryState !== victoryState) return;
                 window._overlayReady = true;
-                window.dispatchEvent(new CustomEvent('victory', { detail: window._victoryState }));
+                window.dispatchEvent(new CustomEvent('victory', { detail: victoryState }));
             }, window._victoryOverlayDelayMs ?? 3000);
 
         } else if (msg.type === 'match_finished') {
+            if (!lifecycleSessionMatches(msg)) {
+                console.warn('[WS] stale match_finished ignored for session', msg.sessionId);
+                return;
+            }
+            const finishedSessionId =
+                msg.sessionId ??
+                window._endingSessionId ??
+                window._matchSession?.sessionId ??
+                null;
             // Cancel the match_end fallback reload (below): match_finished arriving
             // means this same page already has the real victory state, so let this
             // handler's own reload logic run instead of racing a second, blind one.
@@ -623,7 +662,9 @@ function connectWS() {
                 _countdownDurationMs: 0,
                 _countdownDone:       true,
             });
-            window.dispatchEvent(new CustomEvent('match_finished', { detail: { sessionId: msg.sessionId } }));
+            window.dispatchEvent(new CustomEvent('match_finished', {
+                detail: { sessionId: finishedSessionId },
+            }));
 
             const wasEliminated       = !!window._eliminatedFromSession;
             const wasEjectedFromEmpty = !window._isSpectator && window._victoryState == null;
@@ -641,13 +682,22 @@ function connectWS() {
             } else {
                 window._pendingScreenReset = true;
             }
+            window._endingSessionId = null;
 
         } else if (msg.type === 'match_end') {
+            if (!lifecycleSessionMatches(msg)) {
+                console.warn('[WS] stale match_end ignored for session', msg.sessionId);
+                return;
+            }
+            const endingSessionId =
+                msg.sessionId ?? window._matchSession?.sessionId ?? null;
             window._lastMatchResult = {
                 winner: msg.winner, loser: msg.loser,
                 isWinner: msg.winner === window._myClientId, matchId: msg.matchId,
+                sessionId: endingSessionId,
             };
             window._eliminatedFromSession = null;
+            window._endingSessionId       = endingSessionId;
             window._matchSession          = null;
             window.dispatchEvent(new CustomEvent('match_end', { detail: window._lastMatchResult }));
 
@@ -662,6 +712,10 @@ function connectWS() {
             // reloads a second time on the fresh page — the double "checking
             // connection" screen bug this comment is guarding against.
             window._matchEndReloadTimeout = setTimeout(() => {
+                if (!sameSessionId(endingSessionId, window._endingSessionId) ||
+                    window._matchSession != null) {
+                    return;
+                }
                 try {
                     sessionStorage.setItem('matchmakingSafeAt', String(Date.now() + 5000));
                     sessionStorage.setItem('postMatchReload', '1');

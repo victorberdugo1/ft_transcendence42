@@ -111,9 +111,17 @@ function setSpectatorSession(spec, newSessionId) {
 }
 
 function broadcastToSession(session, msg) {
-    const raw = JSON.stringify(msg);
+    if (!session) return;
+    const raw = JSON.stringify({
+        ...msg,
+        sessionId: msg.sessionId ?? session.id,
+    });
     for (const cid of session.playerIds) {
         const p = players[cid];
+        // A finished session can keep delayed timers alive while this numeric
+        // clientId is already participating in a newer session. Never resolve
+        // recipients from session.playerIds alone: verify current ownership.
+        if (playerSession.get(cid) !== session.id) continue;
         if (p?.ws?.readyState === WebSocket.OPEN) p.ws.send(raw);
     }
     for (const spec of Object.values(spectators)) {
@@ -695,33 +703,38 @@ function cleanupSession(session, winnerClientId) {
     if ([...gameSessions.values()].every(s => s.finished)) confirmedStageId = -1;
 
     for (const cid of session.playerIds) {
-        playerSession.delete(cid);
-        playerCharSelected.delete(cid);
         const p = players[cid];
-        // CPU players (training bots / tournament-padding bots) are created
-        // fresh per session and never reconnect — unlike humans they must be
-        // fully removed here, or they linger in `players{}` forever and
-        // silently eat into MAX_PLAYERS on every training/tournament run.
-        if (p?.isCpu) {
-            delete players[cid];
-            continue;
-        }
-        if (p) {
-            delete p._pendingStageId;
-            p.stocks = 3;
-            p.voltage = 0;
-            p.voltageMaxed = false;
-            p.attacking = false;
-            p.dashing = false;
-            p.blocking = false;
-            p.crouching = false;
-            p.hitTargets = new Set();
-            p.kbx = 0; p.kby = 0; p.vx = 0; p.vy = 0;
-            p.animation = 'idle';
-            p.animTimer = 0;
+        const stillOwnedBySession = playerSession.get(cid) === session.id;
+
+        // A delayed cleanup must never delete/reset a slot that has already
+        // been reassigned to another session.
+        if (stillOwnedBySession) {
+            playerSession.delete(cid);
+            playerCharSelected.delete(cid);
+            // CPU players (training bots / tournament-padding bots) are created
+            // fresh per session and never reconnect — unlike humans they must be
+            // fully removed here, or they linger in `players{}` forever and
+            // silently eat into MAX_PLAYERS on every training/tournament run.
+            if (p?.isCpu) {
+                delete players[cid];
+            } else if (p) {
+                delete p._pendingStageId;
+                p.stocks = 3;
+                p.voltage = 0;
+                p.voltageMaxed = false;
+                p.attacking = false;
+                p.dashing = false;
+                p.blocking = false;
+                p.crouching = false;
+                p.hitTargets = new Set();
+                p.kbx = 0; p.kby = 0; p.vx = 0; p.vy = 0;
+                p.animation = 'idle';
+                p.animTimer = 0;
+            }
         }
         const spec = spectators[cid];
         if (spec?.eliminated) {
+            playerCharSelected.delete(cid);
             if (spec.dbRowId) {
                 db.query('UPDATE spectators SET left_at = NOW() WHERE id = $1', [spec.dbRowId])
                     .catch(() => { });
@@ -1272,6 +1285,10 @@ function resolveTournamentGraceExpiry(session, clientId, fallbackDbId) {
     delete session.pendingEliminations[clientId];
 
     if (session.finished) return;
+    if (playerSession.get(clientId) !== session.id) {
+        console.log(`[TOURNAMENT] Ignored stale grace expiry for client ${clientId} from session ${session.id}`);
+        return;
+    }
 
     const p2 = players[clientId];
     const leavingDbId = p2?.dbUserId ?? session.dbUserIds?.[clientId] ?? fallbackDbId ?? null;
