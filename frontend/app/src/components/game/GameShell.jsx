@@ -14,8 +14,9 @@ function calcResolution() {
 }
 
 // Stays mounted for the entire authenticated session so Emscripten never
-// re-initialises (doing so crashes preMainLoop). inLobby=true hides the
-// canvas behind the lobby overlay without unmounting it.
+// re-initialises (doing so crashes preMainLoop). inLobby=true never hides
+// the canvas (no visibility/opacity toggles) — it only lowers its z-index
+// so the lobby page sits visually on top, without unmounting or hiding it.
 export default function GameShell({
   user,
   gameMode,
@@ -29,7 +30,7 @@ export default function GameShell({
   const canvasRef = useRef(null);
   const scriptRef = useRef(null);
   const [visible, setVisible] = useState(false);
-  const [status, setStatus] = useState("Connecting\u2026");
+  const [status, setStatus] = useState("");
   const [sessionErr, setSessionErr] = useState("");
   const [pairDissolved, setPairDissolved] = useState(false);
   const [matchStarted, setMatchStarted] = useState(false);
@@ -212,7 +213,7 @@ export default function GameShell({
     pairedRef.current = false;
     setLeaveAckPending(false);
     setVisible(false);
-    setStatus("Connecting\u2026");
+    setStatus("");
     onBackToLobby();
   }
 
@@ -268,7 +269,7 @@ export default function GameShell({
     window._pendingGameMode = gameMode;
     window._pendingGameOpts = currentOpts;
     setVisible(false);
-    setStatus("Connecting\u2026");
+    setStatus("");
     setMatchStarted(false);
     matchStartedRef.current = false;
     setPairDissolved(false);
@@ -524,22 +525,16 @@ export default function GameShell({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [inLobby]);
 
-  const modeLabel = {
-    versus: "Playing as",
-    training: "Training vs AI",
-    tournament: "Tournament",
-    spectate: "Spectating",
-  };
-
   return (
     <div
       className="game-page"
-      style={
-        inLobby ? { visibility: "hidden", pointerEvents: "none" } : undefined
-      }
+      style={{
+        zIndex: inLobby ? -1 : 1,
+        pointerEvents: inLobby ? "none" : "auto",
+      }}
     >
       <div className="game-toolbar">
-        {gameMode !== "tournament" && (
+        {!inLobby && gameMode !== "tournament" && (
           <button
             type="button"
             className="logout-button"
@@ -564,12 +559,6 @@ export default function GameShell({
             Back to lobby
           </button>
         )}
-        <div className="game-user">
-          <span className="game-user-label">
-            {modeLabel[gameMode] ?? "Playing as"}
-          </span>
-          <strong>{user.username || user.email || "user"}</strong>
-        </div>
       </div>
 
       {status && (
@@ -596,12 +585,7 @@ export default function GameShell({
       )}
 
       <div className="game-frame">
-        <canvas
-          ref={canvasRef}
-          id="canvas"
-          className="game-canvas"
-          style={{ opacity: visible ? 1 : 0 }}
-        />
+        <canvas ref={canvasRef} id="canvas" className="game-canvas" />
       </div>
     </div>
   );
