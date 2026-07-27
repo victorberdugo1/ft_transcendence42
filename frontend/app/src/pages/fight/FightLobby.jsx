@@ -222,8 +222,8 @@ export default function FightLobby({
   }
 
   return (
-    <div className="auth-page">
-      <div className="auth-card lobby-card" style={{ position: "relative" }}>
+    <div className="fight-lobby-page">
+      <div className="lobby-card">
 
         <div className="fight-lobby-toolbar">
           <div className="fight-lobby-toolbar-start">

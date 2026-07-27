@@ -4,6 +4,16 @@
   z-index: 10;
 }
 
+.fight-lobby-page {
+  min-height: 100dvh;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  padding: 16px;
+}
+
 .fight-lobby-inline-error {
   text-align: center;
   margin-bottom: 0.5rem;
@@ -33,13 +43,14 @@
 }
 
 .fight-lobby-toolbar-start .page-back-btn {
-  min-height: 42px;
+  min-height: 44px;
   padding: 10px 16px;
   border-radius: 999px;
   border: 1px solid rgba(215, 194, 154, 0.35);
   background: transparent;
   color: #d7c29a;
   cursor: pointer;
+  touch-action: manipulation;
   transition:
     background 0.15s ease,
     border-color 0.15s ease;
@@ -119,8 +130,12 @@
 .lobby-card {
   display: grid;
   gap: 20px;
-  max-height: none;
-  overflow: hidden;
+  max-height: 100dvh;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  box-sizing: border-box;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
 .lobby-mode-stack {
@@ -203,13 +218,15 @@
 
 .lobby-logout-link {
   border: 0;
-  padding: 0;
+  padding: 10px 4px;
+  min-height: 44px;
   background: transparent;
   color: #718191;
   cursor: pointer;
   font-size: 0.82rem;
   white-space: nowrap;
   flex-shrink: 0;
+  touch-action: manipulation;
 }
 
 .lobby-logout-link:hover {
@@ -223,18 +240,20 @@
 
 .lobby-mode-tabs {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(72px, 1fr));
   gap: 8px;
 }
 
 .lobby-mode-tab {
   padding: 11px 8px;
+  min-height: 44px;
   border-radius: 14px;
   border: 1px solid rgba(236, 213, 175, 0.18);
   background: transparent;
   color: #cfdae5;
   cursor: pointer;
   font-size: 0.82rem;
+  touch-action: manipulation;
   transition:
     background 0.15s,
     border-color 0.15s;
@@ -251,12 +270,15 @@
 }
 
 .lobby-mode-panel {
-  height: clamp(300px, 52vh, 500px);
+  height: clamp(300px, 52dvh, 500px);
   padding: 18px;
   border-radius: 16px;
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid rgba(236, 213, 175, 0.1);
-  overflow: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  box-sizing: border-box;
 }
 
 .lobby-mode-body {
@@ -284,7 +306,7 @@
 
 .lobby-char-pick {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(64px, 1fr));
   gap: 10px;
 }
 
@@ -294,12 +316,14 @@
   align-items: center;
   gap: 6px;
   padding: 10px 6px;
+  min-height: 44px;
   border-radius: 12px;
   border: 1px solid rgba(236, 213, 175, 0.18);
   background: transparent;
   color: #cfdae5;
   cursor: pointer;
   font-size: 0.75rem;
+  touch-action: manipulation;
   transition:
     background 0.12s,
     border-color 0.12s;
@@ -339,12 +363,13 @@
 
 .lobby-stage-pick {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
   gap: 8px;
 }
 
 .lobby-stage-btn {
   padding: 11px 10px;
+  min-height: 44px;
   border-radius: 12px;
   border: 1px solid rgba(236, 213, 175, 0.18);
   background: transparent;
@@ -352,6 +377,7 @@
   cursor: pointer;
   font-size: 0.82rem;
   letter-spacing: 0.04em;
+  touch-action: manipulation;
   transition:
     background 0.12s,
     border-color 0.12s,
@@ -438,6 +464,7 @@
 
 .lobby-watch-btn {
   padding: 8px 16px;
+  min-height: 44px;
   border-radius: 999px;
   border: 1px solid rgba(215, 194, 154, 0.4);
   background: transparent;
@@ -445,6 +472,7 @@
   cursor: pointer;
   font-size: 0.85rem;
   white-space: nowrap;
+  touch-action: manipulation;
 }
 
 .lobby-watch-btn:hover {
@@ -550,15 +578,7 @@
   }
 
   .lobby-mode-panel {
-    height: clamp(260px, 58vh, 420px);
-  }
-
-  .lobby-mode-tabs {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
-  .lobby-char-pick {
-    grid-template-columns: repeat(2, 1fr);
+    height: clamp(260px, 58dvh, 420px);
   }
 
   .lobby-mini-stats {
@@ -624,4 +644,21 @@
 .logout-button:disabled {
   opacity: 0.4;
   cursor: not-allowed;
+}
+
+/* ─────────────────────────────────────────────────────────────────────── */
+/* Juego anclado arriba (estilo GameBoy), debajo de la toolbar fija.       */
+/* Solo cambio alineación vertical + hueco superior — no toco position/    */
+/* display para no romper el touch del canvas/mando (ver historial).      */
+/* ─────────────────────────────────────────────────────────────────────── */
+
+:root {
+  --game-toolbar-h: 64px;
+}
+
+.game-frame {
+    position: absolute;
+    top: 5%;
+    max-height: 90%;
+    overflow-y: auto;
 }
