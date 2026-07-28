@@ -23,6 +23,7 @@ import "@src/pages/profile/profile.css";
 import Profile from "@src/pages/profile/Profile.jsx";
 import "@src/pages/social/social.css";
 import SocialHub from "@src/pages/social/SocialHub.jsx";
+import { apiFetchJson } from "@src/utils/http.js";
 import { cleanupMatchState } from "@src/utils/cleanupMatchState.js";
 import { useCallback, useEffect, useRef, useState } from "react";
 
