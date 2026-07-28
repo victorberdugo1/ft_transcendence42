@@ -41,7 +41,9 @@
     "serverUnreachable": "Could not reach the server. Please try again.",
     "allFieldsRequired": "All fields are required.",
     "usernameMin": "Username must be at least 3 characters long.",
+    "usernameMax": "Username must be at most 50 characters long.",
     "passwordMin": "Password must be at least 8 characters long.",
+    "passwordMax": "Password must be at most 72 characters long.",
     "passwordMismatch": "Passwords do not match.",
     "registerFailed": "Register failed."
   },

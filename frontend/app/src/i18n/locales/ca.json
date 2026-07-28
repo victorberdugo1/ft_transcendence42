@@ -41,7 +41,9 @@
     "serverUnreachable": "No s'ha pogut connectar al servidor. Torna-ho a provar.",
     "allFieldsRequired": "Tots els camps son obligatoris.",
     "usernameMin": "L'usuari ha de tenir almenys 3 caracters.",
+    "usernameMax": "L'usuari ha de tenir com a maxim 50 caracters.",
     "passwordMin": "La contrasenya ha de tenir almenys 8 caracters.",
+    "passwordMax": "La contrasenya ha de tenir com a maxim 72 caracters.",
     "passwordMismatch": "Les contrasenyes no coincideixen.",
     "registerFailed": "Ha fallat el registre."
   },

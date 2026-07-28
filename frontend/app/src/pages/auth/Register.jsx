@@ -33,13 +33,23 @@ export default function Register({ onLogin, onSwitchToLogin }) {
       return;
     }
 
-    if (!isValidEmail(normalizedEmail)) {
+    if (normalizedUsername.length > 50) {
+      setError(t("validation.usernameMax"));
+      return;
+    }
+
+    if (!isValidEmail(normalizedEmail) || normalizedEmail.length > 255) {
       setError(t("validation.invalidEmail"));
       return;
     }
 
     if (password.length < 8) {
       setError(t("validation.passwordMin"));
+      return;
+    }
+
+    if (password.length > 72) {
+      setError(t("validation.passwordMax"));
       return;
     }
 
@@ -88,6 +98,7 @@ export default function Register({ onLogin, onSwitchToLogin }) {
         onChange={(event) => setUsername(event.target.value)}
         autoComplete="username"
         placeholder={t("auth.usernamePlaceholder")}
+        maxLength={50}
       />
 
       <label className="auth-label" htmlFor="register-email">
@@ -101,6 +112,7 @@ export default function Register({ onLogin, onSwitchToLogin }) {
         onChange={(event) => setEmail(event.target.value)}
         autoComplete="email"
         placeholder={t("auth.emailPlaceholder")}
+        maxLength={255}
       />
 
       <label className="auth-label" htmlFor="register-password">
@@ -115,6 +127,7 @@ export default function Register({ onLogin, onSwitchToLogin }) {
           onChange={(event) => setPassword(event.target.value)}
           autoComplete="new-password"
           placeholder={t("auth.registerPasswordPlaceholder")}
+          maxLength={72}
         />
         <button
           type="button"
@@ -136,6 +149,7 @@ export default function Register({ onLogin, onSwitchToLogin }) {
           type={showConfirmPassword ? "text" : "password"}
           value={confirmPassword}
           onChange={(event) => setConfirmPassword(event.target.value)}
+          maxLength={72}
           autoComplete="new-password"
           placeholder={t("auth.confirmPasswordPlaceholder")}
         />

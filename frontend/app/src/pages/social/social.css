@@ -116,6 +116,7 @@
 .social-header p {
   margin: 14px 0 0;
   max-width: 44rem;
+  overflow-wrap: anywhere;
   color: rgba(255, 255, 255, 0.88);
   line-height: 1.7;
 }
@@ -319,6 +320,11 @@
 }
 
 .social-side-entry strong {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   font-size: 1rem;
 }
 
@@ -486,7 +492,12 @@
   display: inline-flex;
   align-items: center;
   min-height: 24px;
+  min-width: 0;
+  max-width: 60%;
   padding: 0 8px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   background: rgba(96, 219, 255, 0.12);
   color: var(--social-cyan);
   font-size: 0.74rem;
@@ -607,6 +618,7 @@
 
 .social-profile-card h3 {
   font-size: clamp(1.4rem, 2vw, 2rem);
+  overflow-wrap: anywhere;
 }
 
 .social-action-primary {
@@ -639,6 +651,7 @@
 .social-search-result strong,
 .social-overview-list strong {
   display: block;
+  overflow-wrap: anywhere;
 }
 
 .social-search-actions {
