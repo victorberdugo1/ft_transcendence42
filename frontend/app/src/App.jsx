@@ -266,14 +266,20 @@ export default function App() {
     );
   }
 
-  // GameShell MUST stay mounted across lobby / fightLobby / game pages so the
-  // Emscripten WASM module is never torn down (re-initialising it crashes mainLoop).
+  // GameShell MUST stay mounted across every post-login page so the Emscripten
+  // WASM module is never torn down and re-injected (re-initialising it races the
+  // still-running previous instance against shared Module/Browser/GL globals,
+  // crashing mainLoop — see teardownGameRuntime, which only removes the <script>
+  // tag and never actually stops the WASM runtime's requestAnimationFrame loop).
   // It is hidden (visibility:hidden) whenever page !== "game".
   const gameActive =
     page === "lobby" ||
     page === "profile" ||
     page === "fightLobby" ||
-    page === "game";
+    page === "game" ||
+    page === "achievements" ||
+    page === "social" ||
+    page === "manual";
   const myClientId = window._myClientId ?? -1;
 
   return (
