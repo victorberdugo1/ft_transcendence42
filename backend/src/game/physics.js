@@ -255,6 +255,15 @@ function resolvePlayerCollision(a, b) {
 }
 
 function tickPlatforms(alive, handleElimination, platforms) {
+    // Eliminations are collected here instead of resolved immediately so that
+    // two (or more) players running out of stocks in the SAME tick are handed
+    // to handleElimination together — otherwise handling them one at a time
+    // meant the first call could decide a winner before the second player's
+    // simultaneous death was even known about, and bailing out of this loop
+    // early on a normal elimination silently skipped every later player's
+    // landing/out-of-bounds check for that tick.
+    const eliminatedThisTick = [];
+
     for (const p of alive) {
         let landed = false;
         for (const plat of platforms) {
@@ -277,10 +286,22 @@ function tickPlatforms(alive, handleElimination, platforms) {
         if (outOfBounds) {
             p.stocks = Math.max(0, p.stocks - 1);
             if (p.stocks === 0) {
-                const intercepted = handleElimination(p);
-                if (!intercepted) return;
-                p.stocks = 1;
+                eliminatedThisTick.push(p);
+                continue;
             }
+            Object.assign(p, {
+                respawning: true, respawnTimer: 1.5,
+                vx: 0, vy: 0, kbx: 0, kby: 0,
+                animation: 'idle', voltageMaxed: false,
+            });
+        }
+    }
+
+    if (eliminatedThisTick.length > 0) {
+        const intercepted = handleElimination(eliminatedThisTick);
+        for (const p of eliminatedThisTick) {
+            if (!intercepted.has(p.id)) continue;
+            p.stocks = 1;
             Object.assign(p, {
                 respawning: true, respawnTimer: 1.5,
                 vx: 0, vy: 0, kbx: 0, kby: 0,

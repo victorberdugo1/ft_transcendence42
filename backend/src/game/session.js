@@ -602,92 +602,129 @@ function recordTournamentElimination(session, clientId, dbUserId, stocks) {
     bracket.eliminationLog.push({ clientId, dbUserId, stocks });
 }
 
-function handleElimination(loser) {
-    const sessionId = playerSession.get(loser.id);
+// `losers` is every player who ran out of stocks in the SAME physics tick —
+// usually just one, but a simultaneous double- (or multi-) KO passes several
+// at once. Returns a Set of clientIds that should respawn instead of staying
+// eliminated (see the pendingWinner-straggler case below).
+function handleElimination(losers) {
+    const losersArr = Array.isArray(losers) ? losers : [losers];
+    if (losersArr.length === 0) return new Set();
+
+    const first = losersArr[0];
+    const sessionId = playerSession.get(first.id);
     const session = sessionId ? gameSessions.get(sessionId) : null;
 
-    if (session?.pendingWinner?.winnerId === loser.id) {
+    // The already-declared pending winner falling out of bounds on a LATER,
+    // separate tick (staggered off the stage before ever touching ground to
+    // confirm the win) isn't a fresh elimination — let them respawn normally
+    // and re-resolve once they land. This must never fire for a genuine
+    // same-tick multi-KO, so it's restricted to a lone straggler.
+    if (losersArr.length === 1 && session?.pendingWinner?.winnerId === first.id) {
         session.pendingWinner.resolveAfterRespawn = true;
-        return true;
+        return new Set([first.id]);
     }
 
     if (session) {
-        session.eliminated.add(loser.id);
-        session.loserDbId = loser.dbUserId ?? session.dbUserIds?.[loser.id] ?? null;
-        session.loserStocks = loser.stocks ?? 0;
-        if (!session.eliminationLog) session.eliminationLog = [];
-        session.eliminationLog.push({
-            clientId: loser.id,
-            dbUserId: session.loserDbId,
-            stocks: session.loserStocks,
-        });
-        recordTournamentElimination(session, loser.id, session.loserDbId, session.loserStocks);
+        for (const loser of losersArr) {
+            session.eliminated.add(loser.id);
+            session.loserDbId = loser.dbUserId ?? session.dbUserIds?.[loser.id] ?? null;
+            session.loserStocks = loser.stocks ?? 0;
+            if (!session.eliminationLog) session.eliminationLog = [];
+            session.eliminationLog.push({
+                clientId: loser.id,
+                dbUserId: session.loserDbId,
+                stocks: session.loserStocks,
+            });
+            recordTournamentElimination(session, loser.id, session.loserDbId, session.loserStocks);
+        }
     }
 
-    const { id: eliminatedId, dbUserId: eliminatedDbId, ws: eliminatedWs } = loser;
+    if (session?.mode === 'training') {
+        const eliminatedIds = new Set(losersArr.map(l => l.id));
+        const humanEliminated = eliminatedIds.has(session.humanId);
+
+        for (const loser of losersArr) {
+            if (loser.id !== session.humanId) {
+                if (session.cpusEliminated) session.cpusEliminated.add(loser.id);
+                delete players[loser.id];
+                playerSession.delete(loser.id);
+            }
+            broadcastToSession(session, { type: 'player_eliminated', clientId: loser.id });
+        }
+        broadcastState();
+
+        const allCpusDead = session.cpuIds.every(cid => session.cpusEliminated.has(cid));
+
+        if (humanEliminated && allCpusDead) {
+            // Simultaneous double-KO: the player and every CPU ran out of
+            // stocks in the same tick. Neither side "wins" — end the match
+            // as a draw so it never counts as a victory for the bot or a
+            // defeat for the player.
+            session.finished = true;
+            broadcastToSession(session, { type: 'match_end', winner: null, loser: null, matchId: null, mode: session.mode });
+            setTimeout(() => {
+                broadcastToSession(session, { type: 'match_finished', sessionId: session.id });
+                cleanupSession(session, null);
+            }, 6000);
+        } else if (humanEliminated) {
+            const survivingCpu = session.cpuIds.find(cid => !session.cpusEliminated.has(cid)) ?? session.cpuId;
+            session.pendingWinner = { winnerId: survivingCpu, loserId: session.humanId };
+        } else if (allCpusDead) {
+            session.pendingWinner = { winnerId: session.humanId, loserId: [...eliminatedIds][0] };
+        }
+        return new Set();
+    }
 
     const remaining = session
         ? [...session.playerIds].filter(id => !session.eliminated.has(id))
         : [];
 
-    if (session?.mode === 'training') {
-        const isHuman = eliminatedId === session.humanId;
-        if (!isHuman) {
-            if (session.cpusEliminated) session.cpusEliminated.add(eliminatedId);
-            delete players[eliminatedId];
-            playerSession.delete(eliminatedId);
-            broadcastState();
-            broadcastToSession(session, { type: 'player_eliminated', clientId: eliminatedId });
-            const allCpusDead = session.cpuIds.every(cid => session.cpusEliminated.has(cid));
-            if (allCpusDead) {
-                session.pendingWinner = { winnerId: session.humanId, loserId: eliminatedId };
-            }
-        } else {
-            const survivingCpu = session.cpuIds.find(cid => !session.cpusEliminated.has(cid)) ?? session.cpuId;
-            broadcastState();
-            broadcastToSession(session, { type: 'player_eliminated', clientId: eliminatedId });
-            session.pendingWinner = { winnerId: survivingCpu, loserId: eliminatedId };
-        }
-        return;
-    }
-
-    const isDecidingElimination = remaining.length === 1 &&
+    const isDecidingBatch = remaining.length === 1 &&
         (session?.mode === '1v1' || session?.mode === 'tournament');
 
-    if (!isDecidingElimination) {
-        delete players[eliminatedId];
-        playerSession.delete(eliminatedId);
+    for (const loser of losersArr) {
+        const { id: eliminatedId, dbUserId: eliminatedDbId, ws: eliminatedWs } = loser;
 
-        // Bots have no WebSocket — skip spectator promotion entirely.
-        if (eliminatedWs?.readyState === WebSocket.OPEN) {
-            const newSpec = {
-                id: eliminatedId, dbUserId: eliminatedDbId, ws: eliminatedWs,
-                watchingSession: null, mode: 'overflow', dbRowId: null, eliminated: true,
-            };
-            spectators[eliminatedId] = newSpec;
-            setSpectatorSession(newSpec, sessionId ?? null);
-            eliminatedWs.send(JSON.stringify({
-                type: 'spectator_mode', clientId: eliminatedId, mode: 'overflow',
-                watchingSession: sessionId ?? null, activeSessions: listActiveSessions(), eliminated: true,
-            }));
+        if (!isDecidingBatch) {
+            delete players[eliminatedId];
+            playerSession.delete(eliminatedId);
+
+            // Bots have no WebSocket — skip spectator promotion entirely.
+            if (eliminatedWs?.readyState === WebSocket.OPEN) {
+                const newSpec = {
+                    id: eliminatedId, dbUserId: eliminatedDbId, ws: eliminatedWs,
+                    watchingSession: null, mode: 'overflow', dbRowId: null, eliminated: true,
+                };
+                spectators[eliminatedId] = newSpec;
+                setSpectatorSession(newSpec, sessionId ?? null);
+                eliminatedWs.send(JSON.stringify({
+                    type: 'spectator_mode', clientId: eliminatedId, mode: 'overflow',
+                    watchingSession: sessionId ?? null, activeSessions: listActiveSessions(), eliminated: true,
+                }));
+            }
         }
+
+        broadcastToAll({ type: 'player_eliminated', clientId: eliminatedId });
     }
 
     broadcastState();
-    broadcastToAll({ type: 'player_eliminated', clientId: eliminatedId });
 
-    if (!session) return;
+    if (!session) return new Set();
 
     if (remaining.length === 1) {
-        session.pendingWinner = { winnerId: remaining[0], loserId: eliminatedId };
+        session.pendingWinner = { winnerId: remaining[0], loserId: losersArr[losersArr.length - 1].id };
     } else if (remaining.length === 0) {
         session.finished = true;
-        broadcastToSession(session, { type: 'match_end', winner: null, loser: eliminatedId, matchId: null, mode: session.mode });
+        // A simultaneous multi-KO leaves no one standing — a draw, same as
+        // this branch's pre-existing single-elimination "everyone's gone" case.
+        const drawLoserId = losersArr.length === 1 ? losersArr[0].id : null;
+        broadcastToSession(session, { type: 'match_end', winner: null, loser: drawLoserId, matchId: null, mode: session.mode });
         setTimeout(() => {
             broadcastToSession(session, { type: 'match_finished', sessionId: session.id });
             cleanupSession(session, null);
         }, 6000);
     }
+    return new Set();
 }
 
 function cleanupSession(session, winnerClientId) {
