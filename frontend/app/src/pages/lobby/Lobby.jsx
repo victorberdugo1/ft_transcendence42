@@ -50,7 +50,7 @@ export default function Lobby({ user, onPlay, onProfile, onAchievements, onSocia
   ];
 
   return (
-    <div className="lobby-page">
+    <div className="lobby-page max-[1180px]:p-[16px_20px] max-[900px]:p-[12px_14px]">
       <main className="lobby-command-center" aria-label={t("lobby.a11y.mainHub")}>
         <header className="lobby-topbar">
           <div className="lobby-title-lockup">

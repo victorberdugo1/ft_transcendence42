@@ -442,7 +442,7 @@ export default function SocialHub({ user, onBack, initialTab = "global" }) {
 
         {hubStatus === "error" ? <div className="social-error-banner">{error}</div> : null}
 
-        <div className="social-layout">
+        <div className="social-layout grid grid-cols-[minmax(250px,300px)_minmax(0,1fr)_minmax(250px,320px)] max-[1180px]:grid-cols-[minmax(240px,280px)_minmax(0,1fr)] max-[880px]:grid-cols-1">
           <aside className="social-sidebar">
             <div className="social-side-block">
               <span className="social-side-title">{t(`socialHub.sideTitles.${activeTab}`)}</span>

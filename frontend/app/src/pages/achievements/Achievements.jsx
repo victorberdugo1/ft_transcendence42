@@ -205,7 +205,7 @@ export default function Achievements({ user, onBack }) {
           backLabel={t("achievementsPage.backToLobby")}
         />
 
-        <section className="ach-hero">
+        <section className="ach-hero grid grid-cols-[minmax(0,1.3fr)_minmax(320px,0.95fr)] max-[1024px]:grid-cols-1 gap-[22px]">
           <div className="ach-hero-copy">
             <span className="ach-hero-chip">{t("achievementsPage.hero.chip")}</span>
             <h2>{t("achievementsPage.hero.title", { playerName: user.username || user.email })}</h2>
@@ -237,7 +237,7 @@ export default function Achievements({ user, onBack }) {
         ) : null}
 
         {status === "ready" && featured ? (
-          <div className="ach-layout">
+          <div className="ach-layout grid grid-cols-[minmax(320px,380px)_minmax(0,1fr)] max-[1024px]:grid-cols-1 gap-6">
             <aside className="ach-spotlight">
               <div className={`ach-spotlight-card ach-spotlight-${featured.accent}`}>
                 <span className="ach-spotlight-emblem" aria-hidden="true">//</span>

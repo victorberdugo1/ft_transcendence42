@@ -316,7 +316,7 @@ export default function Profile({ onBack }) {
         </nav>
 
         {activeTab === "overview" ? (
-        <div className="profile-layout" id="profile-overview-panel" role="tabpanel" aria-labelledby="profile-overview-tab">
+        <div className="profile-layout grid grid-cols-[minmax(290px,350px)_minmax(0,1fr)] max-[980px]:grid-cols-1 gap-6" id="profile-overview-panel" role="tabpanel" aria-labelledby="profile-overview-tab">
           <aside className="profile-card profile-user-card">
             <button type="button" className="profile-avatar-button" onClick={openAvatarPicker} aria-label={t("profile.avatar.change")}>
               <Avatar
