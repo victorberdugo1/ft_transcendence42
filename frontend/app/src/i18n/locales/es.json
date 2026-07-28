@@ -41,7 +41,9 @@
     "serverUnreachable": "No se pudo conectar al servidor. Intenta de nuevo.",
     "allFieldsRequired": "Todos los campos son obligatorios.",
     "usernameMin": "El usuario debe tener al menos 3 caracteres.",
+    "usernameMax": "El usuario debe tener como maximo 50 caracteres.",
     "passwordMin": "La contrasena debe tener al menos 8 caracteres.",
+    "passwordMax": "La contrasena debe tener como maximo 72 caracteres.",
     "passwordMismatch": "Las contrasenas no coinciden.",
     "registerFailed": "Fallo el registro."
   },

@@ -68,6 +68,7 @@ export default function Login({ onLogin, onSwitchToRegister }) {
         onChange={(event) => setEmail(event.target.value)}
         autoComplete="email"
         placeholder={t("auth.emailPlaceholder")}
+        maxLength={255}
       />
 
       <label className="auth-label" htmlFor="login-password">

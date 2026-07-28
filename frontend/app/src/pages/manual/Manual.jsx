@@ -90,7 +90,7 @@ export default function Manual({ onBack }) {
       </div>
 
       <div className="mn-shell">
-        <header className="mn-hero">
+        <header className="mn-hero grid grid-cols-[minmax(0,1.4fr)_minmax(280px,0.9fr)] max-[980px]:grid-cols-1 gap-[22px]">
           <div className="mn-hero-copy">
             <p className="mn-hero-kicker">{manual.hero.eyebrow}</p>
             <h1 className="mn-hero-title">{manual.hero.title}</h1>
@@ -107,7 +107,7 @@ export default function Manual({ onBack }) {
           </div>
         </header>
 
-        <div className="mn-layout">
+        <div className="mn-layout grid grid-cols-[240px_minmax(0,1fr)] max-[980px]:grid-cols-1 gap-5">
           <aside className="mn-rail">
             <p className="mn-rail-label">{manual.tocLabel}</p>
             <nav className="mn-rail-nav" aria-label={manual.tocLabel}>

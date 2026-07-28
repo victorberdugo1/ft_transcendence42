@@ -183,6 +183,9 @@
 .lobby-username {
   font-size: 1.05rem;
   color: #f6f1e9;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .lobby-email {
@@ -460,6 +463,8 @@
 .lobby-session-specs {
   font-size: 0.85rem;
   color: #91a0af;
+  overflow-wrap: anywhere;
+  min-width: 0;
 }
 
 .lobby-watch-btn {

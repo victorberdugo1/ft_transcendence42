@@ -254,6 +254,7 @@
 
 .ach-hero h2 {
   font-size: clamp(2.2rem, 4vw, 4rem);
+  overflow-wrap: anywhere;
 }
 
 .ach-hero-copy p {

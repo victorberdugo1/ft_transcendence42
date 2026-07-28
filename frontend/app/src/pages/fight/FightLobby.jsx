@@ -225,7 +225,7 @@ export default function FightLobby({
     <div className="fight-lobby-page">
       <div className="lobby-card">
 
-        <div className="fight-lobby-toolbar">
+        <div className="fight-lobby-toolbar max-[720px]:flex-col max-[720px]:items-stretch max-[720px]:mb-4">
           <div className="fight-lobby-toolbar-start">
             {!sssLocked ? (
               <PageBackButton

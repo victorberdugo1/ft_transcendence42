@@ -45,8 +45,8 @@ export default function AuthGate({
   const { t } = useTranslation();
 
   return (
-    <div className="auth-page">
-      <div className="auth-card">
+    <div className="auth-page max-[720px]:items-start max-[720px]:p-4 max-[420px]:p-2.5">
+      <div className="auth-card max-[720px]:p-[22px] max-[720px]:rounded-[18px] max-[420px]:p-[18px] max-[420px]:rounded-2xl">
         <div className="auth-language-row">
           <LanguageSelector variant="auth" compact />
         </div>

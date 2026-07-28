@@ -19,6 +19,10 @@ function generateToken() {
     return crypto.randomBytes(64).toString('hex');
 }
 
+function isValidEmail(email) {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
 function parseSidCookie(req) {
     const header = req.headers.cookie || '';
     for (const part of header.split(';')) {
@@ -62,8 +66,14 @@ async function register(req, res) {
     if (!username || !email || !password)
         return res.status(400).json({ error: 'username, email and password are required' });
 
-    if (password.length < 8)
-        return res.status(400).json({ error: 'Password must be at least 8 characters' });
+    if (username.trim().length < 3 || username.trim().length > 50)
+        return res.status(400).json({ error: 'Username must be between 3 and 50 characters' });
+
+    if (email.trim().length > 255 || !isValidEmail(email.trim()))
+        return res.status(400).json({ error: 'Invalid email format' });
+
+    if (password.length < 8 || password.length > 72)
+        return res.status(400).json({ error: 'Password must be between 8 and 72 characters' });
 
     try {
         const hash = await bcrypt.hash(password, BCRYPT_ROUNDS);
@@ -109,6 +119,12 @@ async function login(req, res) {
 
     if (!email || !password)
         return res.status(400).json({ error: 'email and password are required' });
+
+    if (email.trim().length > 255 || !isValidEmail(email.trim()))
+        return res.status(400).json({ error: 'Invalid email format' });
+
+    if (password.length > 72)
+        return res.status(400).json({ error: 'Invalid credentials' });
 
     try {
         const { rows } = await db.query(
