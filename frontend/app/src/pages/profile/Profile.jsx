@@ -179,7 +179,7 @@ export default function Profile({ onBack }) {
   const xpBar = useMemo(() => xpProgress(xp, level), [xp, level]);
   const avatarOptions = useMemo(() => getAvatarOptions(t), [t]);
   const avatarOptionsById = useMemo(() => new Map(avatarOptions.map(option => [option.id, option])), [avatarOptions]);
-  const avatarVisual = getAvatarVisual(user.avatar, avatarOptionsById);
+  const avatarVisual = getAvatarVisual(user.avatar, avatarOptionsById) ?? { type: "character", src: CHARACTER_AVATARS.eld };
   const dateFormatter = useMemo(
     () =>
       new Intl.DateTimeFormat(i18n.resolvedLanguage || i18n.language || "en", {
@@ -320,9 +320,9 @@ export default function Profile({ onBack }) {
           <aside className="profile-card profile-user-card">
             <button type="button" className="profile-avatar-button" onClick={openAvatarPicker} aria-label={t("profile.avatar.change")}>
               <Avatar
-                src={avatarVisual?.src ?? null}
+                src={avatarVisual.src}
                 label={user.username || t("profile.player")}
-                className={avatarVisual ? `profile-avatar-${avatarVisual.type}` : ""}
+                className={`profile-avatar-${avatarVisual.type}`}
                 t={t}
               />
               <span className="profile-avatar-edit-hint">{t("profile.avatar.change")}</span>
