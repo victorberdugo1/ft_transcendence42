@@ -55,6 +55,13 @@ export default function GameShell({
     leaveAckPendingRef.current = leaveAckPending;
   }, [leaveAckPending]);
 
+  // window._victoryActive is a plain global flipped by ws-client.js the
+  // instant the 'victory' message arrives (well before the delayed 'victory'
+  // DOM event fires for the overlay). Mirror it into real state so the
+  // "Back to lobby" button's disabled/title actually update the moment it
+  // flips, instead of only on the next unrelated re-render.
+  const [victoryActive, setVictoryActive] = useState(!!window._victoryActive);
+
   // Disparar evento de touch-controls cuando el match comienza/termina
   useEffect(() => {
     if (matchStarted && window._touchControls) {
@@ -492,6 +499,13 @@ export default function GameShell({
       }
     };
 
+    const victoryPoll = setInterval(() => {
+      setVictoryActive((prev) => {
+        const next = !!window._victoryActive;
+        return prev === next ? prev : next;
+      });
+    }, 100);
+
     window.addEventListener("match_start", onStart);
     window.addEventListener("training_start_error", onTrainingStartError);
     window.addEventListener("spectator_mode", onSpectateMode);
@@ -505,6 +519,7 @@ export default function GameShell({
 
     return () => {
       clearInterval(poll);
+      clearInterval(victoryPoll);
       clearTimeout(matchFinishedTimer);
       clearTimeout(victorySpectatorTimer);
       if (leaveLockTimerRef.current) {
@@ -541,12 +556,12 @@ export default function GameShell({
             onClick={handleBackToLobby}
             disabled={
               !!(grace && grace.clientId !== (window._myClientId ?? -1)) ||
-              !!window._victoryActive ||
+              victoryActive ||
               (lobbyPaired && gameMode === "versus") ||
               (paired && leaveLocked && gameMode === "versus")
             }
             title={
-              window._victoryActive
+              victoryActive
                 ? "Victory animation in progress…"
                 : grace && grace.clientId !== (window._myClientId ?? -1)
                   ? "Your rival has a few seconds to reconnect..."

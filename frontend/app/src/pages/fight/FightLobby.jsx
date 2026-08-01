@@ -185,7 +185,10 @@ export default function FightLobby({
         }
       } catch (e) {
         console.error("[fight-lobby] load error:", e);
-        onLogout();
+        // Only a real auth failure should log the user out — a transient
+        // network hiccup or a fetch racing an in-flight WS reconnect must
+        // not be escalated into a session-ending logout.
+        if (!cancelled && (e?.status === 401 || e?.status === 403)) onLogout();
       }
     }
     load();

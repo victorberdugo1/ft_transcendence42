@@ -940,7 +940,28 @@ async function onConnection(ws, req) {
                 ? gameSessions.get(playerSession.get(clientId))
                 : null;
 
-            if (!leavingSession || leavingSession.finished) {
+            if (leavingSession && leavingSession.finished) {
+                // resolveMatchWinner() already set `finished = true` synchronously
+                // (session.js), but the scheduled match_finished broadcast +
+                // cleanupSession() for this same session hasn't run yet (it's
+                // still inside its linger window). This is not a lobby leave —
+                // the lobby-pair guard, notifyNewLobbyHost/broadcastState, and
+                // tournament-room removal below only make sense pre-match, and
+                // running them here would race the pending cleanup. Just drop
+                // this client's own slot; cleanupSession's stillOwnedBySession
+                // guard already tolerates it being gone by the time it runs.
+                delete players[clientId];
+                playerSession.delete(clientId);
+                playerCharSelected.delete(clientId);
+                delete lastState[clientId];
+                console.log(`[SERVER] Player ${clientId} left after match resolution (pre-cleanup)`);
+                if (ws.readyState === WebSocket.OPEN) {
+                    ws.send(JSON.stringify({ type: 'leave_ack', paired: false, graced: false }));
+                }
+                return;
+            }
+
+            if (!leavingSession) {
                 // LOBBY-PAIR GUARD: a real gameSession doesn't exist yet (we're
                 // still pre-match_start), but stage_select may have already
                 // paired this client with a partner by lobbyQueue adjacency
