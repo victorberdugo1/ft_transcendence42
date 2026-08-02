@@ -1,4 +1,4 @@
-*This project has been created as part of the 42 curriculum by aprenafe, isegura-, mmarinov, vberdugo.*
+*This project has been created as part of the 42 curriculum by ***aprenafe, isegura-, mmarinov, vberdugo.****
 
 ---
 
